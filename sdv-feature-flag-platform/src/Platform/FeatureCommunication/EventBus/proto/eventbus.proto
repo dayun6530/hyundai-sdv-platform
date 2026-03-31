@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package sdv.platform;
+
+service EventBus {
+    rpc registerComponent(RegisterRequest) returns (RegisterResponse);
+    rpc unRegister(UnRegisterRequest) returns (UnRegisterResponse);
+    rpc sendEvent(SendEventRequest) returns (SendEventResponse);
+    rpc getEventQueue(GetEventQueueRequest) returns (GetEventQueueResponse);
+}
+
+message RegisterRequest {}
+
+message RegisterResponse {
+    int64 component_id = 1;
+}
+
+message UnRegisterRequest {
+    int64 component_id = 1;
+}
+
+message UnRegisterResponse {}
+
+message SendEventRequest {
+    int32 event_id = 1;
+    string message = 2;
+}
+
+message SendEventResponse {}
+
+message GetEventQueueRequest {
+    int64 component_id = 1;
+}
+
+message EventMessage {
+    int32 event_id = 1;
+    string message = 2;
+}
+
+message GetEventQueueResponse {
+    int64 component_id = 1;
+    repeated EventMessage events = 2;
+}

@@ -1,0 +1,23 @@
+#pragma once
+
+#include "LifeCycleManager/Feature.h"
+
+#include <string>
+
+namespace sdv::feature {
+
+class EvEnergyFeature : public sdv::platform::lifecyclemgr::Feature {
+public:
+    explicit EvEnergyFeature(sdv::platform::communications::eventbus::EventBusInterface& eventBus);
+
+protected:
+    void execute() override;
+
+private:
+    void processVehicleLocation(const std::string& message);
+    void processRoadInfo(const std::string& message);
+
+    int battery_;
+};
+
+}  // namespace sdv::feature
