@@ -1,0 +1,3 @@
+add_subdirectory(FeatureCommunication/EventBus)
+add_subdirectory(LifeCycleManager)
+add_subdirectory(CenterCommunication)
