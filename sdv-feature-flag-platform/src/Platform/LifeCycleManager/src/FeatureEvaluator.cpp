@@ -7,8 +7,24 @@
 #include <thread>
 #include <chrono>
 #include <signal.h>
+#include <algorithm>
+#include <cctype>
 
 namespace sdv::platform::lifecyclemgr {
+
+namespace {
+
+void trimInPlace(std::string& s) {
+    while (!s.empty() && (s.back() == '\r' || s.back() == '\n' || std::isspace(static_cast<unsigned char>(s.back())))) {
+        s.pop_back();
+    }
+    auto first = std::find_if_not(s.begin(), s.end(), [](unsigned char c) {
+        return std::isspace(c);
+    });
+    s.erase(s.begin(), first);
+}
+
+}  // namespace
 
 FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
                                    const std::string& inboundPath,
@@ -39,6 +55,7 @@ void FeatureEvaluator::processSignals() {
     std::vector<std::string> lines;
     std::string line;
     while (std::getline(input, line)) {
+        trimInPlace(line);
         if (!line.empty()) lines.push_back(line);
     }
     input.close();
@@ -63,6 +80,7 @@ void FeatureEvaluator::processSignals() {
             ? rest.substr(0, secondColon) : rest;
         std::string extra = (secondColon != std::string::npos)
             ? rest.substr(secondColon + 1) : "";
+        trimInPlace(extra);
 
         if (action == "FLAG_ON") {
             sendFlagOn(featureName);
@@ -89,7 +107,8 @@ void FeatureEvaluator::processSignals() {
             sendShadowOff(featureName);
         } else if (action == "AB_SET") {
             if (extra.size() != 1 || (extra[0] != 'A' && extra[0] != 'B')) {
-                log(LogLevel::warn, "invalid AB_SET format (expected AB_SET:FeatureName:A|B): " + cmd);
+                log(LogLevel::warn,
+                    "invalid AB_SET format (expected AB_SET:FeatureName:A or AB_SET:FeatureName:B): " + cmd);
                 continue;
             }
             sendAbSet(featureName, extra[0]);
