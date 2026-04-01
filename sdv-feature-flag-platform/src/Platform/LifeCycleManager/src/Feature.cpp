@@ -118,6 +118,7 @@ std::vector<Event> Feature::pollEvents() {
                    event.getMessage() == name_) {
             log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
             requestStop();
+<<<<<<< Updated upstream
         } else if (event.getEventId() == EventId::ShadowModeOn &&
                    event.getMessage() == primaryName_) {
             if (name_ == primaryName_) {
@@ -130,6 +131,20 @@ std::vector<Event> Feature::pollEvents() {
                 shadowMirrorEnabled_ = false;
                 log(LogLevel::info, "ShadowMode OFF (mirroring disabled)");
             }
+=======
+        } else if (event.getEventId() == EventId::AbVariantAssign) {
+            const std::string& msg = event.getMessage();
+            const std::string prefix = name_ + "|";
+            if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
+                const char v = msg.back();
+                if (v == 'A' || v == 'B') {
+                    abVariant_ = v;
+                    log(LogLevel::info, std::string("A/B variant set to ") + v);
+                    continue;
+                }
+            }
+            appEvents.push_back(event);
+>>>>>>> Stashed changes
         } else {
             appEvents.push_back(event);
         }

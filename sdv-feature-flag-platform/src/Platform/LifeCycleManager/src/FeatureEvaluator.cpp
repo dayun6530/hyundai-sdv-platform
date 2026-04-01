@@ -61,6 +61,8 @@ void FeatureEvaluator::processSignals() {
         auto secondColon = rest.find(':');
         std::string featureName = (secondColon != std::string::npos)
             ? rest.substr(0, secondColon) : rest;
+        std::string extra = (secondColon != std::string::npos)
+            ? rest.substr(secondColon + 1) : "";
 
         if (action == "FLAG_ON") {
             sendFlagOn(featureName);
@@ -68,10 +70,19 @@ void FeatureEvaluator::processSignals() {
             sendFlagOff(featureName);
         } else if (action == "KILL") {
             sendKillSwitch(featureName);
+<<<<<<< Updated upstream
         } else if (action == "SHADOW_ON") {
             sendShadowOn(featureName);
         } else if (action == "SHADOW_OFF") {
             sendShadowOff(featureName);
+=======
+        } else if (action == "AB_SET") {
+            if (extra.size() != 1 || (extra[0] != 'A' && extra[0] != 'B')) {
+                log(LogLevel::warn, "invalid AB_SET format (expected AB_SET:FeatureName:A|B): " + cmd);
+                continue;
+            }
+            sendAbSet(featureName, extra[0]);
+>>>>>>> Stashed changes
         } else {
             log(LogLevel::warn, "unknown action: " + action);
         }
@@ -94,6 +105,7 @@ bool FeatureEvaluator::sendKillSwitch(const std::string& featureName) {
     return eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
 }
 
+<<<<<<< Updated upstream
 bool FeatureEvaluator::sendShadowOn(const std::string& primaryName) {
     log(LogLevel::info, "SHADOW_ON -> " + primaryName);
     return eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
@@ -102,6 +114,12 @@ bool FeatureEvaluator::sendShadowOn(const std::string& primaryName) {
 bool FeatureEvaluator::sendShadowOff(const std::string& primaryName) {
     log(LogLevel::info, "SHADOW_OFF -> " + primaryName);
     return eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
+=======
+bool FeatureEvaluator::sendAbSet(const std::string& featureName, char variant) {
+    const std::string msg = featureName + "|" + std::string(1, variant);
+    log(LogLevel::info, std::string("AB_SET -> ") + msg);
+    return eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
+>>>>>>> Stashed changes
 }
 
 void FeatureEvaluator::sendWarning(const std::string& target,

@@ -15,10 +15,17 @@ enum class EventId : int32_t {
     FeatureFlagOff = 11,
     KillSwitch = 12,
 
+<<<<<<< Updated upstream
     // Shadow Mode
     ShadowMirrorData = 20,
     ShadowModeOn = 21,
     ShadowModeOff = 22,
+=======
+    ShadowMirrorData = 20,
+    ShadowModeOn = 21,
+    ShadowModeOff = 22,
+    AbVariantAssign = 23,
+>>>>>>> Stashed changes
 
     QuitTheSystem = 99
 };
