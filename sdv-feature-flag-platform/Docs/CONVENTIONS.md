@@ -87,6 +87,13 @@
 | `FLAG_ON` | `FLAG_ON:featureName` | `FeatureFlagOn` |
 | `FLAG_OFF` | `FLAG_OFF:featureName` | `FeatureFlagOff` |
 | `KILL` | `KILL:featureName` | `KillSwitch` + 기존 WARNING 파일 출력 |
+| `DMS_SLEEP` | `DMS_SLEEP:featureName:payload` | `KillSwitch`로 매핑 (DMS: 운전자 잠듬, 데모 표준) |
+| `ADAS_FATAL` | `ADAS_FATAL:featureName:payload` | `KillSwitch`로 매핑 (ADAS 치명적 오류, 데모 표준) |
+| `SENSOR_FATAL` | `SENSOR_FATAL:featureName:payload` | `KillSwitch`로 매핑 (센서/입력 치명적 오류, 데모 표준) |
+| `MANUAL_KILL` | `MANUAL_KILL:featureName:payload` | `KillSwitch`로 매핑 (사람 강제 중단, 데모 표준) |
+| `DRIVER_SLEEP` | `DRIVER_SLEEP:featureName:payload` | `DMS_SLEEP` 별칭(alias) — `KillSwitch`로 매핑 |
+| `DMS_DRIVER_SLEEP` | `DMS_DRIVER_SLEEP:featureName:payload` | `DMS_SLEEP` 별칭(alias) — `KillSwitch`로 매핑 |
+| `DRIVER_DROWSY` | `DRIVER_DROWSY:featureName:payload` | `DMS_SLEEP` 별칭(alias) — `KillSwitch`로 매핑 |
 | `SHADOW_ON` | `SHADOW_ON:PrimaryName` | `ShadowModeOn` |
 | `SHADOW_OFF` | `SHADOW_OFF:PrimaryName` | `ShadowModeOff` |
 | `AB_SET` | `AB_SET:FeatureName:A` 또는 `AB_SET:FeatureName:B` | `AbVariantAssign` message `FeatureName|A` 등 |

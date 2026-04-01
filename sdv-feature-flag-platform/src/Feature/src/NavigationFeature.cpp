@@ -71,10 +71,10 @@ void NavigationFeature::execute() {
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    log(LogLevel::info, "운행 종료. 시스템 종료 요청");
-    if (!eventBus_.sendEvent(Event(EventId::QuitTheSystem, "Navigation: 운행 종료"))) {
-        log(LogLevel::error, "시스템 종료 이벤트 전송 실패");
-    }
+    // NOTE: 데모/운영에서 단일 Feature가 전체 시스템 종료를 트리거하면
+    // KillSwitch 등 제어 데모가 불안정해질 수 있으므로, NavigationFeature는
+    // 운행 종료 시 QuitTheSystem을 발행하지 않는다.
+    log(LogLevel::info, "운행 종료. (QuitTheSystem 발행하지 않음)");
 }
 
 }  // namespace sdv::feature
