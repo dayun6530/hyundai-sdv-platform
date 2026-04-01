@@ -304,6 +304,7 @@ int main() {
         in << "FLAG_ON:AdasFeature\n";
         in << "FLAG_OFF:EvEnergyFeature\n";
         in << "KILL:NavigationFeature\n";
+        in << "AB_SET:NavigationFeature:A\n";
         in << "UNKNOWN:Whatever\n";
     }
     std::ofstream(outbound, std::ios::trunc).close();
@@ -328,7 +329,7 @@ int main() {
     server->Shutdown();
     serverThread.join();
 
-    sqa::test::check(tc, service.receivedCount() >= 3, "FeatureEvaluator sends flag events to EventBus");
+    sqa::test::check(tc, service.receivedCount() >= 4, "FeatureEvaluator sends events to EventBus (including AB_SET)");
 
     std::ifstream inAfter(inbound);
     std::string rest;

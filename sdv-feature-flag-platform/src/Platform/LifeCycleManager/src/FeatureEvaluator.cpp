@@ -21,6 +21,10 @@ void FeatureEvaluator::execute() {
     log(LogLevel::info, "started. Inbound: " + inboundPath_ +
         " Outbound: " + outboundPath_);
 
+    // Give other features time to register to EventBus before emitting control events.
+    // EventBus does not guarantee delivery to components that register later.
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
     while (!isStopRequested()) {
         processSignals();
         pollEvents();
@@ -57,6 +61,8 @@ void FeatureEvaluator::processSignals() {
         auto secondColon = rest.find(':');
         std::string featureName = (secondColon != std::string::npos)
             ? rest.substr(0, secondColon) : rest;
+        std::string extra = (secondColon != std::string::npos)
+            ? rest.substr(secondColon + 1) : "";
 
         if (action == "FLAG_ON") {
             sendFlagOn(featureName);
@@ -77,6 +83,16 @@ void FeatureEvaluator::processSignals() {
             // External situation signals (from SignalReceiver) mapped to KillSwitch.
             log(LogLevel::warn, action + " -> KILL " + featureName);
             sendKillSwitch(featureName);
+        } else if (action == "SHADOW_ON") {
+            sendShadowOn(featureName);
+        } else if (action == "SHADOW_OFF") {
+            sendShadowOff(featureName);
+        } else if (action == "AB_SET") {
+            if (extra.size() != 1 || (extra[0] != 'A' && extra[0] != 'B')) {
+                log(LogLevel::warn, "invalid AB_SET format (expected AB_SET:FeatureName:A|B): " + cmd);
+                continue;
+            }
+            sendAbSet(featureName, extra[0]);
         } else {
             log(LogLevel::warn, "unknown action: " + action);
         }
@@ -97,6 +113,22 @@ bool FeatureEvaluator::sendKillSwitch(const std::string& featureName) {
     log(LogLevel::info, "KILL -> " + featureName);
     sendWarning(featureName, "KillSwitch activated");
     return eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
+}
+
+bool FeatureEvaluator::sendShadowOn(const std::string& primaryName) {
+    log(LogLevel::info, "SHADOW_ON -> " + primaryName);
+    return eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
+}
+
+bool FeatureEvaluator::sendShadowOff(const std::string& primaryName) {
+    log(LogLevel::info, "SHADOW_OFF -> " + primaryName);
+    return eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
+}
+
+bool FeatureEvaluator::sendAbSet(const std::string& featureName, char variant) {
+    const std::string msg = featureName + "|" + std::string(1, variant);
+    log(LogLevel::info, std::string("AB_SET -> ") + msg);
+    return eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
 }
 
 void FeatureEvaluator::sendWarning(const std::string& target,

@@ -46,6 +46,9 @@
 |------|------|-----|----------------|
 | 데이터 | `VehicleLocationUpdate` | 1 | 자유 문자열 (단일 줄 권장) |
 | 데이터 | `RoadInfoUpdate` | 2 | 자유 문자열 (단일 줄 권장) |
+| 데이터 | `NavigationGuidanceUpdate` | 3 | 자유 문자열 (단일 줄 권장) |
+| 데이터 | `AdasDecisionUpdate` | 4 | 자유 문자열 (단일 줄 권장) |
+| 데이터 | `EnergyStateUpdate` | 5 | 자유 문자열 (단일 줄 권장) |
 | 플래그 | `FeatureFlagOn` | 10 | 대상 Feature **논리 이름** |
 | 플래그 | `FeatureFlagOff` | 11 | 대상 Feature **논리 이름** |
 | 안전 | `KillSwitch` | 12 | 대상 Feature **논리 이름** |
@@ -170,6 +173,9 @@
 - **message 형식**: `MIRROR|<원본_EventId_숫자>|<payload>`  
   - 예: 원본이 `VehicleLocationUpdate`이고 payload가 `서울…`이면  
     `MIRROR|1|서울…`
+- **멀티 Shadow 필터링(현행 구현)**: payload 앞에 `<PrimaryName>:` 접두사를 둘 수 있다.  
+  예: `MIRROR|1|NavigationFeature:서울…`  
+  (`|` 세그먼트는 유지하면서, Shadow 프로세스가 자기 Primary 것만 consume하도록 하기 위함)
 - **Shadow Feature**는 `ShadowMirrorData`만 파싱해 자기 로직에 넣고, **다시 `VehicleLocationUpdate` / `RoadInfoUpdate` 등을 bus에 쏘지 않는다** (위반 시 코드 리뷰에서 반려).
 
 ### 9.3 제어
