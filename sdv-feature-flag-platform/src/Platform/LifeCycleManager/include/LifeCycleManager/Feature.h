@@ -45,10 +45,19 @@ protected:
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
 
+    // Send domain event and (optionally) mirror for Shadow Mode.
+    // Shadow Mode mirroring is enabled/disabled via EventId::ShadowModeOn/Off.
+    bool sendDomainEvent(EventId id, const std::string& message);
+
     EventBusInterface& eventBus_;
     std::string name_;
+    // Primary logical name this process belongs to.
+    // - Primary: primaryName_ == name_
+    // - Shadow:  primaryName_ != name_ (e.g., NavigationFeatureShadow -> NavigationFeature)
+    std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
+    bool shadowMirrorEnabled_;
 
 private:
     static std::string normalizeFileName(const std::string& name);

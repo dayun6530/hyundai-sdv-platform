@@ -50,6 +50,9 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     battery_ -= 3;
     log(LogLevel::info, "배터리 잔량: " + std::to_string(battery_) +
         "% | 예상 주행 가능 거리: " + std::to_string(battery_ * 4) + "km");
+    sendDomainEvent(EventId::EnergyStateUpdate,
+        "ENERGY_STATE battery=" + std::to_string(battery_) +
+        " rangeKm=" + std::to_string(battery_ * 4));
 }
 
 void EvEnergyFeature::processRoadInfo(const std::string& message) {
@@ -63,6 +66,8 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     } else {
         log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
     }
+    sendDomainEvent(EventId::EnergyStateUpdate,
+        "ENERGY_STATE roadHint=processed battery=" + std::to_string(battery_));
 }
 
 }  // namespace sdv::feature

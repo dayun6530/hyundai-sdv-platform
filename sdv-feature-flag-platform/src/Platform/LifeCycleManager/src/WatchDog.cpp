@@ -63,9 +63,15 @@ void WatchDog::analyzeEvent(const Event& event) {
 
     if (eid != EventId::VehicleLocationUpdate &&
         eid != EventId::RoadInfoUpdate &&
+        eid != EventId::NavigationGuidanceUpdate &&
+        eid != EventId::AdasDecisionUpdate &&
+        eid != EventId::EnergyStateUpdate &&
         eid != EventId::FeatureFlagOn &&
         eid != EventId::FeatureFlagOff &&
         eid != EventId::KillSwitch &&
+        eid != EventId::ShadowMirrorData &&
+        eid != EventId::ShadowModeOn &&
+        eid != EventId::ShadowModeOff &&
         eid != EventId::QuitTheSystem) {
         log(LogLevel::warn, "unknown event ID detected: " + std::to_string(id));
     }

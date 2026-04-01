@@ -21,6 +21,10 @@ void FeatureEvaluator::execute() {
     log(LogLevel::info, "started. Inbound: " + inboundPath_ +
         " Outbound: " + outboundPath_);
 
+    // Give other features time to register to EventBus before emitting control events.
+    // EventBus does not guarantee delivery to components that register later.
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
     while (!isStopRequested()) {
         processSignals();
         pollEvents();
@@ -64,6 +68,10 @@ void FeatureEvaluator::processSignals() {
             sendFlagOff(featureName);
         } else if (action == "KILL") {
             sendKillSwitch(featureName);
+        } else if (action == "SHADOW_ON") {
+            sendShadowOn(featureName);
+        } else if (action == "SHADOW_OFF") {
+            sendShadowOff(featureName);
         } else {
             log(LogLevel::warn, "unknown action: " + action);
         }
@@ -84,6 +92,16 @@ bool FeatureEvaluator::sendKillSwitch(const std::string& featureName) {
     log(LogLevel::info, "KILL -> " + featureName);
     sendWarning(featureName, "KillSwitch activated");
     return eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
+}
+
+bool FeatureEvaluator::sendShadowOn(const std::string& primaryName) {
+    log(LogLevel::info, "SHADOW_ON -> " + primaryName);
+    return eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
+}
+
+bool FeatureEvaluator::sendShadowOff(const std::string& primaryName) {
+    log(LogLevel::info, "SHADOW_OFF -> " + primaryName);
+    return eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
 }
 
 void FeatureEvaluator::sendWarning(const std::string& target,

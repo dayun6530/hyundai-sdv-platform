@@ -26,6 +26,8 @@ private:
     bool sendFlagOn(const std::string& featureName);
     bool sendFlagOff(const std::string& featureName);
     bool sendKillSwitch(const std::string& featureName);
+    bool sendShadowOn(const std::string& primaryName);
+    bool sendShadowOff(const std::string& primaryName);
     void sendWarning(const std::string& target, const std::string& message);
 
     std::string inboundPath_;

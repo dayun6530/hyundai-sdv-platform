@@ -14,7 +14,8 @@ protected:
     void execute() override;
 
 private:
-    static const int broadcastCount_ = 5;
+    // Demo pacing: keep platform alive long enough to observe control events (Shadow/Kill/Flag).
+    static const int broadcastCount_ = 20;
 };
 
 }  // namespace sdv::feature

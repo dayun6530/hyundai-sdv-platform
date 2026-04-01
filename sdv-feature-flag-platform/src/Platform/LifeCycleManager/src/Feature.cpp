@@ -26,8 +26,10 @@ std::string Feature::normalizeFileName(const std::string& name) {
 Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     : eventBus_(eventBus)
     , name_(name)
+    , primaryName_(name)
     , componentId_(-1)
-    , flag_(name) {
+    , flag_(name)
+    , shadowMirrorEnabled_(false) {
     mkdir("logs", 0755);
     logFilePath_ = "logs/" + normalizeFileName(name) + ".log";
     logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
@@ -116,12 +118,51 @@ std::vector<Event> Feature::pollEvents() {
                    event.getMessage() == name_) {
             log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
             requestStop();
+        } else if (event.getEventId() == EventId::ShadowModeOn &&
+                   event.getMessage() == primaryName_) {
+            if (name_ == primaryName_) {
+                shadowMirrorEnabled_ = true;
+                log(LogLevel::info, "ShadowMode ON (mirroring enabled)");
+            }
+        } else if (event.getEventId() == EventId::ShadowModeOff &&
+                   event.getMessage() == primaryName_) {
+            if (name_ == primaryName_) {
+                shadowMirrorEnabled_ = false;
+                log(LogLevel::info, "ShadowMode OFF (mirroring disabled)");
+            }
         } else {
             appEvents.push_back(event);
         }
     }
 
     return appEvents;
+}
+
+bool Feature::sendDomainEvent(EventId id, const std::string& message) {
+    // Hard guard: Shadow processes must never emit domain events.
+    if (name_ != primaryName_) {
+        log(LogLevel::error, "Shadow process attempted to send domain event. Blocked.");
+        return false;
+    }
+
+    // Always send the original event.
+    if (!eventBus_.sendEvent(Event(id, message))) {
+        return false;
+    }
+
+    // Shadow mirroring: only Primary mirrors when enabled.
+    if (name_ != primaryName_ || !shadowMirrorEnabled_) {
+        return true;
+    }
+
+    // Format: MIRROR|<original_event_id_decimal>|<payload>
+    // Payload must not contain '|' (team convention).
+    // Also prefix payload with primary logical name so multiple shadows can filter.
+    // (Keeps 3 segments: MIRROR|id|payload, and avoids adding extra '|'.)
+    std::string payload = primaryName_ + ":" + message;
+    std::string mirrorMsg = "MIRROR|" + std::to_string(static_cast<int>(id)) + "|" + payload;
+    eventBus_.sendEvent(Event(EventId::ShadowMirrorData, mirrorMsg));
+    return true;
 }
 
 void Feature::requestStop() {

@@ -34,16 +34,26 @@ NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
 
 void NavigationFeature::execute() {
     for (int i = 0; i < broadcastCount_ && !isStopRequested(); i++) {
+        // Consume control events (Flag/Kill/Shadow) promptly.
+        pollEvents();
+
         log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 정보 브로드캐스트 ===");
 
         log(LogLevel::info, std::string("차량 위치 전송: ") + locations[i]);
-        if (!eventBus_.sendEvent(Event(EventId::VehicleLocationUpdate, locations[i]))) {
+        if (!sendDomainEvent(EventId::VehicleLocationUpdate, locations[i])) {
             log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
         }
 
         log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[i]);
-        if (!eventBus_.sendEvent(Event(EventId::RoadInfoUpdate, roadInfos[i]))) {
+        if (!sendDomainEvent(EventId::RoadInfoUpdate, roadInfos[i])) {
             log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
+        }
+
+        // Extra navigation-domain status update (for Shadow demo observability).
+        if (!sendDomainEvent(EventId::NavigationGuidanceUpdate,
+                "NAV_GUIDANCE step=" + std::to_string(i + 1) +
+                " status=guiding")) {
+            log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
         }
 
         if (i < broadcastCount_ - 1) {
