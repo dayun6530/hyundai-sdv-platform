@@ -64,6 +64,19 @@ void FeatureEvaluator::processSignals() {
             sendFlagOff(featureName);
         } else if (action == "KILL") {
             sendKillSwitch(featureName);
+        } else if (
+            // Demo-friendly canonical situation types
+            action == "DMS_SLEEP" ||
+            action == "ADAS_FATAL" ||
+            action == "SENSOR_FATAL" ||
+            action == "MANUAL_KILL" ||
+            // Backward-compatible aliases
+            action == "DRIVER_SLEEP" ||
+            action == "DMS_DRIVER_SLEEP" ||
+            action == "DRIVER_DROWSY") {
+            // External situation signals (from SignalReceiver) mapped to KillSwitch.
+            log(LogLevel::warn, action + " -> KILL " + featureName);
+            sendKillSwitch(featureName);
         } else {
             log(LogLevel::warn, "unknown action: " + action);
         }
