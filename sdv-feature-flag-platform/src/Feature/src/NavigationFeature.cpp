@@ -29,6 +29,9 @@ static const char* roadInfos[] = {
     "고속도로 출구 → 시내도로 2km (제한속도 60km/h, 내리막 경사 5%)"
 };
 
+static constexpr int kRoutePointCount =
+    static_cast<int>(sizeof(locations) / sizeof(locations[0]));
+
 NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
     : Feature("NavigationFeature", eventBus) {}
 
@@ -37,15 +40,17 @@ void NavigationFeature::execute() {
         // Consume control events (Flag/Kill/Shadow) promptly.
         pollEvents();
 
+        const int r = i % kRoutePointCount;
+
         log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 정보 브로드캐스트 ===");
 
-        log(LogLevel::info, std::string("차량 위치 전송: ") + locations[i]);
-        if (!sendDomainEvent(EventId::VehicleLocationUpdate, locations[i])) {
+        log(LogLevel::info, std::string("차량 위치 전송: ") + locations[r]);
+        if (!sendDomainEvent(EventId::VehicleLocationUpdate, locations[r])) {
             log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
         }
 
-        log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[i]);
-        if (!sendDomainEvent(EventId::RoadInfoUpdate, roadInfos[i])) {
+        log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[r]);
+        if (!sendDomainEvent(EventId::RoadInfoUpdate, roadInfos[r])) {
             log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
         }
 
@@ -56,8 +61,12 @@ void NavigationFeature::execute() {
             log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
         }
 
+        // Consume SHADOW_ON/KILL etc. during the inter-broadcast interval (not only at loop start).
         if (i < broadcastCount_ - 1) {
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            for (int s = 0; s < 5 && !isStopRequested(); ++s) {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                pollEvents();
+            }
         }
     }
 

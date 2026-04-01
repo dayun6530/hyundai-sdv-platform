@@ -46,15 +46,13 @@ protected:
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
 
-<<<<<<< Updated upstream
     // Send domain event and (optionally) mirror for Shadow Mode.
     // Shadow Mode mirroring is enabled/disabled via EventId::ShadowModeOn/Off.
     bool sendDomainEvent(EventId id, const std::string& message);
-=======
+
     // Optional A/B mode support (CONVENTIONS 10.2).
     // In the "two executables" model (<BaseName>A / <BaseName>B) this can be unused.
     std::optional<char> getAbVariant() const { return abVariant_; }
->>>>>>> Stashed changes
 
     EventBusInterface& eventBus_;
     std::string name_;

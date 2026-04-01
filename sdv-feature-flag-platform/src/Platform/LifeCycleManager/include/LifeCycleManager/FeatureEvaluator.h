@@ -26,12 +26,9 @@ private:
     bool sendFlagOn(const std::string& featureName);
     bool sendFlagOff(const std::string& featureName);
     bool sendKillSwitch(const std::string& featureName);
-<<<<<<< Updated upstream
     bool sendShadowOn(const std::string& primaryName);
     bool sendShadowOff(const std::string& primaryName);
-=======
     bool sendAbSet(const std::string& featureName, char variant);
->>>>>>> Stashed changes
     void sendWarning(const std::string& target, const std::string& message);
 
     std::string inboundPath_;
