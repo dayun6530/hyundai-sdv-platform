@@ -29,7 +29,9 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     , primaryName_(name)
     , componentId_(-1)
     , flag_(name)
-    , shadowMirrorEnabled_(false) {
+    , shadowMirrorEnabled_(false)
+    , abAEnabled_(true)
+    , abBEnabled_(true) {
     mkdir("logs", 0755);
     logFilePath_ = "logs/" + normalizeFileName(name) + ".log";
     logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
@@ -106,14 +108,36 @@ std::vector<Event> Feature::pollEvents() {
     while (queue.getSize() > 0) {
         Event event = queue.getEvent();
 
-        if (event.getEventId() == EventId::FeatureFlagOff &&
-            event.getMessage() == name_) {
-            flag_.disable();
-            log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
-        } else if (event.getEventId() == EventId::FeatureFlagOn &&
-                   event.getMessage() == name_) {
-            flag_.enable();
-            log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
+        if (event.getEventId() == EventId::FeatureFlagOff) {
+            const std::string& m = event.getMessage();
+            if (m == name_) {
+                flag_.disable();
+                log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
+            } else if (m == name_ + "|A") {
+                abAEnabled_ = false;
+                log(LogLevel::info, "A/B path A OFF (by FeatureEvaluator)");
+            } else if (m == name_ + "|B") {
+                abBEnabled_ = false;
+                log(LogLevel::info, "A/B path B OFF (by FeatureEvaluator)");
+            } else {
+                appEvents.push_back(event);
+            }
+        } else if (event.getEventId() == EventId::FeatureFlagOn) {
+            const std::string& m = event.getMessage();
+            if (m == name_) {
+                flag_.enable();
+                abAEnabled_ = true;
+                abBEnabled_ = true;
+                log(LogLevel::info, "Flag ON (by FeatureEvaluator), A/B paths ON");
+            } else if (m == name_ + "|A") {
+                abAEnabled_ = true;
+                log(LogLevel::info, "A/B path A ON (by FeatureEvaluator)");
+            } else if (m == name_ + "|B") {
+                abBEnabled_ = true;
+                log(LogLevel::info, "A/B path B ON (by FeatureEvaluator)");
+            } else {
+                appEvents.push_back(event);
+            }
         } else if (event.getEventId() == EventId::KillSwitch &&
                    event.getMessage() == name_) {
             log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
@@ -136,8 +160,13 @@ std::vector<Event> Feature::pollEvents() {
             if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
                 const char v = msg.back();
                 if (v == 'A' || v == 'B') {
-                    abVariant_ = v;
-                    log(LogLevel::info, std::string("A/B variant set to ") + v);
+                    if (v == 'A') {
+                        abAEnabled_ = true;
+                    } else {
+                        abBEnabled_ = true;
+                    }
+                    log(LogLevel::info,
+                        std::string("AB_SET: path ") + v + " ON (by FeatureEvaluator)");
                     continue;
                 }
             }

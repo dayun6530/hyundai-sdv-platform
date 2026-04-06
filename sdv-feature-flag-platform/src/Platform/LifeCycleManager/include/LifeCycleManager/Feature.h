@@ -10,7 +10,6 @@
 #include <atomic>
 #include <cstdint>
 #include <fstream>
-#include <optional>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -50,9 +49,10 @@ protected:
     // Shadow Mode mirroring is enabled/disabled via EventId::ShadowModeOn/Off.
     bool sendDomainEvent(EventId id, const std::string& message);
 
-    // Optional A/B mode support (CONVENTIONS 10.2).
-    // In the "two executables" model (<BaseName>A / <BaseName>B) this can be unused.
-    std::optional<char> getAbVariant() const { return abVariant_; }
+    // A/B 경로는 FLAG_ON/FLAG_OFF 의 세 번째 토큰(A/B) 또는 AB_SET 으로 켜고 끔.
+    // 두 경로는 서로 배타적이지 않으며 동시에 활성화할 수 있다.
+    bool isAbPathAEnabled() const { return abAEnabled_; }
+    bool isAbPathBEnabled() const { return abBEnabled_; }
 
     EventBusInterface& eventBus_;
     std::string name_;
@@ -70,7 +70,8 @@ private:
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
-    std::optional<char> abVariant_;
+    bool abAEnabled_;
+    bool abBEnabled_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr

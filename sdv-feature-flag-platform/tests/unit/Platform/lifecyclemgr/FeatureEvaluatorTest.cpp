@@ -301,10 +301,12 @@ int main() {
 
     {
         std::ofstream in(inbound, std::ios::trunc);
-        in << "FLAG_ON:AdasFeature\n";
+        in << "FLAG_ON:AdasFeature:A\n";
+        in << "FLAG_ON:AdasFeature:B\n";
         in << "FLAG_OFF:EvEnergyFeature\n";
         in << "KILL:NavigationFeature\n";
-        in << "AB_SET:NavigationFeature:A\n";
+        in << "FLAG_ON:NavigationFeature:A\n";
+        in << "FLAG_ON:NavigationFeature:B\n";
         in << "UNKNOWN:Whatever\n";
     }
     std::ofstream(outbound, std::ios::trunc).close();
@@ -329,7 +331,8 @@ int main() {
     server->Shutdown();
     serverThread.join();
 
-    sqa::test::check(tc, service.receivedCount() >= 4, "FeatureEvaluator sends events to EventBus (including AB_SET)");
+    sqa::test::check(tc, service.receivedCount() >= 6,
+                     "FeatureEvaluator sends events to EventBus (including FLAG_ON A/B variants)");
 
     std::ifstream inAfter(inbound);
     std::string rest;

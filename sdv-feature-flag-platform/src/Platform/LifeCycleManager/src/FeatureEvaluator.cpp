@@ -83,9 +83,17 @@ void FeatureEvaluator::processSignals() {
         trimInPlace(extra);
 
         if (action == "FLAG_ON") {
-            sendFlagOn(featureName);
+            if (extra.size() == 1 && (extra[0] == 'A' || extra[0] == 'B')) {
+                sendFlagOnVariant(featureName, extra[0]);
+            } else {
+                sendFlagOn(featureName);
+            }
         } else if (action == "FLAG_OFF") {
-            sendFlagOff(featureName);
+            if (extra.size() == 1 && (extra[0] == 'A' || extra[0] == 'B')) {
+                sendFlagOffVariant(featureName, extra[0]);
+            } else {
+                sendFlagOff(featureName);
+            }
         } else if (action == "KILL") {
             sendKillSwitch(featureName);
         } else if (
@@ -123,9 +131,21 @@ bool FeatureEvaluator::sendFlagOn(const std::string& featureName) {
     return eventBus_.sendEvent(Event(EventId::FeatureFlagOn, featureName));
 }
 
+bool FeatureEvaluator::sendFlagOnVariant(const std::string& featureName, char variant) {
+    const std::string msg = featureName + "|" + std::string(1, variant);
+    log(LogLevel::info, "FLAG_ON -> " + msg);
+    return eventBus_.sendEvent(Event(EventId::FeatureFlagOn, msg));
+}
+
 bool FeatureEvaluator::sendFlagOff(const std::string& featureName) {
     log(LogLevel::info, "FLAG_OFF -> " + featureName);
     return eventBus_.sendEvent(Event(EventId::FeatureFlagOff, featureName));
+}
+
+bool FeatureEvaluator::sendFlagOffVariant(const std::string& featureName, char variant) {
+    const std::string msg = featureName + "|" + std::string(1, variant);
+    log(LogLevel::info, "FLAG_OFF -> " + msg);
+    return eventBus_.sendEvent(Event(EventId::FeatureFlagOff, msg));
 }
 
 bool FeatureEvaluator::sendKillSwitch(const std::string& featureName) {

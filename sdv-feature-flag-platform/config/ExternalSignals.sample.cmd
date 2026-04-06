@@ -24,3 +24,11 @@ SENSOR_FATAL:AdasFeature:camera_disconnected
 # Manual kill (operator)
 MANUAL_KILL:AdasFeature:demo
 
+# A/B (third field = payload): A와 B를 동시에 켤 수 있음 — SignalReceiver·직접 SignalsInbound 동일 형식
+FLAG_ON:AdasFeature:A
+FLAG_ON:AdasFeature:B
+FLAG_ON:EvEnergyFeature:A
+FLAG_ON:EvEnergyFeature:B
+FLAG_ON:NavigationFeature:A
+FLAG_ON:NavigationFeature:B
+
