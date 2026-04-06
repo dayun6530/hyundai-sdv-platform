@@ -28,8 +28,7 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     , name_(name)
     , primaryName_(name)
     , componentId_(-1)
-    , flag_(name)
-    , shadowMirrorEnabled_(false) {
+    , flag_(name) {
     mkdir("logs", 0755);
     logFilePath_ = "logs/" + normalizeFileName(name) + ".log";
     logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
@@ -42,6 +41,8 @@ Feature::~Feature() {
 }
 
 int Feature::run() {
+    flag_.resetRunState();
+
     if (!flag_.isEnabled()) {
         log(LogLevel::warn, "Flag is OFF. Feature will not start.");
         return 0;
@@ -99,6 +100,10 @@ const Flag& Feature::getFlag() const {
     return flag_;
 }
 
+bool Feature::isKilled() const {
+    return flag_.isKilled();
+}
+
 std::vector<Event> Feature::pollEvents() {
     EventQueue queue = eventBus_.getEventQueue(componentId_);
     std::vector<Event> appEvents;
@@ -116,18 +121,21 @@ std::vector<Event> Feature::pollEvents() {
             log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
         } else if (event.getEventId() == EventId::KillSwitch &&
                    event.getMessage() == name_) {
-            log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
-            requestStop();
+            if (!flag_.isKilled()) {
+                flag_.setKilled(true);
+                log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
+                requestStop();
+            }
         } else if (event.getEventId() == EventId::ShadowModeOn &&
                    event.getMessage() == primaryName_) {
             if (name_ == primaryName_) {
-                shadowMirrorEnabled_ = true;
+                flag_.setShadowMirrorEnabled(true);
                 log(LogLevel::info, "ShadowMode ON (mirroring enabled)");
             }
         } else if (event.getEventId() == EventId::ShadowModeOff &&
                    event.getMessage() == primaryName_) {
             if (name_ == primaryName_) {
-                shadowMirrorEnabled_ = false;
+                flag_.setShadowMirrorEnabled(false);
                 log(LogLevel::info, "ShadowMode OFF (mirroring disabled)");
             }
         } else if (event.getEventId() == EventId::AbVariantAssign) {
@@ -136,7 +144,7 @@ std::vector<Event> Feature::pollEvents() {
             if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
                 const char v = msg.back();
                 if (v == 'A' || v == 'B') {
-                    abVariant_ = v;
+                    flag_.setAbVariant(v);
                     log(LogLevel::info, std::string("A/B variant set to ") + v);
                     continue;
                 }
@@ -163,7 +171,7 @@ bool Feature::sendDomainEvent(EventId id, const std::string& message) {
     }
 
     // Shadow mirroring: only Primary mirrors when enabled.
-    if (name_ != primaryName_ || !shadowMirrorEnabled_) {
+    if (name_ != primaryName_ || !flag_.isShadowMirrorEnabled()) {
         return true;
     }
 
@@ -182,7 +190,7 @@ void Feature::requestStop() {
 }
 
 bool Feature::isStopRequested() const {
-    return stopRequested_;
+    return stopRequested_ || flag_.isKilled();
 }
 
 void Feature::signalHandler(int) {

@@ -37,6 +37,9 @@ public:
     Flag& getFlag();
     const Flag& getFlag() const;
 
+    /// Kill-switch state lives in \ref flag_.
+    bool isKilled() const;
+
     static void requestStop();
     static void signalHandler(int signum);
 
@@ -51,8 +54,7 @@ protected:
     bool sendDomainEvent(EventId id, const std::string& message);
 
     // Optional A/B mode support (CONVENTIONS 10.2).
-    // In the "two executables" model (<BaseName>A / <BaseName>B) this can be unused.
-    std::optional<char> getAbVariant() const { return abVariant_; }
+    std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
 
     EventBusInterface& eventBus_;
     std::string name_;
@@ -62,7 +64,6 @@ protected:
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
-    bool shadowMirrorEnabled_;
 
 private:
     static std::string normalizeFileName(const std::string& name);
@@ -70,7 +71,6 @@ private:
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
-    std::optional<char> abVariant_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr

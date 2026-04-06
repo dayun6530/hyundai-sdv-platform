@@ -24,6 +24,29 @@ void trimInPlace(std::string& s) {
     s.erase(s.begin(), first);
 }
 
+bool containsIgnoreCase(const std::string& haystack, const std::string& needle) {
+    auto h = haystack.size();
+    auto n = needle.size();
+    if (n == 0 || h < n) return false;
+    for (std::size_t i = 0; i <= h - n; ++i) {
+        bool match = true;
+        for (std::size_t j = 0; j < n; ++j) {
+            if (std::tolower(static_cast<unsigned char>(haystack[i + j])) !=
+                std::tolower(static_cast<unsigned char>(needle[j]))) {
+                match = false;
+                break;
+            }
+        }
+        if (match) return true;
+    }
+    return false;
+}
+
+/// External / relayed text that should trigger a platform-wide Kill Switch broadcast.
+bool isPlatformKillSwitchTriggerText(const std::string& text) {
+    return containsIgnoreCase(text, "Kill switch activated");
+}
+
 }  // namespace
 
 FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
@@ -32,6 +55,23 @@ FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
     : Feature("FeatureEvaluator", eventBus)
     , inboundPath_(inboundPath)
     , outboundPath_(outboundPath) {}
+
+void FeatureEvaluator::broadcastKillSwitchToAllTargetFeatures() {
+    static constexpr const char* kTargets[] = {
+        "NavigationFeature",
+        "NavigationFeatureShadow",
+        "AdasFeature",
+        "AdasFeatureShadow",
+        "EvEnergyFeature",
+        "EvEnergyFeatureShadow",
+        "WatchDog",
+    };
+    // 요구사항: 이벤트 전송 직전에 해당 로그를 남김
+    log(LogLevel::warn, "모든 Feature로 Kill Switch 이벤트 발송 완료");
+    for (const char* target : kTargets) {
+        sendKillSwitch(target);
+    }
+}
 
 void FeatureEvaluator::execute() {
     log(LogLevel::info, "started. Inbound: " + inboundPath_ +
@@ -43,7 +83,13 @@ void FeatureEvaluator::execute() {
 
     while (!isStopRequested()) {
         processSignals();
-        pollEvents();
+        auto appEvents = pollEvents();
+        for (const auto& event : appEvents) {
+            if (isPlatformKillSwitchTriggerText(event.getMessage())) {
+                broadcastKillSwitchToAllTargetFeatures();
+                break;
+            }
+        }
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
@@ -66,6 +112,11 @@ void FeatureEvaluator::processSignals() {
     clear.close();
 
     for (const auto& cmd : lines) {
+        if (isPlatformKillSwitchTriggerText(cmd)) {
+            broadcastKillSwitchToAllTargetFeatures();
+            continue;
+        }
+
         auto firstColon = cmd.find(':');
         if (firstColon == std::string::npos) {
             log(LogLevel::warn, "invalid signal format: " + cmd);
