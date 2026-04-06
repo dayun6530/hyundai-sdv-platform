@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cstdint>
 #include <fstream>
+#include <optional> // std::optional 사용을 위해 추가
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -54,6 +55,9 @@ protected:
     bool isAbPathAEnabled() const { return abAEnabled_; }
     bool isAbPathBEnabled() const { return abBEnabled_; }
 
+    // Optional A/B mode support (CONVENTIONS 10.2).
+    std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
+
     EventBusInterface& eventBus_;
     std::string name_;
     // Primary logical name this process belongs to.
@@ -70,8 +74,10 @@ private:
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
-    bool abAEnabled_;
-    bool abBEnabled_;
+
+    // A/B 상태 변수 (안전하게 기본값 false 할당)
+    bool abAEnabled_ = false;
+    bool abBEnabled_ = false;
 };
 
 }  // namespace sdv::platform::lifecyclemgr

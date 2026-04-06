@@ -7,8 +7,6 @@
 #include <stdexcept>
 
 #define main navigation_feature_original_main
-#include "src/Feature/src/NavigationFeature_A.cpp"
-#include "src/Feature/src/NavigationFeature_B.cpp"
 #include "src/Feature/src/NavigationFeature.cpp"
 #undef main
 

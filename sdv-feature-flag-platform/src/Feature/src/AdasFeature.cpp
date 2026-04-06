@@ -45,6 +45,11 @@ void AdasFeature::execute() {
 
 void AdasFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신: " + message);
+    
+    // 팀원들이 작성한 안내 로그 유지
+    log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
+
+    // 질문자님의 완벽한 A/B 경로 분기 로직 적용
     bool any = false;
     if (isAbPathAEnabled()) {
         any = true;
@@ -61,6 +66,12 @@ void AdasFeature::processVehicleLocation(const std::string& message) {
 
 void AdasFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
+
+    // 팀원들이 작성한 안내 로그 유지
+    log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
+    log(LogLevel::info, "자율주행 중...");
+
+    // 질문자님의 완벽한 A/B 경로 분기 로직 적용
     bool any = false;
     if (isAbPathAEnabled()) {
         any = true;

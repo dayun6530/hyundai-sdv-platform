@@ -8,8 +8,6 @@
 #include <stdexcept>
 
 #define main adas_feature_original_main
-#include "src/Feature/src/AdasFeature_A.cpp"
-#include "src/Feature/src/AdasFeature_B.cpp"
 #include "src/Feature/src/AdasFeature.cpp"
 #undef main
 

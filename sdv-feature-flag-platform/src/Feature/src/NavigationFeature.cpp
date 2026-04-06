@@ -43,6 +43,7 @@ void NavigationFeature::execute() {
 
         log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 정보 브로드캐스트 ===");
 
+        // 질문자님의 완벽한 A/B 경로 분기 로직(람다 함수) 채택!
         auto sendForVariants = [this](EventId id, const std::string& payloadBase,
                                       const char* ctxLabel) {
             bool any = false;
@@ -56,6 +57,7 @@ void NavigationFeature::execute() {
             }
         };
 
+        // 팀원의 단순 전송 방식을 질문자님의 람다 함수 호출로 교체
         log(LogLevel::info, std::string("차량 위치 전송: ") + locations[r]);
         sendForVariants(EventId::VehicleLocationUpdate, locations[r], "차량 위치");
 

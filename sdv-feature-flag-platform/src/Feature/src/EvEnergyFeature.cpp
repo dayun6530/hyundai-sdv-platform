@@ -50,6 +50,8 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     battery_ -= 3;
     log(LogLevel::info, "배터리 잔량: " + std::to_string(battery_) +
         "% | 예상 주행 가능 거리: " + std::to_string(battery_ * 4) + "km");
+
+    // 질문자님의 완벽한 A/B 경로 분기 로직 적용
     const std::string base = "ENERGY_STATE battery=" + std::to_string(battery_) +
         " rangeKm=" + std::to_string(battery_ * 4);
     bool any = false;
@@ -77,6 +79,8 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     } else {
         log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
     }
+
+    // 질문자님의 완벽한 A/B 경로 분기 로직 적용
     const std::string base =
         "ENERGY_STATE roadHint=processed battery=" + std::to_string(battery_);
     bool any = false;
