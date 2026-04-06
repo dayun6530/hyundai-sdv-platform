@@ -37,6 +37,9 @@ public:
     Flag& getFlag();
     const Flag& getFlag() const;
 
+    /// Kill-switch state lives in \ref flag_.
+    bool isKilled() const;
+
     /// Shadow Mode: when true, Primary processes also emit ShadowMirrorData for each domain event.
     bool isShadowModeActive() const { return flag_.isShadowMirroringEnabled(); }
 

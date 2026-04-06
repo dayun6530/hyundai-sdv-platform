@@ -44,6 +44,8 @@ Feature::~Feature() {
 }
 
 int Feature::run() {
+    flag_.resetRunState();
+
     if (!flag_.isEnabled()) {
         log(LogLevel::warn, "Flag is OFF. Feature will not start.");
         return 0;
@@ -101,6 +103,12 @@ const Flag& Feature::getFlag() const {
     return flag_;
 }
 
+// 질문자님이 작성하신 킬 스위치 확인 함수 유지
+bool Feature::isKilled() const {
+    return flag_.isKilled();
+}
+
+// 팀원분이 작성하신 Shadow Mode 기능 및 이벤트 처리 헬퍼 함수 통합
 void Feature::bindShadowToPrimary(const std::string& primaryLogicalName) {
     primaryName_ = primaryLogicalName;
     flag_.disableShadowMirroring();
@@ -178,6 +186,8 @@ std::vector<Event> Feature::pollEvents() {
 
     while (queue.getSize() > 0) {
         Event event = queue.getEvent();
+
+        // 덩치 큰 로직 대신 깔끔하게 함수 하나로 처리!
         if (tryConsumeAsPlatformControl(event)) {
             continue;
         }
@@ -197,6 +207,7 @@ bool Feature::sendDomainEvent(EventId id, const std::string& message) {
         return false;
     }
 
+    // 중복 검사 없이 팀원분의 깔끔한 코드로 채택
     if (!flag_.isShadowMirroringEnabled()) {
         return true;
     }
@@ -213,7 +224,7 @@ void Feature::requestStop() {
 }
 
 bool Feature::isStopRequested() const {
-    return stopRequested_;
+    return stopRequested_ || flag_.isKilled();
 }
 
 void Feature::signalHandler(int) {

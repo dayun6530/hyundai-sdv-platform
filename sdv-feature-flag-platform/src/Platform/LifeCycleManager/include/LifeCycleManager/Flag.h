@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
 #include <atomic>
 #include <optional>
+#include <string>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -17,27 +17,43 @@ public:
 
     const std::string& getFeatureName() const;
 
-    /// Shadow Mode (Primary): when true, `sendDomainEvent` also emits `ShadowMirrorData`.
-    void enableShadowMirroring();
-    void disableShadowMirroring();
-    bool isShadowMirroringEnabled() const;
+    // ----- [Kill Switch] -----
+    // Kill Switch (cooperative): set when matching KillSwitch event is consumed.
+    void setKilled(bool killed);
+    bool isKilled() const;
+    
+    // (develop 브랜치 호환용 Alias)
+    void setKillSwitchLatched(bool latched) { setKilled(latched); }
+    bool isKillSwitchLatched() const { return isKilled(); }
 
-    /// Set when a KillSwitch control event targets this feature (observable; independent of `isEnabled`).
-    void setKillSwitchLatched(bool latched);
-    bool isKillSwitchLatched() const;
+    // ----- [Shadow Mode] -----
+    // Shadow Mode: primary-only mirror toggle.
+    void setShadowMirrorEnabled(bool enabled);
+    bool isShadowMirrorEnabled() const;
 
-    /// A/B variant (CONVENTIONS 10.2): `variant` must be 'A' or 'B'.
+    // (develop 브랜치 호환용 Alias)
+    void enableShadowMirroring() { setShadowMirrorEnabled(true); }
+    void disableShadowMirroring() { setShadowMirrorEnabled(false); }
+    bool isShadowMirroringEnabled() const { return isShadowMirrorEnabled(); }
+
+    // ----- [A/B Test Mode] -----
+    // A/B variant (CONVENTIONS 10.2).
     void setAbVariant(char variant);
     void clearAbVariant();
     std::optional<char> getAbVariant() const;
 
+    // ----- [LifeCycle] -----
+    /// Reset kill state for a new run() (enabled/disabled unchanged).
+    void resetRunState();
+
 private:
     std::string featureName_;
+
     std::atomic<bool> enabled_;
-    std::atomic<bool> shadowMirroringEnabled_;
-    std::atomic<bool> killSwitchLatched_;
-    /// 0 = unset; otherwise 'A' or 'B'.
-    std::atomic<char> abVariant_;
+    std::atomic<bool> killed_;
+    std::atomic<bool> shadowMirrorEnabled_;
+    
+    std::optional<char> abVariant_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr
