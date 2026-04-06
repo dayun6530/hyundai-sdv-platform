@@ -24,29 +24,6 @@ void trimInPlace(std::string& s) {
     s.erase(s.begin(), first);
 }
 
-bool containsIgnoreCase(const std::string& haystack, const std::string& needle) {
-    auto h = haystack.size();
-    auto n = needle.size();
-    if (n == 0 || h < n) return false;
-    for (std::size_t i = 0; i <= h - n; ++i) {
-        bool match = true;
-        for (std::size_t j = 0; j < n; ++j) {
-            if (std::tolower(static_cast<unsigned char>(haystack[i + j])) !=
-                std::tolower(static_cast<unsigned char>(needle[j]))) {
-                match = false;
-                break;
-            }
-        }
-        if (match) return true;
-    }
-    return false;
-}
-
-/// External / relayed text that should trigger a platform-wide Kill Switch broadcast.
-bool isPlatformKillSwitchTriggerText(const std::string& text) {
-    return containsIgnoreCase(text, "Kill switch activated");
-}
-
 }  // namespace
 
 FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
@@ -55,23 +32,6 @@ FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
     : Feature("FeatureEvaluator", eventBus)
     , inboundPath_(inboundPath)
     , outboundPath_(outboundPath) {}
-
-void FeatureEvaluator::broadcastKillSwitchToAllTargetFeatures() {
-    static constexpr const char* kTargets[] = {
-        "NavigationFeature",
-        "NavigationFeatureShadow",
-        "AdasFeature",
-        "AdasFeatureShadow",
-        "EvEnergyFeature",
-        "EvEnergyFeatureShadow",
-        "WatchDog",
-    };
-    // 요구사항: 이벤트 전송 직전에 해당 로그를 남김
-    log(LogLevel::warn, "모든 Feature로 Kill Switch 이벤트 발송 완료");
-    for (const char* target : kTargets) {
-        sendKillSwitch(target);
-    }
-}
 
 void FeatureEvaluator::execute() {
     log(LogLevel::info, "started. Inbound: " + inboundPath_ +
@@ -83,13 +43,7 @@ void FeatureEvaluator::execute() {
 
     while (!isStopRequested()) {
         processSignals();
-        auto appEvents = pollEvents();
-        for (const auto& event : appEvents) {
-            if (isPlatformKillSwitchTriggerText(event.getMessage())) {
-                broadcastKillSwitchToAllTargetFeatures();
-                break;
-            }
-        }
+        pollEvents();
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
@@ -112,11 +66,6 @@ void FeatureEvaluator::processSignals() {
     clear.close();
 
     for (const auto& cmd : lines) {
-        if (isPlatformKillSwitchTriggerText(cmd)) {
-            broadcastKillSwitchToAllTargetFeatures();
-            continue;
-        }
-
         auto firstColon = cmd.find(':');
         if (firstColon == std::string::npos) {
             log(LogLevel::warn, "invalid signal format: " + cmd);
@@ -132,13 +81,19 @@ void FeatureEvaluator::processSignals() {
         std::string extra = (secondColon != std::string::npos)
             ? rest.substr(secondColon + 1) : "";
         trimInPlace(extra);
-        trimInPlace(action);
-        trimInPlace(featureName);
 
         if (action == "FLAG_ON") {
-            sendFlagOn(featureName);
+            if (extra.size() == 1 && (extra[0] == 'A' || extra[0] == 'B')) {
+                sendFlagOnVariant(featureName, extra[0]);
+            } else {
+                sendFlagOn(featureName);
+            }
         } else if (action == "FLAG_OFF") {
-            sendFlagOff(featureName);
+            if (extra.size() == 1 && (extra[0] == 'A' || extra[0] == 'B')) {
+                sendFlagOffVariant(featureName, extra[0]);
+            } else {
+                sendFlagOff(featureName);
+            }
         } else if (action == "KILL") {
             sendKillSwitch(featureName);
         } else if (
@@ -173,58 +128,46 @@ void FeatureEvaluator::processSignals() {
 
 bool FeatureEvaluator::sendFlagOn(const std::string& featureName) {
     log(LogLevel::info, "FLAG_ON -> " + featureName);
-    const bool ok = eventBus_.sendEvent(Event(EventId::FeatureFlagOn, featureName));
-    if (!ok) {
-        log(LogLevel::warn, "FLAG_ON EventBus sendEvent failed for " + featureName);
-    }
-    return ok;
+    return eventBus_.sendEvent(Event(EventId::FeatureFlagOn, featureName));
+}
+
+bool FeatureEvaluator::sendFlagOnVariant(const std::string& featureName, char variant) {
+    const std::string msg = featureName + "|" + std::string(1, variant);
+    log(LogLevel::info, "FLAG_ON -> " + msg);
+    return eventBus_.sendEvent(Event(EventId::FeatureFlagOn, msg));
 }
 
 bool FeatureEvaluator::sendFlagOff(const std::string& featureName) {
     log(LogLevel::info, "FLAG_OFF -> " + featureName);
-    const bool ok = eventBus_.sendEvent(Event(EventId::FeatureFlagOff, featureName));
-    if (!ok) {
-        log(LogLevel::warn, "FLAG_OFF EventBus sendEvent failed for " + featureName);
-    }
-    return ok;
+    return eventBus_.sendEvent(Event(EventId::FeatureFlagOff, featureName));
+}
+
+bool FeatureEvaluator::sendFlagOffVariant(const std::string& featureName, char variant) {
+    const std::string msg = featureName + "|" + std::string(1, variant);
+    log(LogLevel::info, "FLAG_OFF -> " + msg);
+    return eventBus_.sendEvent(Event(EventId::FeatureFlagOff, msg));
 }
 
 bool FeatureEvaluator::sendKillSwitch(const std::string& featureName) {
     log(LogLevel::info, "KILL -> " + featureName);
     sendWarning(featureName, "KillSwitch activated");
-    const bool ok = eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
-    if (!ok) {
-        log(LogLevel::warn, "KILL EventBus sendEvent failed for " + featureName);
-    }
-    return ok;
+    return eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
 }
 
 bool FeatureEvaluator::sendShadowOn(const std::string& primaryName) {
     log(LogLevel::info, "SHADOW_ON -> " + primaryName);
-    const bool ok = eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
-    if (!ok) {
-        log(LogLevel::warn, "SHADOW_ON EventBus sendEvent failed for " + primaryName);
-    }
-    return ok;
+    return eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
 }
 
 bool FeatureEvaluator::sendShadowOff(const std::string& primaryName) {
     log(LogLevel::info, "SHADOW_OFF -> " + primaryName);
-    const bool ok = eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
-    if (!ok) {
-        log(LogLevel::warn, "SHADOW_OFF EventBus sendEvent failed for " + primaryName);
-    }
-    return ok;
+    return eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
 }
 
 bool FeatureEvaluator::sendAbSet(const std::string& featureName, char variant) {
     const std::string msg = featureName + "|" + std::string(1, variant);
     log(LogLevel::info, std::string("AB_SET -> ") + msg);
-    const bool ok = eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
-    if (!ok) {
-        log(LogLevel::warn, "AB_SET EventBus sendEvent failed for " + msg);
-    }
-    return ok;
+    return eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
 }
 
 void FeatureEvaluator::sendWarning(const std::string& target,

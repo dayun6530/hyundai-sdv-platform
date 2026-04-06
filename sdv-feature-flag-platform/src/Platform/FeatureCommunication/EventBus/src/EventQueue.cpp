@@ -1,29 +1,8 @@
 #include "FeatureCommunication/EventBus/EventQueue.h"
 
-#include "FeatureCommunication/EventBus/EventId.h"
-
 #include <stdexcept>
 
 namespace sdv::platform::communications::eventbus {
-
-namespace {
-
-bool isCriticalControlEvent(const Event& e) {
-    switch (e.getEventId()) {
-    case EventId::FeatureFlagOn:
-    case EventId::FeatureFlagOff:
-    case EventId::KillSwitch:
-    case EventId::ShadowModeOn:
-    case EventId::ShadowModeOff:
-    case EventId::AbVariantAssign:
-    case EventId::QuitTheSystem:
-        return true;
-    default:
-        return false;
-    }
-}
-
-}  // namespace
 
 EventQueue::EventQueue(int64_t componentId)
     : componentId_(componentId) {}
@@ -38,19 +17,7 @@ int EventQueue::getSize() const {
 
 bool EventQueue::addEvent(const Event& newEvent) {
     if (static_cast<int>(eventList_.size()) >= maxQueueSize) {
-        // Prefer admitting platform control: drop one older non-control event if needed.
-        if (!isCriticalControlEvent(newEvent)) {
-            return false;
-        }
-        for (auto it = eventList_.begin(); it != eventList_.end(); ++it) {
-            if (!isCriticalControlEvent(*it)) {
-                eventList_.erase(it);
-                break;
-            }
-        }
-        if (static_cast<int>(eventList_.size()) >= maxQueueSize) {
-            return false;
-        }
+        return false;
     }
     eventList_.push_back(newEvent);
     return true;

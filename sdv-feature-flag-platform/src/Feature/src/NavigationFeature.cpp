@@ -36,6 +36,7 @@ NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
 
 void NavigationFeature::execute() {
     for (int i = 0; i < broadcastCount_ && !isStopRequested(); i++) {
+        // Consume control events (Flag/Kill/Shadow) promptly.
         pollEvents();
 
         const int r = i % kRoutePointCount;
@@ -47,10 +48,8 @@ void NavigationFeature::execute() {
             bool any = false;
             const bool aOn = isAbPathAEnabled();
             const bool bOn = isAbPathBEnabled();
-
             nav_ab::sendVariantA(*this, id, payloadBase, ctxLabel, any, aOn);
             nav_ab::sendVariantB(*this, id, payloadBase, ctxLabel, any, bOn);
-
             if (!any) {
                 log(LogLevel::warn,
                     "A/B 경로 모두 비활성, " + std::string(ctxLabel) + " 생략");
@@ -68,6 +67,7 @@ void NavigationFeature::execute() {
             "NAV_GUIDANCE step=" + std::to_string(i + 1) + " status=guiding",
             "내비게이션 안내");
 
+        // Consume SHADOW_ON/KILL etc. during the inter-broadcast interval (not only at loop start).
         if (i < broadcastCount_ - 1) {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));

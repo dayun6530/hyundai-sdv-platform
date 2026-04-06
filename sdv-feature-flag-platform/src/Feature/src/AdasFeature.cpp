@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <signal.h>
+#include <string>
 
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
@@ -44,20 +45,15 @@ void AdasFeature::execute() {
 
 void AdasFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신: " + message);
-    log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
-
     bool any = false;
-
     if (isAbPathAEnabled()) {
         any = true;
         adas_ab::onLocationA(*this, message);
     }
-
     if (isAbPathBEnabled()) {
         any = true;
         adas_ab::onLocationB(*this, message);
     }
-
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 위치 기반 ADAS 이벤트 미전송");
     }
@@ -65,21 +61,15 @@ void AdasFeature::processVehicleLocation(const std::string& message) {
 
 void AdasFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
-    log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
-    log(LogLevel::info, "자율주행 중...");
-
     bool any = false;
-
     if (isAbPathAEnabled()) {
         any = true;
         adas_ab::onRoadA(*this, message);
     }
-
     if (isAbPathBEnabled()) {
         any = true;
         adas_ab::onRoadB(*this, message);
     }
-
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 도로 기반 ADAS 이벤트 미전송");
     }

@@ -10,7 +10,6 @@
 #include <atomic>
 #include <cstdint>
 #include <fstream>
-#include <optional>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -37,12 +36,6 @@ public:
     Flag& getFlag();
     const Flag& getFlag() const;
 
-    /// Kill-switch state lives in \ref flag_.
-    bool isKilled() const;
-
-    /// Shadow Mode: when true, Primary processes also emit ShadowMirrorData for each domain event.
-    bool isShadowModeActive() const { return flag_.isShadowMirroringEnabled(); }
-
     static void requestStop();
     static void signalHandler(int signum);
 
@@ -52,47 +45,33 @@ protected:
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
 
-    /// True if this process is the Primary (not a Shadow receiver process).
-    bool isPrimaryProcess() const { return name_ == primaryName_; }
-
-    /// Attach a Shadow process to its Primary logical name (Team CONVENTIONS: `<Primary>Shadow`).
-    void bindShadowToPrimary(const std::string& primaryLogicalName);
-
-    /// Override Shadow Mode without bus events (tests, special orchestration). No-op on Shadow processes.
-    void setShadowModeActive(bool active);
-
-    // Send domain event and (optionally) mirror when Shadow Mode is active (Primary only).
+    // Send domain event and (optionally) mirror for Shadow Mode.
+    // Shadow Mode mirroring is enabled/disabled via EventId::ShadowModeOn/Off.
     bool sendDomainEvent(EventId id, const std::string& message);
 
-    // Optional A/B mode support (CONVENTIONS 10.2).
-    std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
+    // A/B 경로는 FLAG_ON/FLAG_OFF 의 세 번째 토큰(A/B) 또는 AB_SET 으로 켜고 끔.
+    // 두 경로는 서로 배타적이지 않으며 동시에 활성화할 수 있다.
+    bool isAbPathAEnabled() const { return abAEnabled_; }
+    bool isAbPathBEnabled() const { return abBEnabled_; }
 
     EventBusInterface& eventBus_;
     std::string name_;
-    // Primary logical name: equals name_ for Primary; Shadow binary sets via bindShadowToPrimary().
+    // Primary logical name this process belongs to.
+    // - Primary: primaryName_ == name_
+    // - Shadow:  primaryName_ != name_ (e.g., NavigationFeatureShadow -> NavigationFeature)
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
+    bool shadowMirrorEnabled_;
 
 private:
     static std::string normalizeFileName(const std::string& name);
 
-    /// Flag/Kill/Shadow On-Off/A-B: returns true if consumed and must not be passed to the app queue.
-    bool tryConsumeAsPlatformControl(const Event& event);
-
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
+    bool abAEnabled_;
+    bool abBEnabled_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr
-
-namespace sdv::feature {
-
-/// Entry point for `*Shadow` executables: EventBus connect (optional `argv[1]` host:port),
-/// then consume `ShadowMirrorData` for the given Primary name.
-int runShadowReceiverMain(int argc, char* argv[],
-    const char* shadowLogicalName,
-    const char* primaryLogicalName);
-
-}  // namespace sdv::feature

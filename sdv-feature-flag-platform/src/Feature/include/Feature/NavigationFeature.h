@@ -39,7 +39,7 @@ protected:
     void execute() override;
 
 private:
-    // Demo pacing: longer run so platform control events can be observed during tests.
+    // Demo pacing: keep platform alive long enough to observe control events (Shadow/Kill/Flag).
     static const int broadcastCount_ = 20;
 };
 
