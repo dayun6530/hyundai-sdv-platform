@@ -69,10 +69,12 @@ void NavigationFeature::execute() {
         log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[r]);
         sendForVariants(EventId::RoadInfoUpdate, roadInfos[r], "도로 정보");
 
+        // ✅ 충돌 해결: A/B variant 방식 유지
         sendForVariants(
             EventId::NavigationGuidanceUpdate,
             "NAV_GUIDANCE step=" + std::to_string(i + 1) + " status=guiding",
-            "내비게이션 안내");
+            "내비게이션 안내"
+        );
 
         if (i < broadcastCount_ - 1) {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
@@ -83,9 +85,6 @@ void NavigationFeature::execute() {
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    // NOTE: 데모/운영에서 단일 Feature가 전체 시스템 종료를 트리거하면
-    // KillSwitch 등 제어 데모가 불안정해질 수 있으므로, NavigationFeature는
-    // 운행 종료 시 QuitTheSystem을 발행하지 않는다.
     log(LogLevel::info, "운행 종료. (QuitTheSystem 발행하지 않음)");
 }
 

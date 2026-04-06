@@ -40,7 +40,7 @@ public:
     bool isKilled() const;
 
     /// Shadow Mode: when true, Primary processes also emit ShadowMirrorData for each domain event.
-    bool isShadowModeActive() const { return flag_.isShadowMirrorEnabled(); }
+    bool isShadowModeActive() const { return flag_.isShadowMirroringEnabled(); }
 
     static void requestStop();
     static void signalHandler(int signum);
@@ -60,10 +60,10 @@ protected:
     /// Override Shadow Mode without bus events (tests, special orchestration). No-op on Shadow processes.
     void setShadowModeActive(bool active);
 
+    // Send domain event and (optionally) mirror when Shadow Mode is active (Primary only).
     bool sendDomainEvent(EventId id, const std::string& message);
 
-    // A/B 경로는 FLAG_ON/FLAG_OFF 의 세 번째 토큰(A/B) 또는 AB_SET 으로 켜고 끔.
-    // 두 경로는 서로 배타적이지 않으며 동시에 활성화할 수 있다.
+    // ✅ feature 브랜치 방식 유지 (A/B 동시에 가능)
     bool isAbPathAEnabled() const { return abAEnabled_; }
     bool isAbPathBEnabled() const { return abBEnabled_; }
 
@@ -76,11 +76,14 @@ protected:
 private:
     static std::string normalizeFileName(const std::string& name);
 
+    /// Flag/Kill/Shadow On-Off/A-B: returns true if consumed and must not be passed to the app queue.
     bool tryConsumeAsPlatformControl(const Event& event);
 
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
+
+    // ✅ feature 브랜치 필드 유지
     bool abAEnabled_;
     bool abBEnabled_;
 };
@@ -89,6 +92,8 @@ private:
 
 namespace sdv::feature {
 
+/// Entry point for `*Shadow` executables: EventBus connect (optional `argv[1]` host:port),
+/// then consume `ShadowMirrorData` for the given Primary name.
 int runShadowReceiverMain(int argc, char* argv[],
     const char* shadowLogicalName,
     const char* primaryLogicalName);
