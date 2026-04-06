@@ -173,6 +173,7 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         const bool directTarget = (event.getMessage() == name_);
         const bool primaryKilledStopShadow =
             !isPrimaryProcess() && event.getMessage() == primaryName_;
+        // `KILL:<Primary>Shadow` stops the Shadow by directTarget; Primary must also exit the pair.
         const bool pairedShadowKilledStopPrimary =
             isPrimaryProcess() && event.getMessage() == (name_ + "Shadow");
         if (!directTarget && !primaryKilledStopShadow && !pairedShadowKilledStopPrimary) {
