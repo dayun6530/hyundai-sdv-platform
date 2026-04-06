@@ -141,9 +141,35 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
         return true;
     }
-    if (event.getEventId() == EventId::KillSwitch &&
-        event.getMessage() == name_) {
-        log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
+    if (event.getEventId() == EventId::KillSwitch) {
+        const bool directTarget = (event.getMessage() == name_);
+        const bool primaryKilledStopShadow =
+            !isPrimaryProcess() && event.getMessage() == primaryName_;
+        // `KILL:<Primary>Shadow` stops the Shadow by directTarget; Primary must also exit the pair.
+        const bool pairedShadowKilledStopPrimary =
+            isPrimaryProcess() && event.getMessage() == (name_ + "Shadow");
+        if (!directTarget && !primaryKilledStopShadow && !pairedShadowKilledStopPrimary) {
+            return false;
+        }
+        if (primaryKilledStopShadow) {
+            log(LogLevel::warn,
+                "Kill switch for Primary " + primaryName_ +
+                " — shadow receiver stopping (" + name_ + ")");
+        } else if (pairedShadowKilledStopPrimary) {
+            log(LogLevel::warn,
+                "Kill switch targets paired Shadow " + event.getMessage() +
+                " — primary stopping (" + name_ + ")");
+            flag_.disableShadowMirroring();
+            log(LogLevel::info,
+                "Shadow mirroring disabled (Kill Switch — paired Shadow target)");
+        } else {
+            log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
+            if (isPrimaryProcess()) {
+                flag_.disableShadowMirroring();
+                log(LogLevel::info,
+                    "Shadow mirroring disabled (Kill Switch — no further ShadowMirrorData from this Primary)");
+            }
+        }
         flag_.setKillSwitchLatched(true);
         requestStop();
         return true;

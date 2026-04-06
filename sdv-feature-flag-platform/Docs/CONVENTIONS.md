@@ -67,8 +67,8 @@
 - 구현체는 `Feature`를 상속하고 **`execute()`만 구현**한다.
 - **생명주기**: (기존과 동일) Flag 확인 → `registerComponent()` → `execute()` → `unRegister()`.
 - **`pollEvents()` 선처리 (팀 목표 동작)**  
-  - **반드시 유지**: `FeatureFlagOn` / `FeatureFlagOff` / `KillSwitch` — message가 `name_`과 일치할 때만 enable / disable / `requestStop()`.  
-  - **추가 구현**: `ShadowModeOn` / `ShadowModeOff` — message가 **이 프로세스의 Primary 이름과 일치**할 때만 `Flag::enableShadowMirroring` / `disableShadowMirroring`. Primary만 mirroring이 켜져 있을 때 도메인 이벤트를 나간 뒤 `ShadowMirrorData`를 송신한다 (9절). `KillSwitch` 수신 시 `Flag::setKillSwitchLatched(true)`(관측)와 `requestStop()`; `AbVariantAssign`은 `Flag::setAbVariant`.  
+  - **반드시 유지**: `FeatureFlagOn` / `FeatureFlagOff` / `KillSwitch` — enable/disable은 message가 `name_`과 일치할 때만. **Kill:** message가 `name_`(직접 타깃)이거나, **Shadow**이고 message가 **Primary 논리 이름**이면 `requestStop()`; **Primary**이고 message가 **`name_`+`Shadow`**(쌍 Shadow 이름)이면 `requestStop()`; **Primary** 직접 타깃 또는 Primary가 Shadow 타깃 Kill으로 멈출 때 **`disableShadowMirroring`**.  
+  - **추가 구현**: `ShadowModeOn` / `ShadowModeOff` — message가 **이 프로세스의 Primary 이름과 일치**할 때만 `Flag::enableShadowMirroring` / `disableShadowMirroring`. Primary만 mirroring이 켜져 있을 때 도메인 이벤트를 나간 뒤 `ShadowMirrorData`를 송신한다 (9절). `KillSwitch`에 `Flag::setKillSwitchLatched(true)`(관측); `AbVariantAssign`은 `Flag::setAbVariant`.  
   - **추가 구현 (단일 바이너리 A/B 선택 시)**: `AbVariantAssign` — message가 `name_|\*` 형태이면 파싱해 로컬 variant 저장. **두 실행 파일 A/B 모델**이면 이 이벤트는 선택 사항(10절).
 - **시그널**: `SIGINT` / `SIGTERM` → `Feature::signalHandler`.
 - **이름 일치**: `Feature("이름", bus)` = config `feature` 줄 = 플랫폼 제어 message 대상 이름.
@@ -130,9 +130,9 @@
 
 ### 8.2 수신 측 동작 (대상 Feature)
 
-- `Feature::pollEvents()`에서 처리: 이름 일치 시 **`requestStop()`** 만 호출 (현행 코드와 동일).
+- `Feature::pollEvents()`에서 처리: `KillSwitch` message가 **이 프로세스 `name_`과 일치**하면(직접 타깃) **Primary**인 경우 **Shadow 미러링도 끈다** (`disableShadowMirroring`) 뒤 `requestStop()`. **Shadow 프로세스**는 message가 **자기 `Primary` 논리 이름**과 일치할 때도 `requestStop()` 한다. **Primary**는 message가 **`<name_>Shadow`**(팀 규약 9.1의 쌍 이름)와 일치할 때도 `requestStop()` 한다 — `KILL:AdasFeatureShadow`만 온 경우에도 **Primary·Shadow 쌍을 같이 내린다**.
 - **`execute()`** 루프는 **`isStopRequested()`** 를 주기적으로 검사해 **짧은 시간 안에 루프 탈출**한다.
-- Kill Switch는 **Flag를 자동으로 OFF로 바꾸지 않는다** (의미 분리). 필요 시 운영에서 `FLAG_OFF`를 **별도로** 보낸다.
+- Kill Switch는 **기능 플래그(enabled)를 자동으로 OFF로 바꾸지 않는다** (`FeatureFlagOff`와 의미 분리). 필요 시 운영에서 `FLAG_OFF`를 **별도로** 보낸다.
 
 ### 8.3 FeatureEvaluator 부가 동작
 
