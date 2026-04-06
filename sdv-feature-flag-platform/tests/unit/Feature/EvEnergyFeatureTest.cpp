@@ -8,6 +8,8 @@
 #include <stdexcept>
 
 #define main ev_energy_feature_original_main
+#include "src/Feature/src/EvEnergyFeature_A.cpp"
+#include "src/Feature/src/EvEnergyFeature_B.cpp"
 #include "src/Feature/src/EvEnergyFeature.cpp"
 #undef main
 
