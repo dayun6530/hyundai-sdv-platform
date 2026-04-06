@@ -50,17 +50,22 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     battery_ -= 3;
     log(LogLevel::info, "배터리 잔량: " + std::to_string(battery_) +
         "% | 예상 주행 가능 거리: " + std::to_string(battery_ * 4) + "km");
+
     const std::string base = "ENERGY_STATE battery=" + std::to_string(battery_) +
         " rangeKm=" + std::to_string(battery_ * 4);
+
     bool any = false;
+
     if (isAbPathAEnabled()) {
         any = true;
         energy_ab::sendLocationStateA(*this, base);
     }
+
     if (isAbPathBEnabled()) {
         any = true;
         energy_ab::sendLocationStateB(*this, base);
     }
+
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 에너지 상태 이벤트 미전송");
     }
@@ -68,6 +73,7 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
 
 void EvEnergyFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
+
     if (message.find("오르막") != std::string::npos) {
         log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
     } else if (message.find("내리막") != std::string::npos) {
@@ -77,17 +83,22 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     } else {
         log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
     }
+
     const std::string base =
         "ENERGY_STATE roadHint=processed battery=" + std::to_string(battery_);
+
     bool any = false;
+
     if (isAbPathAEnabled()) {
         any = true;
         energy_ab::sendRoadStateA(*this, base);
     }
+
     if (isAbPathBEnabled()) {
         any = true;
         energy_ab::sendRoadStateB(*this, base);
     }
+
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 도로 기반 에너지 이벤트 미전송");
     }

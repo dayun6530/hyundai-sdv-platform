@@ -1,13 +1,16 @@
 #include "LifeCycleManager/Feature.h"
 
+#include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 
 #include <iomanip>
 #include <chrono>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <algorithm>
+#include <thread>
+#include <signal.h>
 #include <cctype>
+#include <cstdint>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -28,10 +31,7 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     , name_(name)
     , primaryName_(name)
     , componentId_(-1)
-    , flag_(name)
-    , shadowMirrorEnabled_(false)
-    , abAEnabled_(true)
-    , abBEnabled_(true) {
+    , flag_(name) {
     mkdir("logs", 0755);
     logFilePath_ = "logs/" + normalizeFileName(name) + ".log";
     logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
@@ -44,6 +44,8 @@ Feature::~Feature() {
 }
 
 int Feature::run() {
+    flag_.resetRunState();
+
     if (!flag_.isEnabled()) {
         log(LogLevel::warn, "Flag is OFF. Feature will not start.");
         return 0;
@@ -101,6 +103,109 @@ const Flag& Feature::getFlag() const {
     return flag_;
 }
 
+// 질문자님이 작성하신 킬 스위치 확인 함수 유지
+bool Feature::isKilled() const {
+    return flag_.isKilled();
+}
+
+// 팀원분이 작성하신 Shadow Mode 기능 및 이벤트 처리 헬퍼 함수 통합
+void Feature::bindShadowToPrimary(const std::string& primaryLogicalName) {
+    primaryName_ = primaryLogicalName;
+    flag_.disableShadowMirroring();
+}
+
+void Feature::setShadowModeActive(bool active) {
+    if (!isPrimaryProcess()) {
+        return;
+    }
+    if (active) {
+        flag_.enableShadowMirroring();
+    } else {
+        flag_.disableShadowMirroring();
+    }
+    log(LogLevel::info,
+        active ? "ShadowMode active (mirroring enabled)"
+               : "ShadowMode inactive (mirroring disabled)");
+}
+
+bool Feature::tryConsumeAsPlatformControl(const Event& event) {
+    if (event.getEventId() == EventId::FeatureFlagOff &&
+        event.getMessage() == name_) {
+        flag_.disable();
+        log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
+        return true;
+    }
+    if (event.getEventId() == EventId::FeatureFlagOn &&
+        event.getMessage() == name_) {
+        flag_.enable();
+        log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
+        return true;
+    }
+    if (event.getEventId() == EventId::KillSwitch) {
+        const bool directTarget = (event.getMessage() == name_);
+        const bool primaryKilledStopShadow =
+            !isPrimaryProcess() && event.getMessage() == primaryName_;
+        // `KILL:<Primary>Shadow` stops the Shadow by directTarget; Primary must also exit the pair.
+        const bool pairedShadowKilledStopPrimary =
+            isPrimaryProcess() && event.getMessage() == (name_ + "Shadow");
+        if (!directTarget && !primaryKilledStopShadow && !pairedShadowKilledStopPrimary) {
+            return false;
+        }
+        if (primaryKilledStopShadow) {
+            log(LogLevel::warn,
+                "Kill switch for Primary " + primaryName_ +
+                " — shadow receiver stopping (" + name_ + ")");
+        } else if (pairedShadowKilledStopPrimary) {
+            log(LogLevel::warn,
+                "Kill switch targets paired Shadow " + event.getMessage() +
+                " — primary stopping (" + name_ + ")");
+            flag_.disableShadowMirroring();
+            log(LogLevel::info,
+                "Shadow mirroring disabled (Kill Switch — paired Shadow target)");
+        } else {
+            log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
+            if (isPrimaryProcess()) {
+                flag_.disableShadowMirroring();
+                log(LogLevel::info,
+                    "Shadow mirroring disabled (Kill Switch — no further ShadowMirrorData from this Primary)");
+            }
+        }
+        flag_.setKillSwitchLatched(true);
+        requestStop();
+        return true;
+    }
+    if (event.getEventId() == EventId::ShadowModeOn &&
+        event.getMessage() == primaryName_) {
+        if (isPrimaryProcess()) {
+            flag_.enableShadowMirroring();
+            log(LogLevel::info, "ShadowMode ON (mirroring enabled)");
+        }
+        return true;
+    }
+    if (event.getEventId() == EventId::ShadowModeOff &&
+        event.getMessage() == primaryName_) {
+        if (isPrimaryProcess()) {
+            flag_.disableShadowMirroring();
+            log(LogLevel::info, "ShadowMode OFF (mirroring disabled)");
+        }
+        return true;
+    }
+    if (event.getEventId() == EventId::AbVariantAssign) {
+        const std::string& msg = event.getMessage();
+        const std::string prefix = name_ + "|";
+        if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
+            const char v = msg.back();
+            if (v == 'A' || v == 'B') {
+                flag_.setAbVariant(v);
+                log(LogLevel::info, std::string("A/B variant set to ") + v);
+                return true;
+            }
+        }
+        return false;
+    }
+    return false;
+}
+
 std::vector<Event> Feature::pollEvents() {
     EventQueue queue = eventBus_.getEventQueue(componentId_);
     std::vector<Event> appEvents;
@@ -108,100 +213,34 @@ std::vector<Event> Feature::pollEvents() {
     while (queue.getSize() > 0) {
         Event event = queue.getEvent();
 
-        if (event.getEventId() == EventId::FeatureFlagOff) {
-            const std::string& m = event.getMessage();
-            if (m == name_) {
-                flag_.disable();
-                log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
-            } else if (m == name_ + "|A") {
-                abAEnabled_ = false;
-                log(LogLevel::info, "A/B path A OFF (by FeatureEvaluator)");
-            } else if (m == name_ + "|B") {
-                abBEnabled_ = false;
-                log(LogLevel::info, "A/B path B OFF (by FeatureEvaluator)");
-            } else {
-                appEvents.push_back(event);
-            }
-        } else if (event.getEventId() == EventId::FeatureFlagOn) {
-            const std::string& m = event.getMessage();
-            if (m == name_) {
-                flag_.enable();
-                abAEnabled_ = true;
-                abBEnabled_ = true;
-                log(LogLevel::info, "Flag ON (by FeatureEvaluator), A/B paths ON");
-            } else if (m == name_ + "|A") {
-                abAEnabled_ = true;
-                log(LogLevel::info, "A/B path A ON (by FeatureEvaluator)");
-            } else if (m == name_ + "|B") {
-                abBEnabled_ = true;
-                log(LogLevel::info, "A/B path B ON (by FeatureEvaluator)");
-            } else {
-                appEvents.push_back(event);
-            }
-        } else if (event.getEventId() == EventId::KillSwitch &&
-                   event.getMessage() == name_) {
-            log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
-            requestStop();
-        } else if (event.getEventId() == EventId::ShadowModeOn &&
-                   event.getMessage() == primaryName_) {
-            if (name_ == primaryName_) {
-                shadowMirrorEnabled_ = true;
-                log(LogLevel::info, "ShadowMode ON (mirroring enabled)");
-            }
-        } else if (event.getEventId() == EventId::ShadowModeOff &&
-                   event.getMessage() == primaryName_) {
-            if (name_ == primaryName_) {
-                shadowMirrorEnabled_ = false;
-                log(LogLevel::info, "ShadowMode OFF (mirroring disabled)");
-            }
-        } else if (event.getEventId() == EventId::AbVariantAssign) {
-            const std::string& msg = event.getMessage();
-            const std::string prefix = name_ + "|";
-            if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
-                const char v = msg.back();
-                if (v == 'A' || v == 'B') {
-                    if (v == 'A') {
-                        abAEnabled_ = true;
-                    } else {
-                        abBEnabled_ = true;
-                    }
-                    log(LogLevel::info,
-                        std::string("AB_SET: path ") + v + " ON (by FeatureEvaluator)");
-                    continue;
-                }
-            }
-            appEvents.push_back(event);
-        } else {
-            appEvents.push_back(event);
+        // 덩치 큰 로직 대신 깔끔하게 함수 하나로 처리!
+        if (tryConsumeAsPlatformControl(event)) {
+            continue;
         }
+        appEvents.push_back(event);
     }
 
     return appEvents;
 }
 
 bool Feature::sendDomainEvent(EventId id, const std::string& message) {
-    // Hard guard: Shadow processes must never emit domain events.
-    if (name_ != primaryName_) {
+    if (!isPrimaryProcess()) {
         log(LogLevel::error, "Shadow process attempted to send domain event. Blocked.");
         return false;
     }
 
-    // Always send the original event.
     if (!eventBus_.sendEvent(Event(id, message))) {
         return false;
     }
 
-    // Shadow mirroring: only Primary mirrors when enabled.
-    if (name_ != primaryName_ || !shadowMirrorEnabled_) {
+    // 중복 검사 없이 팀원분의 깔끔한 코드로 채택
+    if (!flag_.isShadowMirroringEnabled()) {
         return true;
     }
 
-    // Format: MIRROR|<original_event_id_decimal>|<payload>
-    // Payload must not contain '|' (team convention).
-    // Also prefix payload with primary logical name so multiple shadows can filter.
-    // (Keeps 3 segments: MIRROR|id|payload, and avoids adding extra '|'.)
     std::string payload = primaryName_ + ":" + message;
-    std::string mirrorMsg = "MIRROR|" + std::to_string(static_cast<int>(id)) + "|" + payload;
+    std::string mirrorMsg =
+        "MIRROR|" + std::to_string(static_cast<int>(id)) + "|" + payload;
     eventBus_.sendEvent(Event(EventId::ShadowMirrorData, mirrorMsg));
     return true;
 }
@@ -211,7 +250,7 @@ void Feature::requestStop() {
 }
 
 bool Feature::isStopRequested() const {
-    return stopRequested_;
+    return stopRequested_ || flag_.isKilled();
 }
 
 void Feature::signalHandler(int) {
@@ -219,3 +258,130 @@ void Feature::signalHandler(int) {
 }
 
 }  // namespace sdv::platform::lifecyclemgr
+
+namespace sdv::feature {
+
+namespace {
+
+using sdv::platform::communications::eventbus::EventBusInterface;
+using sdv::platform::communications::eventbus::EventId;
+using sdv::platform::lifecyclemgr::Feature;
+using sdv::platform::lifecyclemgr::LogLevel;
+
+static const char* shadowEventIdToString(EventId id) {
+    switch (id) {
+    case EventId::VehicleLocationUpdate: return "VehicleLocationUpdate";
+    case EventId::RoadInfoUpdate: return "RoadInfoUpdate";
+    case EventId::NavigationGuidanceUpdate: return "NavigationGuidanceUpdate";
+    case EventId::AdasDecisionUpdate: return "AdasDecisionUpdate";
+    case EventId::EnergyStateUpdate: return "EnergyStateUpdate";
+    case EventId::FeatureFlagOn: return "FeatureFlagOn";
+    case EventId::FeatureFlagOff: return "FeatureFlagOff";
+    case EventId::KillSwitch: return "KillSwitch";
+    case EventId::ShadowMirrorData: return "ShadowMirrorData";
+    case EventId::ShadowModeOn: return "ShadowModeOn";
+    case EventId::ShadowModeOff: return "ShadowModeOff";
+    case EventId::QuitTheSystem: return "QuitTheSystem";
+    default: return "Unknown";
+    }
+}
+
+static bool tryParseInt32(const std::string& s, int32_t& out) {
+    if (s.empty()) return false;
+    for (char c : s) {
+        if (!std::isdigit(static_cast<unsigned char>(c)) && c != '-') return false;
+    }
+    try {
+        long v = std::stol(s);
+        if (v < INT32_MIN || v > INT32_MAX) return false;
+        out = static_cast<int32_t>(v);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+class ShadowReceiverFeature final : public Feature {
+public:
+    explicit ShadowReceiverFeature(EventBusInterface& eventBus,
+        const std::string& shadowLogicalName,
+        const std::string& primaryLogicalName)
+        : Feature(shadowLogicalName, eventBus) {
+        bindShadowToPrimary(primaryLogicalName);
+    }
+
+protected:
+    void execute() override {
+        log(LogLevel::info, std::string("Shadow started. Primary: ") + primaryName_);
+
+        while (!isStopRequested()) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+
+            auto events = pollEvents();
+            for (const auto& event : events) {
+                if (event.getEventId() != EventId::ShadowMirrorData) continue;
+
+                const std::string& msg = event.getMessage();
+                const std::string prefix = "MIRROR|";
+                if (msg.rfind(prefix, 0) != 0) continue;
+
+                auto p1 = msg.find('|', prefix.size());
+                if (p1 == std::string::npos) continue;
+
+                std::string idStr = msg.substr(prefix.size(), p1 - prefix.size());
+                std::string payload = msg.substr(p1 + 1);
+
+                std::string expectedPrefix = primaryName_ + ":";
+                if (payload.rfind(expectedPrefix, 0) != 0) {
+                    continue;
+                }
+                payload = payload.substr(expectedPrefix.size());
+
+                int32_t originalIdInt = 0;
+                if (!tryParseInt32(idStr, originalIdInt)) {
+                    log(LogLevel::warn, "mirror parse failed: invalid original event id: " + idStr);
+                    continue;
+                }
+
+                EventId originalId = static_cast<EventId>(originalIdInt);
+
+                switch (originalId) {
+                case EventId::VehicleLocationUpdate:
+                case EventId::RoadInfoUpdate:
+                case EventId::NavigationGuidanceUpdate:
+                case EventId::AdasDecisionUpdate:
+                case EventId::EnergyStateUpdate:
+                    log(LogLevel::info,
+                        std::string("mirror received: ") + shadowEventIdToString(originalId) +
+                        " payload=[" + payload + "]");
+                    break;
+                default:
+                    log(LogLevel::warn,
+                        std::string("mirror received: UNKNOWN(") + std::to_string(originalIdInt) +
+                        ") payload=[" + payload + "]");
+                    break;
+                }
+            }
+        }
+    }
+};
+
+}  // namespace
+
+int runShadowReceiverMain(int argc, char* argv[],
+    const char* shadowLogicalName,
+    const char* primaryLogicalName) {
+    std::string address = "localhost:50051";
+    if (argc > 1) {
+        address = argv[1];
+    }
+
+    signal(SIGTERM, sdv::platform::lifecyclemgr::Feature::signalHandler);
+    signal(SIGINT, sdv::platform::lifecyclemgr::Feature::signalHandler);
+
+    sdv::platform::communications::eventbus::EventBusProxy proxy(address);
+    ShadowReceiverFeature feature(proxy, shadowLogicalName, primaryLogicalName);
+    return feature.run();
+}
+
+}  // namespace sdv::feature
