@@ -37,6 +37,9 @@ public:
     Flag& getFlag();
     const Flag& getFlag() const;
 
+    /// Shadow Mode: when true, Primary processes also emit ShadowMirrorData for each domain event.
+    bool isShadowModeActive() const { return flag_.isShadowMirroringEnabled(); }
+
     static void requestStop();
     static void signalHandler(int signum);
 
@@ -46,31 +49,47 @@ protected:
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
 
-    // Send domain event and (optionally) mirror for Shadow Mode.
-    // Shadow Mode mirroring is enabled/disabled via EventId::ShadowModeOn/Off.
+    /// True if this process is the Primary (not a Shadow receiver process).
+    bool isPrimaryProcess() const { return name_ == primaryName_; }
+
+    /// Attach a Shadow process to its Primary logical name (Team CONVENTIONS: `<Primary>Shadow`).
+    void bindShadowToPrimary(const std::string& primaryLogicalName);
+
+    /// Override Shadow Mode without bus events (tests, special orchestration). No-op on Shadow processes.
+    void setShadowModeActive(bool active);
+
+    // Send domain event and (optionally) mirror when Shadow Mode is active (Primary only).
     bool sendDomainEvent(EventId id, const std::string& message);
 
     // Optional A/B mode support (CONVENTIONS 10.2).
-    // In the "two executables" model (<BaseName>A / <BaseName>B) this can be unused.
-    std::optional<char> getAbVariant() const { return abVariant_; }
+    std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
 
     EventBusInterface& eventBus_;
     std::string name_;
-    // Primary logical name this process belongs to.
-    // - Primary: primaryName_ == name_
-    // - Shadow:  primaryName_ != name_ (e.g., NavigationFeatureShadow -> NavigationFeature)
+    // Primary logical name: equals name_ for Primary; Shadow binary sets via bindShadowToPrimary().
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
-    bool shadowMirrorEnabled_;
 
 private:
     static std::string normalizeFileName(const std::string& name);
 
+    /// Flag/Kill/Shadow On-Off/A-B: returns true if consumed and must not be passed to the app queue.
+    bool tryConsumeAsPlatformControl(const Event& event);
+
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
-    std::optional<char> abVariant_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr
+
+namespace sdv::feature {
+
+/// Entry point for `*Shadow` executables: EventBus connect (optional `argv[1]` host:port),
+/// then consume `ShadowMirrorData` for the given Primary name.
+int runShadowReceiverMain(int argc, char* argv[],
+    const char* shadowLogicalName,
+    const char* primaryLogicalName);
+
+}  // namespace sdv::feature

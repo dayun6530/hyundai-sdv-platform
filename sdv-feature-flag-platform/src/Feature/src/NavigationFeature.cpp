@@ -1,7 +1,6 @@
 #include "Feature/NavigationFeature.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
-#include "FeatureCommunication/EventBus/Event.h"
 
 #include <thread>
 #include <chrono>
@@ -37,7 +36,6 @@ NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
 
 void NavigationFeature::execute() {
     for (int i = 0; i < broadcastCount_ && !isStopRequested(); i++) {
-        // Consume control events (Flag/Kill/Shadow) promptly.
         pollEvents();
 
         const int r = i % kRoutePointCount;
@@ -54,14 +52,12 @@ void NavigationFeature::execute() {
             log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
         }
 
-        // Extra navigation-domain status update (for Shadow demo observability).
         if (!sendDomainEvent(EventId::NavigationGuidanceUpdate,
                 "NAV_GUIDANCE step=" + std::to_string(i + 1) +
                 " status=guiding")) {
             log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
         }
 
-        // Consume SHADOW_ON/KILL etc. during the inter-broadcast interval (not only at loop start).
         if (i < broadcastCount_ - 1) {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
