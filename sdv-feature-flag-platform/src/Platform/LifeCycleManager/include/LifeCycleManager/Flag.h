@@ -6,6 +6,7 @@
 
 namespace sdv::platform::lifecyclemgr {
 
+/// Feature runtime flags: enable/disable, Shadow mirroring, Kill observation, A/B variant.
 class Flag {
 public:
     explicit Flag(const std::string& featureName);
@@ -16,15 +17,19 @@ public:
 
     const std::string& getFeatureName() const;
 
-    // Kill Switch (cooperative): set when matching KillSwitch event is consumed.
     void setKilled(bool killed);
     bool isKilled() const;
 
-    // Shadow Mode: primary-only mirror toggle (see Feature::pollEvents).
     void setShadowMirrorEnabled(bool enabled);
     bool isShadowMirrorEnabled() const;
 
-    // A/B variant (optional; CONVENTIONS 10.2).
+    void enableShadowMirroring() { setShadowMirrorEnabled(true); }
+    void disableShadowMirroring() { setShadowMirrorEnabled(false); }
+    bool isShadowMirroringEnabled() const { return isShadowMirrorEnabled(); }
+
+    void setKillSwitchLatched(bool latched) { setKilled(latched); }
+    bool isKillSwitchLatched() const { return isKilled(); }
+
     void setAbVariant(char variant);
     void clearAbVariant();
     std::optional<char> getAbVariant() const;

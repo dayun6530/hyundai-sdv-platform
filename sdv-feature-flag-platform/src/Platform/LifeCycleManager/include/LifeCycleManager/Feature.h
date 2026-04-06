@@ -39,6 +39,9 @@ public:
     /// Kill-switch state lives in \ref flag_.
     bool isKilled() const;
 
+    /// Shadow Mode: when true, Primary processes also emit ShadowMirrorData for each domain event.
+    bool isShadowModeActive() const { return flag_.isShadowMirrorEnabled(); }
+
     static void requestStop();
     static void signalHandler(int signum);
 
@@ -48,8 +51,15 @@ protected:
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
 
-    // Send domain event and (optionally) mirror for Shadow Mode.
-    // Shadow Mode mirroring is enabled/disabled via EventId::ShadowModeOn/Off.
+    /// True if this process is the Primary (not a Shadow receiver process).
+    bool isPrimaryProcess() const { return name_ == primaryName_; }
+
+    /// Attach a Shadow process to its Primary logical name (Team CONVENTIONS: `<Primary>Shadow`).
+    void bindShadowToPrimary(const std::string& primaryLogicalName);
+
+    /// Override Shadow Mode without bus events (tests, special orchestration). No-op on Shadow processes.
+    void setShadowModeActive(bool active);
+
     bool sendDomainEvent(EventId id, const std::string& message);
 
     // A/B 경로는 FLAG_ON/FLAG_OFF 의 세 번째 토큰(A/B) 또는 AB_SET 으로 켜고 끔.
@@ -59,15 +69,14 @@ protected:
 
     EventBusInterface& eventBus_;
     std::string name_;
-    // Primary logical name this process belongs to.
-    // - Primary: primaryName_ == name_
-    // - Shadow:  primaryName_ != name_ (e.g., NavigationFeatureShadow -> NavigationFeature)
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
 
 private:
     static std::string normalizeFileName(const std::string& name);
+
+    bool tryConsumeAsPlatformControl(const Event& event);
 
     std::ofstream logFile_;
     std::string logFilePath_;
@@ -77,3 +86,11 @@ private:
 };
 
 }  // namespace sdv::platform::lifecyclemgr
+
+namespace sdv::feature {
+
+int runShadowReceiverMain(int argc, char* argv[],
+    const char* shadowLogicalName,
+    const char* primaryLogicalName);
+
+}  // namespace sdv::feature

@@ -42,7 +42,9 @@ bool Flag::isShadowMirrorEnabled() const {
 }
 
 void Flag::setAbVariant(char variant) {
-    abVariant_ = variant;
+    if (variant == 'A' || variant == 'B') {
+        abVariant_ = variant;
+    }
 }
 
 void Flag::clearAbVariant() {
