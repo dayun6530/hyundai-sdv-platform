@@ -42,31 +42,21 @@ void NavigationFeature::execute() {
 
         log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 정보 브로드캐스트 ===");
 
-        auto sendForVariants = [this](EventId id, const std::string& payloadBase,
-                                      const char* ctxLabel) {
-            bool any = false;
-            const bool aOn = isAbPathAEnabled();
-            const bool bOn = isAbPathBEnabled();
-
-            nav_ab::sendVariantA(*this, id, payloadBase, ctxLabel, any, aOn);
-            nav_ab::sendVariantB(*this, id, payloadBase, ctxLabel, any, bOn);
-
-            if (!any) {
-                log(LogLevel::warn,
-                    "A/B 경로 모두 비활성, " + std::string(ctxLabel) + " 생략");
-            }
-        };
-
         log(LogLevel::info, std::string("차량 위치 전송: ") + locations[r]);
-        sendForVariants(EventId::VehicleLocationUpdate, locations[r], "차량 위치");
+        if (!sendDomainEvent(EventId::VehicleLocationUpdate, locations[r])) {
+            log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
+        }
 
         log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[r]);
-        sendForVariants(EventId::RoadInfoUpdate, roadInfos[r], "도로 정보");
+        if (!sendDomainEvent(EventId::RoadInfoUpdate, roadInfos[r])) {
+            log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
+        }
 
-        sendForVariants(
-            EventId::NavigationGuidanceUpdate,
-            "NAV_GUIDANCE step=" + std::to_string(i + 1) + " status=guiding",
-            "내비게이션 안내");
+        if (!sendDomainEvent(EventId::NavigationGuidanceUpdate,
+                "NAV_GUIDANCE step=" + std::to_string(i + 1) +
+                " status=guiding")) {
+            log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
+        }
 
         if (i < broadcastCount_ - 1) {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
