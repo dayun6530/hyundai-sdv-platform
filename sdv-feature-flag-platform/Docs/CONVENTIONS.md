@@ -68,7 +68,7 @@
 - **생명주기**: (기존과 동일) Flag 확인 → `registerComponent()` → `execute()` → `unRegister()`.
 - **`pollEvents()` 선처리 (팀 목표 동작)**  
   - **반드시 유지**: `FeatureFlagOn` / `FeatureFlagOff` / `KillSwitch` — message가 `name_`과 일치할 때만 enable / disable / `requestStop()`.  
-  - **추가 구현**: `ShadowModeOn` / `ShadowModeOff` — message가 **이 프로세스의 Primary 이름과 일치**할 때만 내부 플래그 `shadowMirrorEnabled_`(이름 예시)를 true/false. Primary만 true일 때 도메인 이벤트를 나간 뒤 `ShadowMirrorData`를 송신한다 (9절).  
+  - **추가 구현**: `ShadowModeOn` / `ShadowModeOff` — message가 **이 프로세스의 Primary 이름과 일치**할 때만 `Flag::enableShadowMirroring` / `disableShadowMirroring`. Primary만 mirroring이 켜져 있을 때 도메인 이벤트를 나간 뒤 `ShadowMirrorData`를 송신한다 (9절). `KillSwitch` 수신 시 `Flag::setKillSwitchLatched(true)`(관측)와 `requestStop()`; `AbVariantAssign`은 `Flag::setAbVariant`.  
   - **추가 구현 (단일 바이너리 A/B 선택 시)**: `AbVariantAssign` — message가 `name_|\*` 형태이면 파싱해 로컬 variant 저장. **두 실행 파일 A/B 모델**이면 이 이벤트는 선택 사항(10절).
 - **시그널**: `SIGINT` / `SIGTERM` → `Feature::signalHandler`.
 - **이름 일치**: `Feature("이름", bus)` = config `feature` 줄 = 플랫폼 제어 message 대상 이름.
@@ -168,7 +168,7 @@
 
 ### 9.2 데이터 경로
 
-- Primary는 `ShadowModeOn`을 받은 뒤에만(내부 `shadowMirrorEnabled_ == true`) 다음을 수행한다:  
+- Primary는 `ShadowModeOn`을 받은 뒤에만(`Flag::isShadowMirroringEnabled() == true`) 다음을 수행한다:  
   도메인 이벤트를 bus로 보낼 때마다 **추가로** `ShadowMirrorData` (20)를 한 번 더 보낸다.
 - **message 형식**: `MIRROR|<원본_EventId_숫자>|<payload>`  
   - 예: 원본이 `VehicleLocationUpdate`이고 payload가 `서울…`이면  

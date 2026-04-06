@@ -6,6 +6,7 @@
 
 namespace sdv::feature {
 
+// Domain output uses Feature::sendDomainEvent — Shadow mirroring is handled entirely in the base class.
 class AdasFeature : public sdv::platform::lifecyclemgr::Feature {
 public:
     explicit AdasFeature(sdv::platform::communications::eventbus::EventBusInterface& eventBus);
