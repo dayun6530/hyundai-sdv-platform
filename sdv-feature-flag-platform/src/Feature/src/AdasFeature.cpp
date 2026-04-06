@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <signal.h>
+#include <string>
 
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
@@ -44,17 +45,42 @@ void AdasFeature::execute() {
 
 void AdasFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신: " + message);
-    log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
-    sendDomainEvent(EventId::AdasDecisionUpdate,
-        "ADAS_DECISION source=location status=tracking");
+    bool any = false;
+    if (isAbPathAEnabled()) {
+        any = true;
+        log(LogLevel::info, "ADAS A: 주변 차량/장애물 감지 영역 업데이트");
+        sendDomainEvent(EventId::AdasDecisionUpdate,
+            "ADAS_DECISION source=location status=tracking variant=A");
+    }
+    if (isAbPathBEnabled()) {
+        any = true;
+        log(LogLevel::info, "ADAS B: 주변 차량/장애물 감지 영역 업데이트");
+        sendDomainEvent(EventId::AdasDecisionUpdate,
+            "ADAS_DECISION source=location status=tracking variant=B");
+    }
+    if (!any) {
+        log(LogLevel::warn, "A/B 경로 모두 비활성, 위치 기반 ADAS 이벤트 미전송");
+    }
 }
 
 void AdasFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
-    log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
-    log(LogLevel::info, "자율주행 중...");
-    sendDomainEvent(EventId::AdasDecisionUpdate,
-        "ADAS_DECISION source=road status=planning");
+    bool any = false;
+    if (isAbPathAEnabled()) {
+        any = true;
+        log(LogLevel::info, "ADAS A: 경로·속도 계획 반영 (자율주행)");
+        sendDomainEvent(EventId::AdasDecisionUpdate,
+            "ADAS_DECISION source=road status=planning variant=A");
+    }
+    if (isAbPathBEnabled()) {
+        any = true;
+        log(LogLevel::info, "ADAS B: 경로·속도 계획 반영 (자율주행)");
+        sendDomainEvent(EventId::AdasDecisionUpdate,
+            "ADAS_DECISION source=road status=planning variant=B");
+    }
+    if (!any) {
+        log(LogLevel::warn, "A/B 경로 모두 비활성, 도로 기반 ADAS 이벤트 미전송");
+    }
 }
 
 }  // namespace sdv::feature

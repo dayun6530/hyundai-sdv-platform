@@ -42,21 +42,39 @@ void NavigationFeature::execute() {
 
         log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 정보 브로드캐스트 ===");
 
+        auto sendForVariants = [this](EventId id, const std::string& payloadBase,
+                                      const char* ctxLabel) {
+            bool any = false;
+            if (isAbPathAEnabled()) {
+                any = true;
+                if (!sendDomainEvent(id, payloadBase + " variant=A")) {
+                    log(LogLevel::warn, std::string(ctxLabel) + " 전송 실패 (A)");
+                }
+            }
+            if (isAbPathBEnabled()) {
+                any = true;
+                if (!sendDomainEvent(id, payloadBase + " variant=B")) {
+                    log(LogLevel::warn, std::string(ctxLabel) + " 전송 실패 (B)");
+                }
+            }
+            if (!any) {
+                log(LogLevel::warn,
+                    "A/B 경로 모두 비활성, " + std::string(ctxLabel) + " 생략");
+            }
+        };
+
         log(LogLevel::info, std::string("차량 위치 전송: ") + locations[r]);
-        if (!sendDomainEvent(EventId::VehicleLocationUpdate, locations[r])) {
-            log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
-        }
+        sendForVariants(EventId::VehicleLocationUpdate, locations[r], "차량 위치");
 
         log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[r]);
-        if (!sendDomainEvent(EventId::RoadInfoUpdate, roadInfos[r])) {
-            log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
-        }
+        sendForVariants(EventId::RoadInfoUpdate, roadInfos[r], "도로 정보");
 
-        if (!sendDomainEvent(EventId::NavigationGuidanceUpdate,
-                "NAV_GUIDANCE step=" + std::to_string(i + 1) +
-                " status=guiding")) {
-            log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
-        }
+        // ✅ 충돌 해결: A/B variant 방식 유지
+        sendForVariants(
+            EventId::NavigationGuidanceUpdate,
+            "NAV_GUIDANCE step=" + std::to_string(i + 1) + " status=guiding",
+            "내비게이션 안내"
+        );
 
         if (i < broadcastCount_ - 1) {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
@@ -67,9 +85,6 @@ void NavigationFeature::execute() {
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    // NOTE: 데모/운영에서 단일 Feature가 전체 시스템 종료를 트리거하면
-    // KillSwitch 등 제어 데모가 불안정해질 수 있으므로, NavigationFeature는
-    // 운행 종료 시 QuitTheSystem을 발행하지 않는다.
     log(LogLevel::info, "운행 종료. (QuitTheSystem 발행하지 않음)");
 }
 

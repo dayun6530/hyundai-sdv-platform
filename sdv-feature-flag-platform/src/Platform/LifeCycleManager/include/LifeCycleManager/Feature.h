@@ -10,7 +10,6 @@
 #include <atomic>
 #include <cstdint>
 #include <fstream>
-#include <optional>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -64,12 +63,12 @@ protected:
     // Send domain event and (optionally) mirror when Shadow Mode is active (Primary only).
     bool sendDomainEvent(EventId id, const std::string& message);
 
-    // Optional A/B mode support (CONVENTIONS 10.2).
-    std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
+    // ✅ feature 브랜치 방식 유지 (A/B 동시에 가능)
+    bool isAbPathAEnabled() const { return abAEnabled_; }
+    bool isAbPathBEnabled() const { return abBEnabled_; }
 
     EventBusInterface& eventBus_;
     std::string name_;
-    // Primary logical name: equals name_ for Primary; Shadow binary sets via bindShadowToPrimary().
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
@@ -83,6 +82,10 @@ private:
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
+
+    // ✅ feature 브랜치 필드 유지
+    bool abAEnabled_;
+    bool abBEnabled_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr
