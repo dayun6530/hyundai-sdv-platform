@@ -23,6 +23,7 @@ protected:
 
 private:
     void processSignals();
+    void broadcastKillSwitchToAllTargetFeatures();
     bool sendFlagOn(const std::string& featureName);
     bool sendFlagOnVariant(const std::string& featureName, char variant);
     bool sendFlagOff(const std::string& featureName);

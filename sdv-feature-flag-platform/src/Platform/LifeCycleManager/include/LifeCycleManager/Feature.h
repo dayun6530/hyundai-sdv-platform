@@ -36,6 +36,9 @@ public:
     Flag& getFlag();
     const Flag& getFlag() const;
 
+    /// Kill-switch state lives in \ref flag_.
+    bool isKilled() const;
+
     static void requestStop();
     static void signalHandler(int signum);
 
@@ -62,7 +65,6 @@ protected:
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
-    bool shadowMirrorEnabled_;
 
 private:
     static std::string normalizeFileName(const std::string& name);
