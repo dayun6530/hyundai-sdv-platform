@@ -16,6 +16,10 @@ EvEnergyFeature::EvEnergyFeature(EventBusInterface& eventBus)
     : Feature("EvEnergyFeature", eventBus), battery_(85) {}
 
 void EvEnergyFeature::execute() {
+    runEvEnergyMainLoop();
+}
+
+void EvEnergyFeature::runEvEnergyMainLoop() {
     log(LogLevel::info, "초기 배터리 잔량: " + std::to_string(battery_) + "%");
     log(LogLevel::info, "에너지 모니터링 대기 중...");
 
@@ -72,6 +76,7 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
 
 }  // namespace sdv::feature
 
+#ifndef SDV_FEATURE_NO_MAIN
 int main(int argc, char* argv[]) {
     std::string address = "localhost:50051";
     if (argc > 1) address = argv[1];
@@ -83,3 +88,4 @@ int main(int argc, char* argv[]) {
     sdv::feature::EvEnergyFeature feature(proxy);
     return feature.run();
 }
+#endif

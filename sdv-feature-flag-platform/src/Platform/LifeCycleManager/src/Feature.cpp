@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <cctype>
 #include <cstdint>
+#include <string>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -142,33 +143,24 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         return true;
     }
     if (event.getEventId() == EventId::KillSwitch) {
-        const bool directTarget = (event.getMessage() == name_);
-        const bool primaryKilledStopShadow =
-            !isPrimaryProcess() && event.getMessage() == primaryName_;
-        // `KILL:<Primary>Shadow` stops the Shadow by directTarget; Primary must also exit the pair.
-        const bool pairedShadowKilledStopPrimary =
-            isPrimaryProcess() && event.getMessage() == (name_ + "Shadow");
-        if (!directTarget && !primaryKilledStopShadow && !pairedShadowKilledStopPrimary) {
+        const std::string& msg = event.getMessage();
+        // Shadow: broadcast copy of KILL:<Primary> — consume and keep running (no paired stop).
+        if (!isPrimaryProcess() && msg == primaryName_) {
+            log(LogLevel::info,
+                "KillSwitch for Primary " + primaryName_ +
+                " (bus broadcast) — Shadow " + name_ +
+                " continues; use KILL:" + name_ + " to stop this process");
+            return true;
+        }
+        // Only the named process stops. `KILL:<Primary>_ALL` is two events (Evaluator).
+        if (msg != name_) {
             return false;
         }
-        if (primaryKilledStopShadow) {
-            log(LogLevel::warn,
-                "Kill switch for Primary " + primaryName_ +
-                " — shadow receiver stopping (" + name_ + ")");
-        } else if (pairedShadowKilledStopPrimary) {
-            log(LogLevel::warn,
-                "Kill switch targets paired Shadow " + event.getMessage() +
-                " — primary stopping (" + name_ + ")");
+        log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator) — target: " + name_);
+        if (isPrimaryProcess()) {
             flag_.disableShadowMirroring();
             log(LogLevel::info,
-                "Shadow mirroring disabled (Kill Switch — paired Shadow target)");
-        } else {
-            log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
-            if (isPrimaryProcess()) {
-                flag_.disableShadowMirroring();
-                log(LogLevel::info,
-                    "Shadow mirroring disabled (Kill Switch — no further ShadowMirrorData from this Primary)");
-            }
+                "Primary stopping: mirroring output off (Shadow peer not stopped by this kill)");
         }
         flag_.setKillSwitchLatched(true);
         requestStop();
@@ -255,6 +247,16 @@ bool Feature::isStopRequested() const {
 
 void Feature::signalHandler(int) {
     stopRequested_ = true;
+}
+
+void Feature::applyLaunchAbVariantFromArgv(int argc, char** argv, Flag& flag) {
+    if (argc <= 2 || argv == nullptr || argv[2] == nullptr) {
+        return;
+    }
+    std::string m(argv[2]);
+    if (m == "A" || m == "B") {
+        flag.setAbVariant(m[0]);
+    }
 }
 
 }  // namespace sdv::platform::lifecyclemgr

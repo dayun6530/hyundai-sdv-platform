@@ -42,6 +42,11 @@ public:
     void clearAbVariant();
     std::optional<char> getAbVariant() const;
 
+    /// True when variant is explicitly A (vehicle line / A|B mode).
+    bool isAbModeA() const;
+    /// True when variant is explicitly B.
+    bool isAbModeB() const;
+
     // ----- [LifeCycle] -----
     /// Reset kill state for a new run() (enabled/disabled unchanged).
     void resetRunState();

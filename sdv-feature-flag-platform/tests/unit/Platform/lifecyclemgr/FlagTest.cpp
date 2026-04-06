@@ -27,11 +27,15 @@ int main() {
     sqa::test::check(tc, flag.isKillSwitchLatched(), "kill switch latch can be set");
 
     sqa::test::check(tc, !flag.getAbVariant().has_value(), "A/B variant defaults unset");
+    sqa::test::check(tc, !flag.isAbModeA() && !flag.isAbModeB(), "no line mode when variant unset");
     flag.setAbVariant('X');
     sqa::test::check(tc, !flag.getAbVariant().has_value(), "invalid A/B variant is ignored");
     flag.setAbVariant('A');
     sqa::test::check(tc, flag.getAbVariant().has_value() && *flag.getAbVariant() == 'A',
         "A/B variant A is stored");
+    sqa::test::check(tc, flag.isAbModeA() && !flag.isAbModeB(), "isAbModeA after set A");
+    flag.setAbVariant('B');
+    sqa::test::check(tc, flag.isAbModeB() && !flag.isAbModeA(), "isAbModeB after set B");
     flag.clearAbVariant();
     sqa::test::check(tc, !flag.getAbVariant().has_value(), "A/B variant can be cleared");
 

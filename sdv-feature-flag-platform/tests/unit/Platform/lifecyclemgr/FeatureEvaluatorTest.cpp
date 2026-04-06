@@ -322,7 +322,8 @@ int main() {
     FeatureEvaluator evaluator(proxy, inbound, outbound);
 
     std::thread evalThread([&evaluator]() { evaluator.run(); });
-    std::this_thread::sleep_for(std::chrono::milliseconds(2600));
+    // Allow initial 3s registration delay + auto SHADOW_ON + first poll loop iteration (processSignals).
+    std::this_thread::sleep_for(std::chrono::milliseconds(4000));
     Feature::requestStop();
     evalThread.join();
 

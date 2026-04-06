@@ -15,6 +15,10 @@ AdasFeature::AdasFeature(EventBusInterface& eventBus)
     : Feature("AdasFeature", eventBus) {}
 
 void AdasFeature::execute() {
+    runAdasMainLoop();
+}
+
+void AdasFeature::runAdasMainLoop() {
     log(LogLevel::info, "자율주행 대기 중...");
 
     while (!isStopRequested()) {
@@ -59,6 +63,7 @@ void AdasFeature::processRoadInfo(const std::string& message) {
 
 }  // namespace sdv::feature
 
+#ifndef SDV_FEATURE_NO_MAIN
 int main(int argc, char* argv[]) {
     std::string address = "localhost:50051";
     if (argc > 1) address = argv[1];
@@ -70,3 +75,4 @@ int main(int argc, char* argv[]) {
     sdv::feature::AdasFeature feature(proxy);
     return feature.run();
 }
+#endif

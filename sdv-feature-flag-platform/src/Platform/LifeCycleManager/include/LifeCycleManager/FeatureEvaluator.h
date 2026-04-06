@@ -23,6 +23,8 @@ protected:
 
 private:
     void processSignals();
+    /// After startup delay: turn on Shadow mirroring for every Primary that has a Shadow pair (car-line + legacy).
+    void emitAutoShadowModeForAllPrimaries();
     void broadcastKillSwitchToAllTargetFeatures();
     bool sendFlagOn(const std::string& featureName);
     bool sendFlagOff(const std::string& featureName);

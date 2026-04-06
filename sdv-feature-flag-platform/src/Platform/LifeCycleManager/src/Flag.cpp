@@ -59,6 +59,14 @@ std::optional<char> Flag::getAbVariant() const {
     return abVariant_;
 }
 
+bool Flag::isAbModeA() const {
+    return abVariant_.has_value() && *abVariant_ == 'A';
+}
+
+bool Flag::isAbModeB() const {
+    return abVariant_.has_value() && *abVariant_ == 'B';
+}
+
 // ----- [LifeCycle] -----
 void Flag::resetRunState() {
     killed_.store(false);

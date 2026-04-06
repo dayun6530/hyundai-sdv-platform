@@ -15,6 +15,22 @@
 
 namespace sdv::platform::lifecyclemgr {
 
+namespace {
+
+/// Car-line binaries use `Feature_A` / `Feature_B` in the exec name; others use \p configAb only.
+std::string resolveAbArgvForExec(const std::string& execName,
+                                 const std::string& configAb) {
+    if (execName.find("Feature_B") != std::string::npos) {
+        return "B";
+    }
+    if (execName.find("Feature_A") != std::string::npos) {
+        return "A";
+    }
+    return configAb;
+}
+
+}  // namespace
+
 LifeCycleMgr::LifeCycleMgr()
     : address_("0.0.0.0:50051") {}
 
@@ -60,6 +76,14 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
 
         if (key == "address") {
             address_ = value;
+        } else if (key == "ab_mode") {
+            if (value == "A" || value == "B") {
+                launchAbVariant_ = value;
+                std::cout << "[LifeCycleMgr] ab_mode (A|B Flag seed): " << value << std::endl;
+            } else {
+                std::cerr << "[LifeCycleMgr] Ignoring invalid ab_mode (use A or B): " << value
+                          << std::endl;
+            }
         } else if (key == "communication") {
             communications_.push_back({value, -1, false});
             std::cout << "[LifeCycleMgr] Communication: " << value << std::endl;
@@ -81,10 +105,16 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
 
 void LifeCycleMgr::spawnProcess(const std::string& execName) {
     std::string execPath = resolveExecPath(execName);
+    const std::string abArgv = resolveAbArgvForExec(execName, launchAbVariant_);
 
     pid_t pid = fork();
     if (pid == 0) {
-        execl(execPath.c_str(), execName.c_str(), address_.c_str(), nullptr);
+        if (!abArgv.empty()) {
+            execl(execPath.c_str(), execName.c_str(), address_.c_str(),
+                abArgv.c_str(), nullptr);
+        } else {
+            execl(execPath.c_str(), execName.c_str(), address_.c_str(), nullptr);
+        }
         std::cerr << "Failed to exec " << execPath << std::endl;
         _exit(1);
     } else if (pid > 0) {

@@ -47,6 +47,18 @@ bool isPlatformKillSwitchTriggerText(const std::string& text) {
     return containsIgnoreCase(text, "Kill switch activated");
 }
 
+/// Primary base name → paired Shadow logical name (legacy `Foo`+`Shadow`, car-line `Foo_A`+`Foo_A_Shadow`).
+std::string shadowLogicalNameForPrimaryBase(const std::string& base) {
+    if (base.size() >= 2) {
+        const bool endsA = (base.compare(base.size() - 2, 2, "_A") == 0);
+        const bool endsB = (base.compare(base.size() - 2, 2, "_B") == 0);
+        if (endsA || endsB) {
+            return base + "_Shadow";
+        }
+    }
+    return base + "Shadow";
+}
+
 }  // namespace
 
 FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
@@ -56,6 +68,25 @@ FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
     , inboundPath_(inboundPath)
     , outboundPath_(outboundPath) {}
 
+void FeatureEvaluator::emitAutoShadowModeForAllPrimaries() {
+    static constexpr const char* kShadowPrimaries[] = {
+        "NavigationFeature",
+        "AdasFeature",
+        "EvEnergyFeature",
+        "NavigationFeature_A",
+        "AdasFeature_A",
+        "EvEnergyFeature_A",
+        "NavigationFeature_B",
+        "AdasFeature_B",
+        "EvEnergyFeature_B",
+    };
+    log(LogLevel::info,
+        "자동 Shadow Mode — 모든 Primary에 ShadowModeOn 발송 (수동 SHADOW_ON 생략)");
+    for (const char* primary : kShadowPrimaries) {
+        sendShadowOn(primary);
+    }
+}
+
 void FeatureEvaluator::broadcastKillSwitchToAllTargetFeatures() {
     static constexpr const char* kTargets[] = {
         "NavigationFeature",
@@ -64,6 +95,18 @@ void FeatureEvaluator::broadcastKillSwitchToAllTargetFeatures() {
         "AdasFeatureShadow",
         "EvEnergyFeature",
         "EvEnergyFeatureShadow",
+        "NavigationFeature_A",
+        "NavigationFeature_A_Shadow",
+        "AdasFeature_A",
+        "AdasFeature_A_Shadow",
+        "EvEnergyFeature_A",
+        "EvEnergyFeature_A_Shadow",
+        "NavigationFeature_B",
+        "NavigationFeature_B_Shadow",
+        "AdasFeature_B",
+        "AdasFeature_B_Shadow",
+        "EvEnergyFeature_B",
+        "EvEnergyFeature_B_Shadow",
         "WatchDog",
     };
     // 요구사항: 이벤트 전송 직전에 해당 로그를 남김
@@ -80,6 +123,8 @@ void FeatureEvaluator::execute() {
     // Give other features time to register to EventBus before emitting control events.
     // EventBus does not guarantee delivery to components that register later.
     std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    emitAutoShadowModeForAllPrimaries();
 
     while (!isStopRequested()) {
         processSignals();
@@ -140,7 +185,21 @@ void FeatureEvaluator::processSignals() {
         } else if (action == "FLAG_OFF") {
             sendFlagOff(featureName);
         } else if (action == "KILL") {
-            sendKillSwitch(featureName);
+            static constexpr const char kKillAllSuffix[] = "_ALL";
+            constexpr std::size_t kAllLen = sizeof(kKillAllSuffix) - 1;
+            if (featureName.size() > kAllLen &&
+                featureName.compare(featureName.size() - kAllLen, kAllLen, kKillAllSuffix) == 0) {
+                const std::string base = featureName.substr(0, featureName.size() - kAllLen);
+                const std::string shadowName = shadowLogicalNameForPrimaryBase(base);
+                log(LogLevel::warn,
+                    "KILL_ALL -> Shadow " + shadowName + " then Primary " + base);
+                // Shadow first: each queue processes Shadow-target kill before Primary-target,
+                // so paired Shadow exits cleanly; Primary ignores the Shadow kill line.
+                sendKillSwitch(shadowName);
+                sendKillSwitch(base);
+            } else {
+                sendKillSwitch(featureName);
+            }
         } else if (
             // Demo-friendly canonical situation types
             action == "DMS_SLEEP" ||

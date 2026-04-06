@@ -35,6 +35,10 @@ NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
     : Feature("NavigationFeature", eventBus) {}
 
 void NavigationFeature::execute() {
+    runNavigationMainLoop();
+}
+
+void NavigationFeature::runNavigationMainLoop() {
     for (int i = 0; i < broadcastCount_ && !isStopRequested(); i++) {
         pollEvents();
 
@@ -75,6 +79,7 @@ void NavigationFeature::execute() {
 
 }  // namespace sdv::feature
 
+#ifndef SDV_FEATURE_NO_MAIN
 int main(int argc, char* argv[]) {
     std::string address = "localhost:50051";
     if (argc > 1) address = argv[1];
@@ -86,3 +91,4 @@ int main(int argc, char* argv[]) {
     sdv::feature::NavigationFeature feature(proxy);
     return feature.run();
 }
+#endif
