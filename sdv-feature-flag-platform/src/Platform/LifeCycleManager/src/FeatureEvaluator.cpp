@@ -132,6 +132,8 @@ void FeatureEvaluator::processSignals() {
         std::string extra = (secondColon != std::string::npos)
             ? rest.substr(secondColon + 1) : "";
         trimInPlace(extra);
+        trimInPlace(action);
+        trimInPlace(featureName);
 
         if (action == "FLAG_ON") {
             if (extra.size() == 1 && (extra[0] == 'A' || extra[0] == 'B')) {
@@ -179,7 +181,11 @@ void FeatureEvaluator::processSignals() {
 
 bool FeatureEvaluator::sendFlagOn(const std::string& featureName) {
     log(LogLevel::info, "FLAG_ON -> " + featureName);
-    return eventBus_.sendEvent(Event(EventId::FeatureFlagOn, featureName));
+    const bool ok = eventBus_.sendEvent(Event(EventId::FeatureFlagOn, featureName));
+    if (!ok) {
+        log(LogLevel::warn, "FLAG_ON EventBus sendEvent failed for " + featureName);
+    }
+    return ok;
 }
 
 bool FeatureEvaluator::sendFlagOnVariant(const std::string& featureName, char variant) {
@@ -190,7 +196,11 @@ bool FeatureEvaluator::sendFlagOnVariant(const std::string& featureName, char va
 
 bool FeatureEvaluator::sendFlagOff(const std::string& featureName) {
     log(LogLevel::info, "FLAG_OFF -> " + featureName);
-    return eventBus_.sendEvent(Event(EventId::FeatureFlagOff, featureName));
+    const bool ok = eventBus_.sendEvent(Event(EventId::FeatureFlagOff, featureName));
+    if (!ok) {
+        log(LogLevel::warn, "FLAG_OFF EventBus sendEvent failed for " + featureName);
+    }
+    return ok;
 }
 
 bool FeatureEvaluator::sendFlagOffVariant(const std::string& featureName, char variant) {
@@ -202,23 +212,39 @@ bool FeatureEvaluator::sendFlagOffVariant(const std::string& featureName, char v
 bool FeatureEvaluator::sendKillSwitch(const std::string& featureName) {
     log(LogLevel::info, "KILL -> " + featureName);
     sendWarning(featureName, "KillSwitch activated");
-    return eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
+    const bool ok = eventBus_.sendEvent(Event(EventId::KillSwitch, featureName));
+    if (!ok) {
+        log(LogLevel::warn, "KILL EventBus sendEvent failed for " + featureName);
+    }
+    return ok;
 }
 
 bool FeatureEvaluator::sendShadowOn(const std::string& primaryName) {
     log(LogLevel::info, "SHADOW_ON -> " + primaryName);
-    return eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
+    const bool ok = eventBus_.sendEvent(Event(EventId::ShadowModeOn, primaryName));
+    if (!ok) {
+        log(LogLevel::warn, "SHADOW_ON EventBus sendEvent failed for " + primaryName);
+    }
+    return ok;
 }
 
 bool FeatureEvaluator::sendShadowOff(const std::string& primaryName) {
     log(LogLevel::info, "SHADOW_OFF -> " + primaryName);
-    return eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
+    const bool ok = eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
+    if (!ok) {
+        log(LogLevel::warn, "SHADOW_OFF EventBus sendEvent failed for " + primaryName);
+    }
+    return ok;
 }
 
 bool FeatureEvaluator::sendAbSet(const std::string& featureName, char variant) {
     const std::string msg = featureName + "|" + std::string(1, variant);
     log(LogLevel::info, std::string("AB_SET -> ") + msg);
-    return eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
+    const bool ok = eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
+    if (!ok) {
+        log(LogLevel::warn, "AB_SET EventBus sendEvent failed for " + msg);
+    }
+    return ok;
 }
 
 void FeatureEvaluator::sendWarning(const std::string& target,
