@@ -31,9 +31,7 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     , name_(name)
     , primaryName_(name)
     , componentId_(-1)
-    , flag_(name)
-    , abAEnabled_(true)
-    , abBEnabled_(true) {
+    , flag_(name) {
     mkdir("logs", 0755);
     logFilePath_ = "logs/" + normalizeFileName(name) + ".log";
     logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
@@ -105,10 +103,12 @@ const Flag& Feature::getFlag() const {
     return flag_;
 }
 
+// 질문자님이 작성하신 킬 스위치 확인 함수 유지
 bool Feature::isKilled() const {
     return flag_.isKilled();
 }
 
+// 팀원분이 작성하신 Shadow Mode 기능 및 이벤트 처리 헬퍼 함수 통합
 void Feature::bindShadowToPrimary(const std::string& primaryLogicalName) {
     primaryName_ = primaryLogicalName;
     flag_.disableShadowMirroring();
@@ -129,45 +129,17 @@ void Feature::setShadowModeActive(bool active) {
 }
 
 bool Feature::tryConsumeAsPlatformControl(const Event& event) {
-    if (event.getEventId() == EventId::FeatureFlagOff) {
-        const std::string& m = event.getMessage();
-        if (m == name_) {
-            flag_.disable();
-            log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
-            return true;
-        }
-        if (m == name_ + "|A") {
-            abAEnabled_ = false;
-            log(LogLevel::info, "A/B path A OFF (by FeatureEvaluator)");
-            return true;
-        }
-        if (m == name_ + "|B") {
-            abBEnabled_ = false;
-            log(LogLevel::info, "A/B path B OFF (by FeatureEvaluator)");
-            return true;
-        }
-        return false;
+    if (event.getEventId() == EventId::FeatureFlagOff &&
+        event.getMessage() == name_) {
+        flag_.disable();
+        log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
+        return true;
     }
-    if (event.getEventId() == EventId::FeatureFlagOn) {
-        const std::string& m = event.getMessage();
-        if (m == name_) {
-            flag_.enable();
-            abAEnabled_ = true;
-            abBEnabled_ = true;
-            log(LogLevel::info, "Flag ON (by FeatureEvaluator), A/B paths ON");
-            return true;
-        }
-        if (m == name_ + "|A") {
-            abAEnabled_ = true;
-            log(LogLevel::info, "A/B path A ON (by FeatureEvaluator)");
-            return true;
-        }
-        if (m == name_ + "|B") {
-            abBEnabled_ = true;
-            log(LogLevel::info, "A/B path B ON (by FeatureEvaluator)");
-            return true;
-        }
-        return false;
+    if (event.getEventId() == EventId::FeatureFlagOn &&
+        event.getMessage() == name_) {
+        flag_.enable();
+        log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
+        return true;
     }
     if (event.getEventId() == EventId::KillSwitch) {
         const bool directTarget = (event.getMessage() == name_);
@@ -179,29 +151,27 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         if (!directTarget && !primaryKilledStopShadow && !pairedShadowKilledStopPrimary) {
             return false;
         }
-        if (!flag_.isKilled()) {
-            if (primaryKilledStopShadow) {
-                log(LogLevel::warn,
-                    "Kill switch for Primary " + primaryName_ +
-                    " — shadow receiver stopping (" + name_ + ")");
-            } else if (pairedShadowKilledStopPrimary) {
-                log(LogLevel::warn,
-                    "Kill switch targets paired Shadow " + event.getMessage() +
-                    " — primary stopping (" + name_ + ")");
+        if (primaryKilledStopShadow) {
+            log(LogLevel::warn,
+                "Kill switch for Primary " + primaryName_ +
+                " — shadow receiver stopping (" + name_ + ")");
+        } else if (pairedShadowKilledStopPrimary) {
+            log(LogLevel::warn,
+                "Kill switch targets paired Shadow " + event.getMessage() +
+                " — primary stopping (" + name_ + ")");
+            flag_.disableShadowMirroring();
+            log(LogLevel::info,
+                "Shadow mirroring disabled (Kill Switch — paired Shadow target)");
+        } else {
+            log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
+            if (isPrimaryProcess()) {
                 flag_.disableShadowMirroring();
                 log(LogLevel::info,
-                    "Shadow mirroring disabled (Kill Switch — paired Shadow target)");
-            } else {
-                log(LogLevel::warn, "Kill switch activated (by FeatureEvaluator)");
-                if (isPrimaryProcess()) {
-                    flag_.disableShadowMirroring();
-                    log(LogLevel::info,
-                        "Shadow mirroring disabled (Kill Switch — no further ShadowMirrorData from this Primary)");
-                }
+                    "Shadow mirroring disabled (Kill Switch — no further ShadowMirrorData from this Primary)");
             }
-            flag_.setKilled(true);
-            requestStop();
         }
+        flag_.setKillSwitchLatched(true);
+        requestStop();
         return true;
     }
     if (event.getEventId() == EventId::ShadowModeOn &&
@@ -226,14 +196,8 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
             const char v = msg.back();
             if (v == 'A' || v == 'B') {
-                if (v == 'A') {
-                    abAEnabled_ = true;
-                } else {
-                    abBEnabled_ = true;
-                }
                 flag_.setAbVariant(v);
-                log(LogLevel::info,
-                    std::string("AB_SET: path ") + v + " ON (by FeatureEvaluator)");
+                log(LogLevel::info, std::string("A/B variant set to ") + v);
                 return true;
             }
         }
@@ -248,6 +212,8 @@ std::vector<Event> Feature::pollEvents() {
 
     while (queue.getSize() > 0) {
         Event event = queue.getEvent();
+
+        // 덩치 큰 로직 대신 깔끔하게 함수 하나로 처리!
         if (tryConsumeAsPlatformControl(event)) {
             continue;
         }
@@ -267,7 +233,8 @@ bool Feature::sendDomainEvent(EventId id, const std::string& message) {
         return false;
     }
 
-    if (!flag_.isShadowMirrorEnabled()) {
+    // 중복 검사 없이 팀원분의 깔끔한 코드로 채택
+    if (!flag_.isShadowMirroringEnabled()) {
         return true;
     }
 

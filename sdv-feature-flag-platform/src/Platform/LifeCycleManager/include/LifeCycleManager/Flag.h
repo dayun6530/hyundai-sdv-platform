@@ -21,7 +21,7 @@ public:
     // Kill Switch (cooperative): set when matching KillSwitch event is consumed.
     void setKilled(bool killed);
     bool isKilled() const;
-
+    
     // (develop 브랜치 호환용 Alias)
     void setKillSwitchLatched(bool latched) { setKilled(latched); }
     bool isKillSwitchLatched() const { return isKilled(); }
@@ -52,7 +52,7 @@ private:
     std::atomic<bool> enabled_;
     std::atomic<bool> killed_;
     std::atomic<bool> shadowMirrorEnabled_;
-
+    
     std::optional<char> abVariant_;
 };
 

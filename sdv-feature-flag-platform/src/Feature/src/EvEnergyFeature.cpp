@@ -50,20 +50,9 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     battery_ -= 3;
     log(LogLevel::info, "배터리 잔량: " + std::to_string(battery_) +
         "% | 예상 주행 가능 거리: " + std::to_string(battery_ * 4) + "km");
-    const std::string base = "ENERGY_STATE battery=" + std::to_string(battery_) +
-        " rangeKm=" + std::to_string(battery_ * 4);
-    bool any = false;
-    if (isAbPathAEnabled()) {
-        any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=A");
-    }
-    if (isAbPathBEnabled()) {
-        any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=B");
-    }
-    if (!any) {
-        log(LogLevel::warn, "A/B 경로 모두 비활성, 에너지 상태 이벤트 미전송");
-    }
+    sendDomainEvent(EventId::EnergyStateUpdate,
+        "ENERGY_STATE battery=" + std::to_string(battery_) +
+        " rangeKm=" + std::to_string(battery_ * 4));
 }
 
 void EvEnergyFeature::processRoadInfo(const std::string& message) {
@@ -77,20 +66,8 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     } else {
         log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
     }
-    const std::string base =
-        "ENERGY_STATE roadHint=processed battery=" + std::to_string(battery_);
-    bool any = false;
-    if (isAbPathAEnabled()) {
-        any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=A");
-    }
-    if (isAbPathBEnabled()) {
-        any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=B");
-    }
-    if (!any) {
-        log(LogLevel::warn, "A/B 경로 모두 비활성, 도로 기반 에너지 이벤트 미전송");
-    }
+    sendDomainEvent(EventId::EnergyStateUpdate,
+        "ENERGY_STATE roadHint=processed battery=" + std::to_string(battery_));
 }
 
 }  // namespace sdv::feature
