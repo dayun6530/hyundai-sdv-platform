@@ -64,6 +64,10 @@ protected:
     // Send domain event and (optionally) mirror when Shadow Mode is active (Primary only).
     bool sendDomainEvent(EventId id, const std::string& message);
 
+    // ⭐️ 빠져있던 질문자님의 A/B 테스트 스위치 함수 복구!
+    bool isAbPathAEnabled() const { return abAEnabled_; }
+    bool isAbPathBEnabled() const { return abBEnabled_; }
+
     // Optional A/B mode support (CONVENTIONS 10.2).
     std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
 
@@ -83,6 +87,10 @@ private:
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
+
+    // ⭐️ 빠져있던 질문자님의 A/B 상태 변수 복구!
+    bool abAEnabled_ = false;
+    bool abBEnabled_ = false;
 };
 
 }  // namespace sdv::platform::lifecyclemgr
