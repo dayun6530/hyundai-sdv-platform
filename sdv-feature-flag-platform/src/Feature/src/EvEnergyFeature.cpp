@@ -55,11 +55,11 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     bool any = false;
     if (isAbPathAEnabled()) {
         any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=A");
+        energy_ab::sendLocationStateA(*this, base);
     }
     if (isAbPathBEnabled()) {
         any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=B");
+        energy_ab::sendLocationStateB(*this, base);
     }
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 에너지 상태 이벤트 미전송");
@@ -82,11 +82,11 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     bool any = false;
     if (isAbPathAEnabled()) {
         any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=A");
+        energy_ab::sendRoadStateA(*this, base);
     }
     if (isAbPathBEnabled()) {
         any = true;
-        sendDomainEvent(EventId::EnergyStateUpdate, base + " variant=B");
+        energy_ab::sendRoadStateB(*this, base);
     }
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 도로 기반 에너지 이벤트 미전송");

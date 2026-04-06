@@ -48,15 +48,11 @@ void AdasFeature::processVehicleLocation(const std::string& message) {
     bool any = false;
     if (isAbPathAEnabled()) {
         any = true;
-        log(LogLevel::info, "ADAS A: 주변 차량/장애물 감지 영역 업데이트");
-        sendDomainEvent(EventId::AdasDecisionUpdate,
-            "ADAS_DECISION source=location status=tracking variant=A");
+        adas_ab::onLocationA(*this, message);
     }
     if (isAbPathBEnabled()) {
         any = true;
-        log(LogLevel::info, "ADAS B: 주변 차량/장애물 감지 영역 업데이트");
-        sendDomainEvent(EventId::AdasDecisionUpdate,
-            "ADAS_DECISION source=location status=tracking variant=B");
+        adas_ab::onLocationB(*this, message);
     }
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 위치 기반 ADAS 이벤트 미전송");
@@ -68,15 +64,11 @@ void AdasFeature::processRoadInfo(const std::string& message) {
     bool any = false;
     if (isAbPathAEnabled()) {
         any = true;
-        log(LogLevel::info, "ADAS A: 경로·속도 계획 반영 (자율주행)");
-        sendDomainEvent(EventId::AdasDecisionUpdate,
-            "ADAS_DECISION source=road status=planning variant=A");
+        adas_ab::onRoadA(*this, message);
     }
     if (isAbPathBEnabled()) {
         any = true;
-        log(LogLevel::info, "ADAS B: 경로·속도 계획 반영 (자율주행)");
-        sendDomainEvent(EventId::AdasDecisionUpdate,
-            "ADAS_DECISION source=road status=planning variant=B");
+        adas_ab::onRoadB(*this, message);
     }
     if (!any) {
         log(LogLevel::warn, "A/B 경로 모두 비활성, 도로 기반 ADAS 이벤트 미전송");

@@ -1,7 +1,6 @@
 #include "Feature/NavigationFeature.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
-#include "FeatureCommunication/EventBus/Event.h"
 
 #include <thread>
 #include <chrono>
@@ -47,18 +46,10 @@ void NavigationFeature::execute() {
         auto sendForVariants = [this](EventId id, const std::string& payloadBase,
                                       const char* ctxLabel) {
             bool any = false;
-            if (isAbPathAEnabled()) {
-                any = true;
-                if (!sendDomainEvent(id, payloadBase + " variant=A")) {
-                    log(LogLevel::warn, std::string(ctxLabel) + " 전송 실패 (A)");
-                }
-            }
-            if (isAbPathBEnabled()) {
-                any = true;
-                if (!sendDomainEvent(id, payloadBase + " variant=B")) {
-                    log(LogLevel::warn, std::string(ctxLabel) + " 전송 실패 (B)");
-                }
-            }
+            const bool aOn = isAbPathAEnabled();
+            const bool bOn = isAbPathBEnabled();
+            nav_ab::sendVariantA(*this, id, payloadBase, ctxLabel, any, aOn);
+            nav_ab::sendVariantB(*this, id, payloadBase, ctxLabel, any, bOn);
             if (!any) {
                 log(LogLevel::warn,
                     "A/B 경로 모두 비활성, " + std::string(ctxLabel) + " 생략");
