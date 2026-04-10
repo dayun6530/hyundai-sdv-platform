@@ -33,8 +33,18 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     , primaryName_(name)
     , componentId_(-1)
     , flag_(name) {
+    const char* envLogDir = std::getenv("SDV_LOG_DIR");
+    const std::string logDir = (envLogDir != nullptr && *envLogDir != '\0')
+        ? std::string(envLogDir)
+        : std::string("logs");
+
+    // Ensure nested log dir exists (logs/ then logs/A|logs/B).
     mkdir("logs", 0755);
-    logFilePath_ = "logs/" + normalizeFileName(name) + ".log";
+    if (logDir != "logs") {
+        mkdir(logDir.c_str(), 0755);
+    }
+
+    logFilePath_ = logDir + "/" + normalizeFileName(name) + ".log";
     logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
 }
 
@@ -207,7 +217,17 @@ std::vector<Event> Feature::pollEvents() {
 
         // 덩치 큰 로직 대신 깔끔하게 함수 하나로 처리!
         if (tryConsumeAsPlatformControl(event)) {
+            // Kill Switch is safety-critical: once it is latched for this process, stop processing
+            // any further events immediately (avoid extra logs/actions after kill command).
+            if (isStopRequested()) {
+                return {};
+            }
             continue;
+        }
+        // If stop is requested (e.g., KillSwitch consumed earlier in this poll), do not forward
+        // remaining events to the app layer.
+        if (isStopRequested()) {
+            return {};
         }
         appEvents.push_back(event);
     }

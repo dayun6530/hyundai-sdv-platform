@@ -24,6 +24,13 @@ add_subdirectory(tests)
 add_executable(SdvPlatform src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp)
 target_include_directories(SdvPlatform PRIVATE src/Platform/LifeCycleManager/include)
 
+# Convenience launchers for multi-car demo: choose config by argv[0] (car_A/car_B).
+add_executable(car_A src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp)
+target_include_directories(car_A PRIVATE src/Platform/LifeCycleManager/include)
+
+add_executable(car_B src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp)
+target_include_directories(car_B PRIVATE src/Platform/LifeCycleManager/include)
+
 add_executable(EventBusHost src/Platform/FeatureCommunication/EventBus/src/EventBusHost.cpp)
 target_link_libraries(EventBusHost PRIVATE EventBus)
 

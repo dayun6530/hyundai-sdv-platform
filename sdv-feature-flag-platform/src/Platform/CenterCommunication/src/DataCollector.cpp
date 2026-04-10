@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <signal.h>
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 
@@ -82,8 +83,13 @@ int main() {
     signal(SIGTERM, dataCollectorSignalHandler);
     signal(SIGINT, dataCollectorSignalHandler);
 
+    const char* envLogDir = std::getenv("SDV_LOG_DIR");
+    const std::string logDir = (envLogDir != nullptr && *envLogDir != '\0')
+        ? std::string(envLogDir)
+        : std::string("logs");
+
     sdv::platform::centercommunication::DataCollector collector(
-        "logs", 512 * 1024, 10);
+        logDir, 512 * 1024, 10);
 
     std::thread collectorThread([&collector]() {
         collector.run();

@@ -5,8 +5,38 @@
 #include <thread>
 #include <chrono>
 #include <signal.h>
+#include <cstdlib>
 
 namespace sdv::platform::centercommunication {
+
+namespace {
+
+static bool endsWith(const std::string& s, const std::string& suffix) {
+    return s.size() >= suffix.size() &&
+        s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+static std::string resolveExternalSignalsPath() {
+    // Highest priority: explicitly set by orchestrator.
+    if (const char* envPath = std::getenv("SDV_EXTERNAL_SIGNALS");
+        envPath != nullptr && *envPath != '\0') {
+        return std::string(envPath);
+    }
+
+    // Convenience fallback for multi-car demo: infer from per-car log dir.
+    // (This prevents silent mis-routing when SDV_EXTERNAL_SIGNALS wasn't propagated.)
+    if (const char* envLogDir = std::getenv("SDV_LOG_DIR");
+        envLogDir != nullptr && *envLogDir != '\0') {
+        const std::string d(envLogDir);
+        if (endsWith(d, "/A") || endsWith(d, "\\A")) return "config/ExternalSignals_A.cmd";
+        if (endsWith(d, "/B") || endsWith(d, "\\B")) return "config/ExternalSignals_B.cmd";
+    }
+
+    // Backward-compatible default.
+    return "config/ExternalSignals.cmd";
+}
+
+}  // namespace
 
 SignalReceiver::SignalReceiver(const std::string& centerUrl,
                                const std::string& signalFilePath)
@@ -16,6 +46,7 @@ void SignalReceiver::start() {
     running_ = true;
     std::cout << "[SignalReceiver] Started. Center: " << centerUrl_
               << " -> " << signalFilePath_ << std::endl;
+    std::cout << "[SignalReceiver] External cmd: " << resolveExternalSignalsPath() << std::endl;
 
     while (running_) {
         pollExternalSignals();
@@ -33,8 +64,12 @@ void SignalReceiver::pollExternalSignals() {
     // TODO: Replace with real HTTP polling from center
     // httpGet("/api/signals") → parse → writeToFile()
     //
-    // For prototype: reads from config/ExternalSignals.cmd
-    std::ifstream input("config/ExternalSignals.cmd");
+    // For prototype: reads from a command file shared with the operator/terminal.
+    // IMPORTANT: when running multiple platforms (car_A + car_B) concurrently,
+    // each must read its own input file to avoid cross-talk.
+    const std::string externalPath = resolveExternalSignalsPath();
+
+    std::ifstream input(externalPath);
     if (!input.is_open()) return;
 
     std::string line;
@@ -52,7 +87,7 @@ void SignalReceiver::pollExternalSignals() {
     input.close();
 
     if (hasSignals) {
-        std::ofstream clear("config/ExternalSignals.cmd", std::ios::trunc);
+        std::ofstream clear(externalPath, std::ios::trunc);
     }
 }
 

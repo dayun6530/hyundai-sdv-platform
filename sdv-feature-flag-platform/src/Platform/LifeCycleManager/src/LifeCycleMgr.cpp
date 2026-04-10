@@ -32,7 +32,8 @@ std::string resolveAbArgvForExec(const std::string& execName,
 }  // namespace
 
 LifeCycleMgr::LifeCycleMgr()
-    : address_("0.0.0.0:50051") {}
+    : address_("0.0.0.0:50051")
+    , logRootDir_("logs") {}
 
 LifeCycleMgr::~LifeCycleMgr() {
     shutdown();
@@ -100,20 +101,37 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
 
     std::cout << "[LifeCycleMgr] " << communications_.size() << " communication(s), "
               << features_.size() << " feature(s) loaded.\n" << std::endl;
+
+    // Derive per-car log root. This avoids crosstalk/cleanup issues when two platforms run together.
+    if (launchAbVariant_ == "A") {
+        logRootDir_ = "logs/A";
+    } else if (launchAbVariant_ == "B") {
+        logRootDir_ = "logs/B";
+    } else {
+        logRootDir_ = "logs";
+    }
+    std::cout << "[LifeCycleMgr] Log root: " << logRootDir_ << std::endl;
     return true;
 }
 
 void LifeCycleMgr::spawnProcess(const std::string& execName) {
     std::string execPath = resolveExecPath(execName);
     const std::string abArgv = resolveAbArgvForExec(execName, launchAbVariant_);
+    // Config uses a listen-friendly address (often 0.0.0.0:PORT). Child processes must use a
+    // connect-friendly address; 0.0.0.0 is not a meaningful client destination.
+    std::string childAddress = address_;
+    static constexpr const char kAnyAddrPrefix[] = "0.0.0.0:";
+    if (childAddress.rfind(kAnyAddrPrefix, 0) == 0) {
+        childAddress.replace(0, sizeof(kAnyAddrPrefix) - 1, "127.0.0.1:");
+    }
 
     pid_t pid = fork();
     if (pid == 0) {
         if (!abArgv.empty()) {
-            execl(execPath.c_str(), execName.c_str(), address_.c_str(),
+            execl(execPath.c_str(), execName.c_str(), childAddress.c_str(),
                 abArgv.c_str(), nullptr);
         } else {
-            execl(execPath.c_str(), execName.c_str(), address_.c_str(), nullptr);
+            execl(execPath.c_str(), execName.c_str(), childAddress.c_str(), nullptr);
         }
         std::cerr << "Failed to exec " << execPath << std::endl;
         _exit(1);
@@ -175,22 +193,34 @@ void LifeCycleMgr::killExistingProcesses() {
 }
 
 void LifeCycleMgr::cleanLogDirectory() {
-    DIR* dir = opendir("logs");
+    DIR* dir = opendir(logRootDir_.c_str());
     if (!dir) return;
 
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
         if (name == "." || name == "..") continue;
-        std::string path = "logs/" + name;
+        std::string path = logRootDir_ + "/" + name;
         std::remove(path.c_str());
     }
     closedir(dir);
-    std::cout << "[LifeCycleMgr] Cleaned logs/ directory." << std::endl;
+    std::cout << "[LifeCycleMgr] Cleaned " << logRootDir_ << " directory." << std::endl;
 }
 
 void LifeCycleMgr::start() {
+    // Export per-car log root for all child processes.
+    setenv("SDV_LOG_DIR", logRootDir_.c_str(), 1);
+    if (launchAbVariant_ == "A") {
+        setenv("SDV_EXTERNAL_SIGNALS", "config/ExternalSignals_A.cmd", 1);
+    } else if (launchAbVariant_ == "B") {
+        setenv("SDV_EXTERNAL_SIGNALS", "config/ExternalSignals_B.cmd", 1);
+    }
+
+    // Ensure directories exist: logs/ then logs/A|logs/B.
     mkdir("logs", 0755);
+    if (logRootDir_ != "logs") {
+        mkdir(logRootDir_.c_str(), 0755);
+    }
     cleanLogDirectory();
     killExistingProcesses();
 
@@ -303,8 +333,40 @@ void LifeCycleMgr::shutdown() {
 }  // namespace sdv::platform::lifecyclemgr
 
 int main(int argc, char* argv[]) {
-    std::string configPath = "config/SdvPlatform.conf";
-    if (argc > 1) configPath = argv[1];
+    auto basenameOf = [](const char* path) -> std::string {
+        if (path == nullptr) return {};
+        std::string s(path);
+        const std::size_t slash = s.find_last_of("/\\");
+        if (slash != std::string::npos) {
+            s = s.substr(slash + 1);
+        }
+        // Handle possible Windows suffix when invoked from mixed environments.
+        static constexpr const char* kExe = ".exe";
+        if (s.size() > 4 && s.compare(s.size() - 4, 4, kExe) == 0) {
+            s.resize(s.size() - 4);
+        }
+        return s;
+    };
+
+    auto resolveDefaultConfigPathFromArgv0 = [&](const char* argv0) -> std::string {
+        const std::string exe = basenameOf(argv0);
+        if (exe == "car_A") return "config/car_A.conf";
+        if (exe == "car_B") return "config/car_B.conf";
+        return {};
+    };
+
+    // Priority:
+    // 1) explicit argv[1] config path
+    // 2) infer by executable name (car_A / car_B)
+    const std::string configPath = (argc >= 2 && argv != nullptr && argv[1] != nullptr)
+        ? std::string(argv[1])
+        : resolveDefaultConfigPathFromArgv0((argv != nullptr) ? argv[0] : nullptr);
+
+    if (configPath.empty()) {
+        std::cerr << "[Error] Please specify a config file or run as 'car_A' / 'car_B'."
+                  << std::endl;
+        return 1;
+    }
 
     sdv::platform::lifecyclemgr::LifeCycleMgr mgr;
     if (!mgr.loadConfig(configPath)) {

@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -66,7 +67,56 @@ FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
                                    const std::string& outboundPath)
     : Feature("FeatureEvaluator", eventBus)
     , inboundPath_(inboundPath)
-    , outboundPath_(outboundPath) {}
+    , outboundPath_(outboundPath) {
+    auto resolveLogPathIfDefault = [](const std::string& p) -> std::string {
+        static constexpr const char kLogsPrefix[] = "logs/";
+        if (p.rfind(kLogsPrefix, 0) != 0) {
+            return p;
+        }
+        const char* envLogDir = std::getenv("SDV_LOG_DIR");
+        const std::string logDir = (envLogDir != nullptr && *envLogDir != '\0')
+            ? std::string(envLogDir)
+            : std::string("logs");
+        const std::size_t slash = p.find_last_of("/\\");
+        const std::string base = (slash == std::string::npos) ? p : p.substr(slash + 1);
+        return logDir + "/" + base;
+    };
+
+    inboundPath_ = resolveLogPathIfDefault(inboundPath_);
+    outboundPath_ = resolveLogPathIfDefault(outboundPath_);
+}
+
+namespace {
+
+static bool containsCarLineSuffix(const std::string& name) {
+    return (name.find("_A") != std::string::npos) || (name.find("_B") != std::string::npos);
+}
+
+static bool endsWith(const std::string& s, const std::string& suffix) {
+    return s.size() >= suffix.size() &&
+        s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+// Convenience: when running a single-car platform (car_A or car_B),
+// allow signals like "KILL:AdasFeature" and map them to AdasFeature_A / AdasFeature_B.
+static std::string normalizeCarLineTarget(const std::string& raw, std::optional<char> variantOpt) {
+    if (!variantOpt.has_value()) return raw;
+    const char v = *variantOpt;
+    if (v != 'A' && v != 'B') return raw;
+    if (raw.empty() || containsCarLineSuffix(raw)) return raw;
+
+    // Handle legacy shadow names "FooShadow" -> "Foo_A_Shadow"
+    if (endsWith(raw, "Shadow")) {
+        const std::string base = raw.substr(0, raw.size() - std::string("Shadow").size());
+        if (base.empty()) return raw;
+        return base + "_" + std::string(1, v) + "_Shadow";
+    }
+
+    // Plain feature base name "Foo" -> "Foo_A"
+    return raw + "_" + std::string(1, v);
+}
+
+}  // namespace
 
 void FeatureEvaluator::emitAutoShadowModeForAllPrimaries() {
     static constexpr const char* kShadowPrimaries[] = {
@@ -179,6 +229,9 @@ void FeatureEvaluator::processSignals() {
         trimInPlace(extra);
         trimInPlace(action);
         trimInPlace(featureName);
+
+        // Single-car convenience: infer _A/_B suffix when omitted.
+        featureName = normalizeCarLineTarget(featureName, getAbVariant());
 
         if (action == "FLAG_ON") {
             sendFlagOn(featureName);
@@ -306,5 +359,6 @@ int main(int argc, char* argv[]) {
 
     sdv::platform::communications::eventbus::EventBusProxy proxy(address);
     sdv::platform::lifecyclemgr::FeatureEvaluator evaluator(proxy);
+    sdv::platform::lifecyclemgr::Feature::applyLaunchAbVariantFromArgv(argc, argv, evaluator.getFlag());
     return evaluator.run();
 }

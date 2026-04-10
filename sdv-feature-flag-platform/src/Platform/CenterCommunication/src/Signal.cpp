@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
+#include <sys/stat.h>
 
 namespace sdv::platform::centercommunication {
 
@@ -32,10 +34,49 @@ SignalData SignalData::deserialize(const std::string& line) {
     return data;
 }
 
+namespace {
+
+static std::string basenameOfPath(const std::string& path) {
+    const std::size_t slash = path.find_last_of("/\\");
+    if (slash == std::string::npos) return path;
+    return path.substr(slash + 1);
+}
+
+static std::string resolveSignalPath(const std::string& requested) {
+    // Backward-compatible: many call sites pass "logs/<file>". When SDV_LOG_DIR is set
+    // (logs/A or logs/B), keep the file name but relocate to the per-car log root.
+    static constexpr const char kLogsPrefix[] = "logs/";
+    if (requested.rfind(kLogsPrefix, 0) != 0) {
+        return requested;
+    }
+
+    const char* envLogDir = std::getenv("SDV_LOG_DIR");
+    const std::string logDir = (envLogDir != nullptr && *envLogDir != '\0')
+        ? std::string(envLogDir)
+        : std::string("logs");
+
+    return logDir + "/" + basenameOfPath(requested);
+}
+
+static void ensureLogDirsExist(const std::string& path) {
+    // Minimal nested dir support for logs/A and logs/B.
+    mkdir("logs", 0755);
+    const std::size_t slash = path.find_last_of("/\\");
+    if (slash == std::string::npos) return;
+    const std::string dir = path.substr(0, slash);
+    if (dir != "logs") {
+        mkdir(dir.c_str(), 0755);
+    }
+}
+
+}  // namespace
+
 Signal::Signal(const std::string& centerUrl, const std::string& signalFilePath)
     : centerUrl_(centerUrl)
-    , signalFilePath_(signalFilePath)
-    , running_(false) {}
+    , signalFilePath_(resolveSignalPath(signalFilePath))
+    , running_(false) {
+    ensureLogDirsExist(signalFilePath_);
+}
 
 Signal::~Signal() {}
 
