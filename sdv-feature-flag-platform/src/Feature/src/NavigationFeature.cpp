@@ -39,26 +39,26 @@ void NavigationFeature::execute() {
 }
 
 void NavigationFeature::runNavigationMainLoop() {
+    const int mod = navDemoPointCount();
     for (int i = 0; i < broadcastCount_ && !isStopRequested(); i++) {
         pollEvents();
 
-        const int r = i % kRoutePointCount;
+        const int r = i % mod;
 
-        log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 정보 브로드캐스트 ===");
+        navLogIterationBanner(i + 1);
 
-        log(LogLevel::info, std::string("차량 위치 전송: ") + locations[r]);
-        if (!sendDomainEvent(EventId::VehicleLocationUpdate, locations[r])) {
+        log(LogLevel::info, std::string("차량 위치 전송: ") + navDemoLocation(r));
+        if (!sendDomainEvent(EventId::VehicleLocationUpdate, navDemoLocation(r))) {
             log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
         }
 
-        log(LogLevel::info, std::string("도로 정보 전송: ") + roadInfos[r]);
-        if (!sendDomainEvent(EventId::RoadInfoUpdate, roadInfos[r])) {
+        log(LogLevel::info, std::string("도로 정보 전송: ") + navDemoRoad(r));
+        if (!sendDomainEvent(EventId::RoadInfoUpdate, navDemoRoad(r))) {
             log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
         }
 
-        if (!sendDomainEvent(EventId::NavigationGuidanceUpdate,
-                "NAV_GUIDANCE step=" + std::to_string(i + 1) +
-                " status=guiding")) {
+        const std::string guidance = navGuidanceForIteration(i + 1);
+        if (!sendDomainEvent(EventId::NavigationGuidanceUpdate, guidance)) {
             log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
         }
 
@@ -71,9 +71,31 @@ void NavigationFeature::runNavigationMainLoop() {
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    // NOTE: 데모/운영에서 단일 Feature가 전체 시스템 종료를 트리거하면
-    // KillSwitch 등 제어 데모가 불안정해질 수 있으므로, NavigationFeature는
-    // 운행 종료 시 QuitTheSystem을 발행하지 않는다.
+    // NOTE: Navigation does not publish QuitTheSystem (keeps control demos stable).
+    navLogRunComplete();
+}
+
+int NavigationFeature::navDemoPointCount() {
+    return kRoutePointCount;
+}
+
+const char* NavigationFeature::navDemoLocation(int rMod) {
+    return locations[rMod % kRoutePointCount];
+}
+
+const char* NavigationFeature::navDemoRoad(int rMod) {
+    return roadInfos[rMod % kRoutePointCount];
+}
+
+void NavigationFeature::navLogIterationBanner(int iteration1Based) {
+    log(LogLevel::info, "=== " + std::to_string(iteration1Based) + "회차 정보 브로드캐스트 ===");
+}
+
+std::string NavigationFeature::navGuidanceForIteration(int iteration1Based) {
+    return "NAV_GUIDANCE step=" + std::to_string(iteration1Based) + " status=guiding";
+}
+
+void NavigationFeature::navLogRunComplete() {
     log(LogLevel::info, "운행 종료. (QuitTheSystem 발행하지 않음)");
 }
 

@@ -1,0 +1,5 @@
+# Use CMake-generated compilation database (run: cmake -S . -B build && cmake --build build).
+# Cursor/clangd reads this when opening the repo; reduces false "cannot find header" diagnostics.
+CompileFlags:
+  Add: [-std=c++17]
+CompilationDatabase: build

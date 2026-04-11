@@ -14,12 +14,10 @@ protected:
     void execute() override;
     virtual void runEvEnergyMainLoop();
 
-protected:
     int battery_;
 
-private:
-    void processVehicleLocation(const std::string& message);
-    void processRoadInfo(const std::string& message);
+    virtual void processVehicleLocation(const std::string& message);
+    virtual void processRoadInfo(const std::string& message);
 };
 
 }  // namespace sdv::feature

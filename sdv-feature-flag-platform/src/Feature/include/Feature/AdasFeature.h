@@ -16,9 +16,8 @@ protected:
     void execute() override;
     virtual void runAdasMainLoop();
 
-private:
-    void processVehicleLocation(const std::string& message);
-    void processRoadInfo(const std::string& message);
+    virtual void processVehicleLocation(const std::string& message);
+    virtual void processRoadInfo(const std::string& message);
 };
 
 }  // namespace sdv::feature

@@ -10,7 +10,12 @@ public:
 
 protected:
     void execute() override;
-    void runNavigationMainLoop() override;
+    int navDemoPointCount() override;
+    const char* navDemoLocation(int rMod) override;
+    const char* navDemoRoad(int rMod) override;
+    void navLogIterationBanner(int iteration1Based) override;
+    std::string navGuidanceForIteration(int iteration1Based) override;
+    void navLogRunComplete() override;
 };
 
 }  // namespace sdv::feature

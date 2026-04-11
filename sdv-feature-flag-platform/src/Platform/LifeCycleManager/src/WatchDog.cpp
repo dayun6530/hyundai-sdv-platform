@@ -72,6 +72,8 @@ void WatchDog::analyzeEvent(const Event& event) {
         eid != EventId::ShadowMirrorData &&
         eid != EventId::ShadowModeOn &&
         eid != EventId::ShadowModeOff &&
+        eid != EventId::AbVariantAssign &&
+        eid != EventId::ShadowPromotionRequest &&
         eid != EventId::QuitTheSystem) {
         log(LogLevel::warn, "unknown event ID detected: " + std::to_string(id));
     }

@@ -48,3 +48,14 @@ target_link_libraries(SignalReceiver PRIVATE CenterCommunicationLib)
 
 add_executable(SignalSender src/Platform/CenterCommunication/src/SignalSender.cpp)
 target_link_libraries(SignalSender PRIVATE CenterCommunicationLib)
+
+# Symlink compile_commands.json to repo root for clangd/Cursor (best-effort; needs Unix + existing build dir).
+if(CMAKE_EXPORT_COMPILE_COMMANDS AND UNIX)
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E rm -f "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+                "${CMAKE_BINARY_DIR}/compile_commands.json"
+                "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        ERROR_QUIET)
+endif()

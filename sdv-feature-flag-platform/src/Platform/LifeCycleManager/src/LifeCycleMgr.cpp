@@ -29,6 +29,22 @@ std::string resolveAbArgvForExec(const std::string& execName,
     return configAb;
 }
 
+/// First argv of /proc/<pid>/cmdline, basename only (matches \p execName from config spawn list).
+std::string cmdlineArgv0BaseName(const std::string& cmdlineFirstArg) {
+    if (cmdlineFirstArg.empty()) {
+        return {};
+    }
+    std::string s = cmdlineFirstArg;
+    const std::size_t slash = s.find_last_of("/\\");
+    if (slash != std::string::npos) {
+        s = s.substr(slash + 1);
+    }
+    if (s.size() > 4 && s.compare(s.size() - 4, 4, ".exe") == 0) {
+        s.resize(s.size() - 4);
+    }
+    return s;
+}
+
 }  // namespace
 
 LifeCycleMgr::LifeCycleMgr()
@@ -117,21 +133,24 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
 void LifeCycleMgr::spawnProcess(const std::string& execName) {
     std::string execPath = resolveExecPath(execName);
     const std::string abArgv = resolveAbArgvForExec(execName, launchAbVariant_);
-    // Config uses a listen-friendly address (often 0.0.0.0:PORT). Child processes must use a
-    // connect-friendly address; 0.0.0.0 is not a meaningful client destination.
-    std::string childAddress = address_;
+    // Config uses a listen-friendly address (often 0.0.0.0:PORT). Feature clients must use a
+    // connect-friendly address; 0.0.0.0 is not a valid gRPC client target.
+    // EventBusHost is the server: keep the config address (0.0.0.0:PORT) so it binds all interfaces.
+    // Passing 127.0.0.1 only for the host has caused Connection refused on some setups (WSL / gRPC).
+    std::string clientAddress = address_;
     static constexpr const char kAnyAddrPrefix[] = "0.0.0.0:";
-    if (childAddress.rfind(kAnyAddrPrefix, 0) == 0) {
-        childAddress.replace(0, sizeof(kAnyAddrPrefix) - 1, "127.0.0.1:");
+    if (clientAddress.rfind(kAnyAddrPrefix, 0) == 0) {
+        clientAddress.replace(0, sizeof(kAnyAddrPrefix) - 1, "127.0.0.1:");
     }
+    const char* argv1Addr =
+        (execName == "EventBusHost") ? address_.c_str() : clientAddress.c_str();
 
     pid_t pid = fork();
     if (pid == 0) {
         if (!abArgv.empty()) {
-            execl(execPath.c_str(), execName.c_str(), childAddress.c_str(),
-                abArgv.c_str(), nullptr);
+            execl(execPath.c_str(), execName.c_str(), argv1Addr, abArgv.c_str(), nullptr);
         } else {
-            execl(execPath.c_str(), execName.c_str(), childAddress.c_str(), nullptr);
+            execl(execPath.c_str(), execName.c_str(), argv1Addr, nullptr);
         }
         std::cerr << "Failed to exec " << execPath << std::endl;
         _exit(1);
@@ -176,7 +195,9 @@ void LifeCycleMgr::killExistingProcesses() {
             std::string cmd;
             std::getline(cmdline, cmd, '\0');
 
-            if (cmd.find(name) != std::string::npos) {
+            // Exact argv0 basename only. Substring match wrongly kills e.g. AdasFeature_B_Shadow
+            // when cleaning up AdasFeature_B (B-line Shadow names contain the Primary name).
+            if (cmdlineArgv0BaseName(cmd) == name) {
                 pid_t targetPid = static_cast<pid_t>(pidVal);
                 std::cout << "[LifeCycleMgr] Killing stale process: " << name
                           << " (PID:" << targetPid << ")" << std::endl;
@@ -230,7 +251,9 @@ void LifeCycleMgr::start() {
 
     for (auto& c : communications_) {
         spawnProcess(c.execName);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        // EventBusHost must accept gRPC before features register; slow /mnt/c/ exec can need >1s.
+        const int pauseSec = (c.execName == "EventBusHost") ? 2 : 1;
+        std::this_thread::sleep_for(std::chrono::seconds(pauseSec));
     }
 
     for (auto& f : features_) {

@@ -9,7 +9,10 @@
 #include <sys/stat.h>
 #include <thread>
 #include <signal.h>
+#include <charconv>
+#include <system_error>
 #include <cctype>
+#include <climits>
 #include <cstdint>
 #include <string>
 
@@ -71,7 +74,12 @@ int Feature::run() {
         ", PID:" + std::to_string(getpid()) +
         ", Flag:ON)");
 
-    execute();
+    if (isShadowMode_) {
+        log(LogLevel::info, std::string("Shadow observer — mirroring Primary: ") + primaryName_);
+        runShadowMirrorObserveLoop();
+    } else {
+        execute();
+    }
 
     eventBus_.unRegister(componentId_);
     log(LogLevel::info, "stopped");
@@ -85,16 +93,17 @@ void Feature::log(LogLevel level, const std::string& message) {
     auto time = std::chrono::system_clock::to_time_t(now);
     auto tm = std::localtime(&time);
 
-    const char* levelStr;
+    const char* levelStr = "?";
     switch (level) {
         case LogLevel::info:  levelStr = "INFO "; break;
         case LogLevel::warn:  levelStr = "WARN "; break;
         case LogLevel::error: levelStr = "ERROR"; break;
     }
 
+    const char* roleStr = isShadowMode_ ? "SHADOW" : "PRIMARY";
     logFile_ << "[" << std::put_time(tm, "%Y-%m-%d %H:%M:%S") << "] "
              << "[" << levelStr << "] "
-             << "[" << name_ << "] "
+             << "[" << roleStr << "][" << featureDomainTagForLogging() << "] "
              << message << std::endl;
 }
 
@@ -114,19 +123,18 @@ const Flag& Feature::getFlag() const {
     return flag_;
 }
 
-// 질문자님이 작성하신 킬 스위치 확인 함수 유지
 bool Feature::isKilled() const {
     return flag_.isKilled();
 }
 
-// 팀원분이 작성하신 Shadow Mode 기능 및 이벤트 처리 헬퍼 함수 통합
 void Feature::bindShadowToPrimary(const std::string& primaryLogicalName) {
     primaryName_ = primaryLogicalName;
+    isShadowMode_ = true;
     flag_.disableShadowMirroring();
 }
 
 void Feature::setShadowModeActive(bool active) {
-    if (!isPrimaryProcess()) {
+    if (isShadowMode_ || !isPrimaryProcess()) {
         return;
     }
     if (active) {
@@ -155,7 +163,7 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
     if (event.getEventId() == EventId::KillSwitch) {
         const std::string& msg = event.getMessage();
         // Shadow: broadcast copy of KILL:<Primary> — consume and keep running (no paired stop).
-        if (!isPrimaryProcess() && msg == primaryName_) {
+        if (isShadowMode_ && msg == primaryName_) {
             log(LogLevel::info,
                 "KillSwitch for Primary " + primaryName_ +
                 " (bus broadcast) — Shadow " + name_ +
@@ -192,6 +200,24 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         }
         return true;
     }
+    if (event.getEventId() == EventId::ShadowPromotionRequest) {
+        const std::string& msg = event.getMessage();
+        if (isShadowMode_ && msg == primaryName_) {
+            log(LogLevel::warn,
+                "SHADOW_PROMOTE: Shadow observer exiting — relaunch via LifeCycleMgr as Primary \"" +
+                primaryName_ + "\" (hot swap contract)");
+            requestStop();
+            return true;
+        }
+        if (!isShadowMode_ && msg == name_) {
+            log(LogLevel::warn,
+                "SHADOW_PROMOTE: Primary stopping — start paired Shadow binary as new Primary \"" +
+                name_ + "\" (orchestrator / LifeCycleMgr)");
+            requestStop();
+            return true;
+        }
+        return false;
+    }
     if (event.getEventId() == EventId::AbVariantAssign) {
         const std::string& msg = event.getMessage();
         const std::string prefix = name_ + "|";
@@ -215,7 +241,6 @@ std::vector<Event> Feature::pollEvents() {
     while (queue.getSize() > 0) {
         Event event = queue.getEvent();
 
-        // 덩치 큰 로직 대신 깔끔하게 함수 하나로 처리!
         if (tryConsumeAsPlatformControl(event)) {
             // Kill Switch is safety-critical: once it is latched for this process, stop processing
             // any further events immediately (avoid extra logs/actions after kill command).
@@ -236,8 +261,9 @@ std::vector<Event> Feature::pollEvents() {
 }
 
 bool Feature::sendDomainEvent(EventId id, const std::string& message) {
-    if (!isPrimaryProcess()) {
-        log(LogLevel::error, "Shadow process attempted to send domain event. Blocked.");
+    if (isShadowMode_ || !isPrimaryProcess()) {
+        log(LogLevel::error,
+            "Shadow observer / non-Primary: domain send blocked (no vehicle control path)");
         return false;
     }
 
@@ -245,7 +271,6 @@ bool Feature::sendDomainEvent(EventId id, const std::string& message) {
         return false;
     }
 
-    // 중복 검사 없이 팀원분의 깔끔한 코드로 채택
     if (!flag_.isShadowMirroringEnabled()) {
         return true;
     }
@@ -279,15 +304,22 @@ void Feature::applyLaunchAbVariantFromArgv(int argc, char** argv, Flag& flag) {
     }
 }
 
-}  // namespace sdv::platform::lifecyclemgr
-
-namespace sdv::feature {
+std::string Feature::featureDomainTagForLogging() const {
+    const std::string& ref = isShadowMode_ ? primaryName_ : name_;
+    if (ref.find("Adas") != std::string::npos) return "ADAS";
+    if (ref.find("Navigation") != std::string::npos) return "NAV";
+    if (ref.find("EvEnergy") != std::string::npos) return "ENERGY";
+    if (ref.find("WatchDog") != std::string::npos) return "WATCHDOG";
+    if (ref.find("FeatureEvaluator") != std::string::npos) return "EVAL";
+    if (ref.find("DataCollector") != std::string::npos) return "DATA";
+    if (ref.find("SignalReceiver") != std::string::npos) return "SIG_RX";
+    if (ref.find("SignalSender") != std::string::npos) return "SIG_TX";
+    return "FEATURE";
+}
 
 namespace {
 
-using sdv::platform::communications::eventbus::EventBusInterface;
 using sdv::platform::communications::eventbus::EventId;
-using sdv::platform::lifecyclemgr::Feature;
 using sdv::platform::lifecyclemgr::LogLevel;
 
 static const char* shadowEventIdToString(EventId id) {
@@ -303,6 +335,8 @@ static const char* shadowEventIdToString(EventId id) {
     case EventId::ShadowMirrorData: return "ShadowMirrorData";
     case EventId::ShadowModeOn: return "ShadowModeOn";
     case EventId::ShadowModeOff: return "ShadowModeOff";
+    case EventId::ShadowPromotionRequest: return "ShadowPromotionRequest";
+    case EventId::AbVariantAssign: return "AbVariantAssign";
     case EventId::QuitTheSystem: return "QuitTheSystem";
     default: return "Unknown";
     }
@@ -310,85 +344,307 @@ static const char* shadowEventIdToString(EventId id) {
 
 static bool tryParseInt32(const std::string& s, int32_t& out) {
     if (s.empty()) return false;
-    for (char c : s) {
-        if (!std::isdigit(static_cast<unsigned char>(c)) && c != '-') return false;
+    long long v = 0;
+    const char* first = s.data();
+    const char* last = s.data() + s.size();
+    const auto r = std::from_chars(first, last, v);
+    if (r.ec != std::errc{} || r.ptr != last) return false;
+    if (v < static_cast<long long>(INT32_MIN) || v > static_cast<long long>(INT32_MAX)) return false;
+    out = static_cast<int32_t>(v);
+    return true;
+}
+
+static bool primaryNameContains(const std::string& primary, const char* needle) {
+    return primary.find(needle) != std::string::npos;
+}
+
+static int parseIntAfterKey(const std::string& s, const std::string& key) {
+    const auto p = s.find(key);
+    if (p == std::string::npos) return -1;
+    std::size_t i = p + key.size();
+    if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return -1;
+    int v = 0;
+    while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) {
+        v = v * 10 + static_cast<int>(s[i] - '0');
+        ++i;
     }
-    try {
-        long v = std::stol(s);
-        if (v < INT32_MIN || v > INT32_MAX) return false;
-        out = static_cast<int32_t>(v);
-        return true;
-    } catch (...) {
-        return false;
+    return v;
+}
+
+static int parseNavigationGuidanceStep(const std::string& g) {
+    const std::string key = "step=";
+    const auto p = g.find(key);
+    if (p == std::string::npos) return 1;
+    std::size_t i = p + key.size();
+    if (i >= g.size() || !std::isdigit(static_cast<unsigned char>(g[i]))) return 1;
+    int v = 0;
+    while (i < g.size() && std::isdigit(static_cast<unsigned char>(g[i]))) {
+        v = v * 10 + static_cast<int>(g[i] - '0');
+        ++i;
+    }
+    return v > 0 ? v : 1;
+}
+
+}  // namespace
+
+void Feature::flushNavigationShadowTriplet(const std::string& guidancePayload) {
+    const bool bLine = primaryNameContains(primaryName_, "NavigationFeature_B");
+    const int step = parseNavigationGuidanceStep(guidancePayload);
+    if (bLine) {
+        log(LogLevel::info,
+            "=== " + std::to_string(step) + "회차 (B-line 내비) ===");
+    } else {
+        log(LogLevel::info,
+            "=== " + std::to_string(step) + "회차 정보 브로드캐스트 ===");
+    }
+    log(LogLevel::info, std::string("차량 위치 전송: ") + navMirrorPendingLoc_);
+    log(LogLevel::info, std::string("도로 정보 전송: ") + navMirrorPendingRoad_);
+    navMirrorPendingLoc_.clear();
+    navMirrorPendingRoad_.clear();
+}
+
+void Feature::logEvEnergyShadowEnergyState(const std::string& payload) {
+    static constexpr const char kLoc[] = "|SHADOW_LOC|";
+    static constexpr const char kRoad[] = "|SHADOW_ROAD|";
+    const bool genesisLine = primaryNameContains(primaryName_, "EvEnergyFeature_B");
+
+    const auto pl = payload.find(kLoc);
+    if (pl != std::string::npos) {
+        const std::string head = payload.substr(0, pl);
+        const std::string detail = payload.substr(pl + sizeof(kLoc) - 1);
+        const int battery = parseIntAfterKey(head, "battery=");
+        const int rangeKm = parseIntAfterKey(head, "rangeKm=");
+        if (genesisLine) {
+            log(LogLevel::info, "차량 위치 수신 (Genesis energy): " + detail);
+            if (battery >= 0 && rangeKm >= 0) {
+                log(LogLevel::info,
+                    "배터리 잔량: " + std::to_string(battery) +
+                    "% | 예상 주행 가능 거리: " + std::to_string(rangeKm) + "km");
+            }
+        } else {
+            log(LogLevel::info, "차량 위치 수신: " + detail);
+            if (battery >= 0) {
+                const int rkm = rangeKm >= 0 ? rangeKm : battery * 4;
+                log(LogLevel::info,
+                    "배터리 잔량: " + std::to_string(battery) +
+                    "% | 예상 주행 가능 거리: " + std::to_string(rkm) + "km");
+            }
+        }
+        return;
+    }
+    const auto pr = payload.find(kRoad);
+    if (pr != std::string::npos) {
+        const std::string head = payload.substr(0, pr);
+        const std::string road = payload.substr(pr + sizeof(kRoad) - 1);
+        const int battery = parseIntAfterKey(head, "battery=");
+        if (genesisLine) {
+            log(LogLevel::info, "도로 정보 수신 (Genesis energy): " + road);
+            if (road.find("오르막") != std::string::npos) {
+                log(LogLevel::warn, "오르막: B-line 에코+파워 한계 보호");
+            } else if (road.find("내리막") != std::string::npos) {
+                if (battery >= 0) {
+                    log(LogLevel::info,
+                        "회생제동 (고출력): " + std::to_string(battery) + "%");
+                } else {
+                    log(LogLevel::info, "회생제동 (고출력) [미러]");
+                }
+            } else {
+                log(LogLevel::info, "평지: 컴포트 주행 모드");
+            }
+        } else {
+            log(LogLevel::info, "도로 정보 수신: " + road);
+            if (road.find("오르막") != std::string::npos) {
+                log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
+            } else if (road.find("내리막") != std::string::npos) {
+                log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
+                if (battery >= 0) {
+                    log(LogLevel::info,
+                        "회생제동으로 배터리 회수: " + std::to_string(battery) + "%");
+                } else {
+                    log(LogLevel::info, "회생제동으로 배터리 회수 [미러 동기화]");
+                }
+            } else {
+                log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
+            }
+        }
+        return;
+    }
+    log(LogLevel::info, "에너지 상태 수신: " + payload);
+}
+
+void Feature::logMirroredPayloadForShadow(EventId id, const std::string& payload) {
+    const std::string& pr = primaryName_;
+
+    if (primaryNameContains(pr, "Adas")) {
+        const bool genesisLine = primaryNameContains(pr, "AdasFeature_B");
+        switch (id) {
+        case EventId::VehicleLocationUpdate:
+            if (genesisLine) {
+                log(LogLevel::info, "현재 위치 수신 (Genesis): " + payload);
+                log(LogLevel::info, "주변 차량/장애물 감지 — 프리미엄 센서 융합");
+            } else {
+                log(LogLevel::info, "현재 위치 수신: " + payload);
+                log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
+            }
+            return;
+        case EventId::RoadInfoUpdate:
+            if (genesisLine) {
+                log(LogLevel::info, "도로 정보 수신 (Genesis): " + payload);
+            } else {
+                log(LogLevel::info, "도로 정보 수신: " + payload);
+                log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
+                log(LogLevel::info, "자율주행 중...");
+            }
+            return;
+        case EventId::AdasDecisionUpdate: {
+            // Primary mirrors AdasDecisionUpdate with optional "|context" for Shadow replay.
+            std::string header = payload;
+            std::string detail;
+            const auto bar = payload.find('|');
+            if (bar != std::string::npos) {
+                header = payload.substr(0, bar);
+                detail = payload.substr(bar + 1);
+            }
+            const bool loc = header.find("source=location") != std::string::npos;
+            const bool road = header.find("source=road") != std::string::npos;
+            if (loc && !detail.empty()) {
+                if (genesisLine) {
+                    log(LogLevel::info, "현재 위치 수신 (Genesis): " + detail);
+                    log(LogLevel::info, "주변 차량/장애물 감지 — 프리미엄 센서 융합");
+                } else {
+                    log(LogLevel::info, "현재 위치 수신: " + detail);
+                    log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
+                }
+                return;
+            }
+            if (road && !detail.empty()) {
+                if (genesisLine) {
+                    log(LogLevel::info, "도로 정보 수신 (Genesis): " + detail);
+                } else {
+                    log(LogLevel::info, "도로 정보 수신: " + detail);
+                    log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
+                    log(LogLevel::info, "자율주행 중...");
+                }
+                return;
+            }
+            log(LogLevel::info, "ADAS 판단 수신: " + payload);
+            return;
+        }
+        default:
+            break;
+        }
+    }
+
+    if (primaryNameContains(pr, "Navigation")) {
+        switch (id) {
+        case EventId::VehicleLocationUpdate:
+            navMirrorPendingLoc_ = payload;
+            return;
+        case EventId::RoadInfoUpdate:
+            navMirrorPendingRoad_ = payload;
+            return;
+        case EventId::NavigationGuidanceUpdate:
+            flushNavigationShadowTriplet(payload);
+            return;
+        default:
+            break;
+        }
+    }
+
+    if (primaryNameContains(pr, "EvEnergy")) {
+        if (id == EventId::EnergyStateUpdate) {
+            logEvEnergyShadowEnergyState(payload);
+            return;
+        }
+    }
+
+    switch (id) {
+    case EventId::VehicleLocationUpdate:
+        log(LogLevel::info, "차량 위치 수신: " + payload);
+        return;
+    case EventId::RoadInfoUpdate:
+        log(LogLevel::info, "도로 정보 수신: " + payload);
+        return;
+    case EventId::NavigationGuidanceUpdate:
+        log(LogLevel::info, "내비게이션 안내 수신: " + payload);
+        return;
+    case EventId::AdasDecisionUpdate:
+        log(LogLevel::info, "ADAS 판단 수신: " + payload);
+        return;
+    case EventId::EnergyStateUpdate:
+        log(LogLevel::info, "에너지 상태 수신: " + payload);
+        return;
+    default:
+        log(LogLevel::warn,
+            std::string("미러 수신(미등록 타입): ") + shadowEventIdToString(id) +
+            "(" + std::to_string(static_cast<int>(id)) + ") | " + payload);
+        return;
     }
 }
 
-class ShadowReceiverFeature final : public Feature {
-public:
-    explicit ShadowReceiverFeature(EventBusInterface& eventBus,
-        const std::string& shadowLogicalName,
-        const std::string& primaryLogicalName)
-        : Feature(shadowLogicalName, eventBus) {
-        bindShadowToPrimary(primaryLogicalName);
-    }
+void Feature::runShadowMirrorObserveLoop() {
+    while (!isStopRequested()) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
-protected:
-    void execute() override {
-        log(LogLevel::info, std::string("Shadow started. Primary: ") + primaryName_);
+        auto events = pollEvents();
+        for (const auto& event : events) {
+            if (event.getEventId() != EventId::ShadowMirrorData) continue;
 
-        while (!isStopRequested()) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            const std::string& msg = event.getMessage();
+            const std::string prefix = "MIRROR|";
+            if (msg.rfind(prefix, 0) != 0) continue;
 
-            auto events = pollEvents();
-            for (const auto& event : events) {
-                if (event.getEventId() != EventId::ShadowMirrorData) continue;
+            auto p1 = msg.find('|', prefix.size());
+            if (p1 == std::string::npos) continue;
 
-                const std::string& msg = event.getMessage();
-                const std::string prefix = "MIRROR|";
-                if (msg.rfind(prefix, 0) != 0) continue;
+            std::string idStr = msg.substr(prefix.size(), p1 - prefix.size());
+            std::string payload = msg.substr(p1 + 1);
 
-                auto p1 = msg.find('|', prefix.size());
-                if (p1 == std::string::npos) continue;
+            std::string expectedPrefix = primaryName_ + ":";
+            if (payload.rfind(expectedPrefix, 0) != 0) {
+                continue;
+            }
+            payload = payload.substr(expectedPrefix.size());
 
-                std::string idStr = msg.substr(prefix.size(), p1 - prefix.size());
-                std::string payload = msg.substr(p1 + 1);
+            int32_t originalIdInt = 0;
+            if (!tryParseInt32(idStr, originalIdInt)) {
+                log(LogLevel::warn, "미러 파싱 실패: 잘못된 원본 이벤트 id: " + idStr);
+                continue;
+            }
 
-                std::string expectedPrefix = primaryName_ + ":";
-                if (payload.rfind(expectedPrefix, 0) != 0) {
-                    continue;
-                }
-                payload = payload.substr(expectedPrefix.size());
+            EventId originalId = static_cast<EventId>(originalIdInt);
 
-                int32_t originalIdInt = 0;
-                if (!tryParseInt32(idStr, originalIdInt)) {
-                    log(LogLevel::warn, "mirror parse failed: invalid original event id: " + idStr);
-                    continue;
-                }
-
-                EventId originalId = static_cast<EventId>(originalIdInt);
-
-                switch (originalId) {
-                case EventId::VehicleLocationUpdate:
-                case EventId::RoadInfoUpdate:
-                case EventId::NavigationGuidanceUpdate:
-                case EventId::AdasDecisionUpdate:
-                case EventId::EnergyStateUpdate:
-                    log(LogLevel::info,
-                        std::string("mirror received: ") + shadowEventIdToString(originalId) +
-                        " payload=[" + payload + "]");
-                    break;
-                default:
-                    log(LogLevel::warn,
-                        std::string("mirror received: UNKNOWN(") + std::to_string(originalIdInt) +
-                        ") payload=[" + payload + "]");
-                    break;
-                }
+            switch (originalId) {
+            case EventId::VehicleLocationUpdate:
+            case EventId::RoadInfoUpdate:
+            case EventId::NavigationGuidanceUpdate:
+            case EventId::AdasDecisionUpdate:
+            case EventId::EnergyStateUpdate:
+                logMirroredPayloadForShadow(originalId, payload);
+                break;
+            default:
+                log(LogLevel::warn,
+                    std::string("미러 수신(미등록 타입): UNKNOWN(") +
+                    std::to_string(originalIdInt) + ") | " + payload);
+                break;
             }
         }
     }
-};
+}
 
-}  // namespace
+}  // namespace sdv::platform::lifecyclemgr
+
+namespace sdv::feature {
+
+ShadowMirrorObserverFeature::ShadowMirrorObserverFeature(
+    sdv::platform::communications::eventbus::EventBusInterface& bus,
+    const std::string& shadowLogicalName,
+    const std::string& primaryLogicalName)
+    : sdv::platform::lifecyclemgr::Feature(shadowLogicalName, bus) {
+    bindShadowToPrimary(primaryLogicalName);
+}
+
+void ShadowMirrorObserverFeature::execute() {}
 
 int runShadowReceiverMain(int argc, char* argv[],
     const char* shadowLogicalName,
@@ -402,8 +658,15 @@ int runShadowReceiverMain(int argc, char* argv[],
     signal(SIGINT, sdv::platform::lifecyclemgr::Feature::signalHandler);
 
     sdv::platform::communications::eventbus::EventBusProxy proxy(address);
-    ShadowReceiverFeature feature(proxy, shadowLogicalName, primaryLogicalName);
+    ShadowMirrorObserverFeature feature(proxy, shadowLogicalName, primaryLogicalName);
     return feature.run();
 }
 
 }  // namespace sdv::feature
+
+#if defined(SDV_SHADOW_ENTRY_MAIN)
+int main(int argc, char* argv[]) {
+    return sdv::feature::runShadowReceiverMain(argc, argv,
+        SDV_SHADOW_LOGICAL_NAME, SDV_SHADOW_PRIMARY_NAME);
+}
+#endif

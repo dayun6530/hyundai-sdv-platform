@@ -10,7 +10,8 @@ public:
 
 protected:
     void execute() override;
-    void runEvEnergyMainLoop() override;
+    void processVehicleLocation(const std::string& message) override;
+    void processRoadInfo(const std::string& message) override;
 };
 
 }  // namespace sdv::feature

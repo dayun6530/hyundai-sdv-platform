@@ -20,6 +20,8 @@ enum class EventId : int32_t {
     ShadowModeOn = 21,
     ShadowModeOff = 22,
     AbVariantAssign = 23,
+    /// Orchestrator / FeatureEvaluator: request Shadow→Primary handover (see Feature::tryConsumeAsPlatformControl).
+    ShadowPromotionRequest = 24,
 
     QuitTheSystem = 99
 };

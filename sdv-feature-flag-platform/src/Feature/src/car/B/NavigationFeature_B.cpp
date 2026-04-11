@@ -1,11 +1,8 @@
 #include "Feature/car/B/NavigationFeature_B.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
-#include "FeatureCommunication/EventBus/EventId.h"
 
-#include <chrono>
 #include <signal.h>
 #include <string>
-#include <thread>
 
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
@@ -46,40 +43,27 @@ void NavigationFeature_B::execute() {
     runNavigationMainLoop();
 }
 
-void NavigationFeature_B::runNavigationMainLoop() {
-    const int broadcastCount = 20;
-    for (int i = 0; i < broadcastCount && !isStopRequested(); i++) {
-        pollEvents();
+int NavigationFeature_B::navDemoPointCount() {
+    return kGenesisRoutePointCount;
+}
 
-        const int r = i % kGenesisRoutePointCount;
+const char* NavigationFeature_B::navDemoLocation(int rMod) {
+    return kGenesisLocations[rMod % kGenesisRoutePointCount];
+}
 
-        log(LogLevel::info, "=== " + std::to_string(i + 1) + "회차 (B-line 내비) ===");
+const char* NavigationFeature_B::navDemoRoad(int rMod) {
+    return kGenesisRoadInfos[rMod % kGenesisRoutePointCount];
+}
 
-        log(LogLevel::info, std::string("차량 위치 전송: ") + kGenesisLocations[r]);
-        if (!sendDomainEvent(EventId::VehicleLocationUpdate, kGenesisLocations[r])) {
-            log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
-        }
+void NavigationFeature_B::navLogIterationBanner(int iteration1Based) {
+    log(LogLevel::info, "=== " + std::to_string(iteration1Based) + "회차 (B-line 내비) ===");
+}
 
-        log(LogLevel::info, std::string("도로 정보 전송: ") + kGenesisRoadInfos[r]);
-        if (!sendDomainEvent(EventId::RoadInfoUpdate, kGenesisRoadInfos[r])) {
-            log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
-        }
+std::string NavigationFeature_B::navGuidanceForIteration(int iteration1Based) {
+    return "NAV_GUIDANCE line=B step=" + std::to_string(iteration1Based) + " status=guiding";
+}
 
-        if (!sendDomainEvent(EventId::NavigationGuidanceUpdate,
-                "NAV_GUIDANCE line=B step=" + std::to_string(i + 1) +
-                " status=guiding")) {
-            log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
-        }
-
-        if (i < broadcastCount - 1) {
-            for (int s = 0; s < 5 && !isStopRequested(); ++s) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-                pollEvents();
-            }
-        }
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+void NavigationFeature_B::navLogRunComplete() {
     log(LogLevel::info, "B-line 운행 종료. (QuitTheSystem 발행하지 않음)");
 }
 

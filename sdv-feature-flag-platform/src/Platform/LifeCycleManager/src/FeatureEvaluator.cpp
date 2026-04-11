@@ -270,6 +270,8 @@ void FeatureEvaluator::processSignals() {
             sendShadowOn(featureName);
         } else if (action == "SHADOW_OFF") {
             sendShadowOff(featureName);
+        } else if (action == "SHADOW_PROMOTE") {
+            sendShadowPromotionRequest(featureName);
         } else if (action == "AB_SET") {
             if (extra.size() != 1 || (extra[0] != 'A' && extra[0] != 'B')) {
                 log(LogLevel::warn,
@@ -325,6 +327,19 @@ bool FeatureEvaluator::sendShadowOff(const std::string& primaryName) {
     const bool ok = eventBus_.sendEvent(Event(EventId::ShadowModeOff, primaryName));
     if (!ok) {
         log(LogLevel::warn, "SHADOW_OFF EventBus sendEvent failed for " + primaryName);
+    }
+    return ok;
+}
+
+bool FeatureEvaluator::sendShadowPromotionRequest(const std::string& primaryLogicalName) {
+    log(LogLevel::info, "SHADOW_PROMOTE -> " + primaryLogicalName +
+        " (Primary stops; Shadow observer exits — relaunch via LifeCycleMgr)");
+    sendWarning(primaryLogicalName, "ShadowPromotionRequest");
+    const bool ok = eventBus_.sendEvent(
+        Event(EventId::ShadowPromotionRequest, primaryLogicalName));
+    if (!ok) {
+        log(LogLevel::warn,
+            "SHADOW_PROMOTE EventBus sendEvent failed for " + primaryLogicalName);
     }
     return ok;
 }

@@ -5,6 +5,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <cstdlib>
 #include <signal.h>
 
 namespace sdv::platform::communications::eventbus {
@@ -95,6 +96,11 @@ void EventBusHost::runServer(const std::string& address) {
     builder.RegisterService(this);
 
     server_ = builder.BuildAndStart();
+    if (!server_) {
+        std::cerr << "EventBusHost: BuildAndStart failed (address=" << address
+                  << "). Is the port already in use?" << std::endl;
+        std::_Exit(1);
+    }
     std::cout << "Event Bus is running now on " << address << "..." << std::endl;
     server_->Wait();
 }

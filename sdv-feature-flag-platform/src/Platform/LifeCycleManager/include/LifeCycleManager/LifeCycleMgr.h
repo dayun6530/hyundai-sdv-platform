@@ -6,6 +6,11 @@
 
 namespace sdv::platform::lifecyclemgr {
 
+/// Multi-process orchestrator. \c SHADOW_PROMOTE (FeatureEvaluator → \ref EventId::ShadowPromotionRequest)
+/// notifies Primary and paired Shadow to exit; the operator must **restart** this manager (or spawn
+/// binaries) so the former Shadow executable runs with the Primary logical name — true hot swap is
+/// out of scope for this prototype.
+
 class LifeCycleMgr {
 public:
     LifeCycleMgr();

@@ -25,6 +25,8 @@ enum class LogLevel {
     error
 };
 
+/// Platform feature base. Domain subclasses implement \ref execute(); Shadow *observer* processes
+/// use \ref bindShadowToPrimary and \ref run() runs the mirror consumer loop instead of \ref execute().
 class Feature {
 public:
     Feature(const std::string& name, EventBusInterface& eventBus);
@@ -40,8 +42,15 @@ public:
     /// Kill-switch state lives in \ref flag_.
     bool isKilled() const;
 
-    /// Shadow Mode: when true, Primary processes also emit ShadowMirrorData for each domain event.
+    /// Primary-only: bus mirroring of domain output is enabled (ShadowModeOn/Off).
     bool isShadowModeActive() const { return flag_.isShadowMirroringEnabled(); }
+
+    /// True when this process is a Shadow *observer* (no domain \ref sendDomainEvent, mirror log only).
+    /// Set by \ref bindShadowToPrimary (used by \ref sdv::feature::ShadowMirrorObserverFeature).
+    bool isShadowMode() const { return isShadowMode_; }
+
+    /// Alias for \ref isShadowMode (legacy naming).
+    bool isShadowReceiverProcess() const { return isShadowMode_; }
 
     static void requestStop();
     static void signalHandler(int signum);
@@ -55,28 +64,28 @@ protected:
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
 
-    /// True if this process is the Primary (not a Shadow receiver process).
+    /// True if this process acts as the Primary logical feature (not a Shadow observer).
     bool isPrimaryProcess() const { return name_ == primaryName_; }
 
-    /// Attach a Shadow process to its Primary logical name (Team CONVENTIONS: `<Primary>Shadow`).
+    /// Pairs this observer's logical name with a Primary (enables \ref isShadowMode_, disables mirroring flag).
     void bindShadowToPrimary(const std::string& primaryLogicalName);
 
-    /// Override Shadow Mode without bus events (tests, special orchestration). No-op on Shadow processes.
+    /// Override Shadow Mode without bus events (tests, special orchestration). No-op on Shadow observers.
     void setShadowModeActive(bool active);
 
-    // Send domain event and (optionally) mirror when Shadow Mode is active (Primary only).
+    /// Domain output to EventBus. Blocked when \ref isShadowMode() (observer must not take control path).
     bool sendDomainEvent(EventId id, const std::string& message);
 
-    // ⭐️ 빠져있던 질문자님의 A/B 테스트 스위치 함수 복구!
     bool isAbPathAEnabled() const { return abAEnabled_; }
     bool isAbPathBEnabled() const { return abBEnabled_; }
 
-    // Optional A/B mode support (CONVENTIONS 10.2).
     std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
+
+    /// Short tag for unified logs: `[PRIMARY][ADAS] ...` / `[SHADOW][ADAS] ...`. Override for custom domains.
+    virtual std::string featureDomainTagForLogging() const;
 
     EventBusInterface& eventBus_;
     std::string name_;
-    // Primary logical name: equals name_ for Primary; Shadow binary sets via bindShadowToPrimary().
     std::string primaryName_;
     int64_t componentId_;
     Flag flag_;
@@ -84,24 +93,41 @@ protected:
 private:
     static std::string normalizeFileName(const std::string& name);
 
-    /// Flag/Kill/Shadow On-Off/A-B: returns true if consumed and must not be passed to the app queue.
     bool tryConsumeAsPlatformControl(const Event& event);
+
+    void runShadowMirrorObserveLoop();
+    void logMirroredPayloadForShadow(EventId id, const std::string& payload);
+    void flushNavigationShadowTriplet(const std::string& guidancePayload);
+    void logEvEnergyShadowEnergyState(const std::string& payload);
 
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
 
-    // ⭐️ 빠져있던 질문자님의 A/B 상태 변수 복구!
     bool abAEnabled_ = false;
     bool abBEnabled_ = false;
+
+    bool isShadowMode_ = false;
+    std::string navMirrorPendingLoc_;
+    std::string navMirrorPendingRoad_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr
 
 namespace sdv::feature {
 
-/// Entry point for `*Shadow` executables: EventBus connect (optional `argv[1]` host:port),
-/// then consume `ShadowMirrorData` for the given Primary name.
+/// Minimal concrete \ref sdv::platform::lifecyclemgr::Feature used only by `*Shadow` executables.
+/// \ref run() detects Shadow mode and consumes `ShadowMirrorData` instead of calling \ref execute().
+class ShadowMirrorObserverFeature final : public sdv::platform::lifecyclemgr::Feature {
+public:
+    ShadowMirrorObserverFeature(sdv::platform::communications::eventbus::EventBusInterface& bus,
+        const std::string& shadowLogicalName,
+        const std::string& primaryLogicalName);
+
+protected:
+    void execute() override;
+};
+
 int runShadowReceiverMain(int argc, char* argv[],
     const char* shadowLogicalName,
     const char* primaryLogicalName);
