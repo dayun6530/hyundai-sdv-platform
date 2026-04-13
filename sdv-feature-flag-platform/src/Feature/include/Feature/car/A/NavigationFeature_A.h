@@ -10,6 +10,7 @@ public:
 
 protected:
     void execute() override;
+    std::string navGuidanceForIteration(int iteration1Based) override;
 };
 
 }  // namespace sdv::feature

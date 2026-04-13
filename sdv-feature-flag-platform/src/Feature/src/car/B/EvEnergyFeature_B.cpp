@@ -18,6 +18,9 @@ void EvEnergyFeature_B::execute() {
     const char line = getAbVariant().value_or('B');
     log(LogLevel::info,
         std::string("Car platform — EvEnergyFeature_B (B-line / Flag A|B=") + line + ")");
+    log(LogLevel::info, "[ENERGY-B] battery state: 82%");
+    log(LogLevel::info, "[ENERGY-B] regenerative braking: optimized");
+    log(LogLevel::info, "[ENERGY-B] eco range prediction enabled");
     log(LogLevel::info, "B-line 에너지 스택 — 대용량 배터리 / 800V 프로파일 (데모)");
     log(LogLevel::info, "초기 배터리 잔량: " + std::to_string(battery_) + "%");
     log(LogLevel::info, "에너지 모니터링 대기 중... (Genesis)");

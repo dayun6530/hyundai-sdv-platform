@@ -40,6 +40,9 @@ void NavigationFeature_B::execute() {
     const char line = getAbVariant().value_or('B');
     log(LogLevel::info,
         std::string("Car platform — NavigationFeature_B (B-line / Flag A|B=") + line + ")");
+    log(LogLevel::info, "[NAV-B] current location updated");
+    log(LogLevel::info, "[NAV-B] route guidance started");
+    log(LogLevel::info, "[NAV-B] real-time traffic rerouting enabled");
     runNavigationMainLoop();
 }
 
@@ -60,7 +63,8 @@ void NavigationFeature_B::navLogIterationBanner(int iteration1Based) {
 }
 
 std::string NavigationFeature_B::navGuidanceForIteration(int iteration1Based) {
-    return "NAV_GUIDANCE line=B step=" + std::to_string(iteration1Based) + " status=guiding";
+    return "[NAV-B] NAV_GUIDANCE line=B step=" + std::to_string(iteration1Based) +
+        " status=guiding traffic=live";
 }
 
 void NavigationFeature_B::navLogRunComplete() {

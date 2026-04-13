@@ -56,6 +56,12 @@ LifeCycleMgr::~LifeCycleMgr() {
 }
 
 std::string LifeCycleMgr::resolveExecPath(const std::string& execName) {
+    // Prefer cwd-relative deploy/active (same working directory as DeploymentMgr / platform).
+    const std::string deployed = std::string("deploy/active/") + execName;
+    if (access(deployed.c_str(), X_OK) == 0) {
+        return deployed;
+    }
+
     char buf[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
     if (len == -1) return "./" + execName;

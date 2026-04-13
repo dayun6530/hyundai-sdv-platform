@@ -1,0 +1,122 @@
+#include "DeploymentManager/ConfigUpdater.h"
+
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <unordered_set>
+
+namespace sdv::platform::deployment {
+
+namespace {
+
+const std::unordered_set<std::string> kManagedFeatures = {
+    "NavigationFeature_A",
+    "NavigationFeature_A_Shadow",
+    "NavigationFeature_B",
+    "NavigationFeature_B_Shadow",
+    "AdasFeature_A",
+    "AdasFeature_A_Shadow",
+    "AdasFeature_B",
+    "AdasFeature_B_Shadow",
+    "EvEnergyFeature_A",
+    "EvEnergyFeature_A_Shadow",
+    "EvEnergyFeature_B",
+    "EvEnergyFeature_B_Shadow",
+    "WatchDog",
+    "FeatureEvaluator",
+};
+
+void emitFeatureBlock(std::ostream& out, const ConfigUpdater::Selection& s) {
+    out << "feature WatchDog\n";
+    out << "feature NavigationFeature_" << s.nav << "\n";
+    out << "feature NavigationFeature_" << s.nav << "_Shadow\n";
+    out << "feature AdasFeature_" << s.adas << "\n";
+    out << "feature AdasFeature_" << s.adas << "_Shadow\n";
+    out << "feature EvEnergyFeature_" << s.energy << "\n";
+    out << "feature EvEnergyFeature_" << s.energy << "_Shadow\n";
+    out << "feature FeatureEvaluator\n";
+}
+
+}  // namespace
+
+bool ConfigUpdater::isManagedFeatureToken(const std::string& featureName) {
+    return kManagedFeatures.count(featureName) != 0;
+}
+
+bool ConfigUpdater::loadSelection(const std::string& selectionPath, Selection& out) {
+    std::ifstream in(selectionPath);
+    if (!in.is_open()) {
+        return false;
+    }
+    std::string key, val;
+    while (in >> key >> val) {
+        if (key == "ADAS") {
+            out.adas = val;
+        } else if (key == "NAV") {
+            out.nav = val;
+        } else if (key == "ENERGY") {
+            out.energy = val;
+        }
+    }
+    return true;
+}
+
+bool ConfigUpdater::saveSelection(const std::string& selectionPath, const Selection& s) {
+    std::ofstream out(selectionPath);
+    if (!out.is_open()) {
+        return false;
+    }
+    out << "# Active car-line version per domain (A | B). Edited by DeploymentManager.\n";
+    out << "ADAS " << s.adas << "\n";
+    out << "NAV " << s.nav << "\n";
+    out << "ENERGY " << s.energy << "\n";
+    return true;
+}
+
+bool ConfigUpdater::applyToConfig(const std::string& configPath, const Selection& s) {
+    std::ifstream in(configPath);
+    if (!in.is_open()) {
+        return false;
+    }
+
+    std::ostringstream rebuilt;
+    std::string line;
+    bool insertedFeatures = false;
+
+    while (std::getline(in, line)) {
+        if (!line.empty() && line[0] != '#') {
+            std::istringstream iss(line);
+            std::string kw, name;
+            if (iss >> kw >> name) {
+                if (kw == "feature" && isManagedFeatureToken(name)) {
+                    if (!insertedFeatures) {
+                        emitFeatureBlock(rebuilt, s);
+                        insertedFeatures = true;
+                    }
+                    continue;
+                }
+            }
+        }
+        rebuilt << line << '\n';
+    }
+
+    if (!insertedFeatures) {
+        rebuilt << "\n# Features (managed by DeploymentManager)\n";
+        emitFeatureBlock(rebuilt, s);
+    }
+
+    const std::string tmp = configPath + ".tmp";
+    std::error_code ec;
+    std::filesystem::remove(tmp, ec);
+    {
+        std::ofstream out(tmp, std::ios::trunc);
+        if (!out.is_open()) {
+            return false;
+        }
+        out << rebuilt.str();
+    }
+    std::filesystem::rename(tmp, configPath, ec);
+    return !ec;
+}
+
+}  // namespace sdv::platform::deployment

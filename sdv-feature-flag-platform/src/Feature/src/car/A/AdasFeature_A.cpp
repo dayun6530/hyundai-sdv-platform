@@ -17,6 +17,8 @@ void AdasFeature_A::execute() {
     const char line = getAbVariant().value_or('A');
     log(LogLevel::info,
         std::string("Car platform — AdasFeature_A (A-line / Flag A|B=") + line + ")");
+    log(LogLevel::info, "[ADAS-A] lane keeping assist active");
+    log(LogLevel::info, "[ADAS-A] forward collision warning sensitivity: normal");
     runAdasMainLoop();
 }
 

@@ -17,7 +17,14 @@ void NavigationFeature_A::execute() {
     const char line = getAbVariant().value_or('A');
     log(LogLevel::info,
         std::string("Car platform — NavigationFeature_A (A-line / Flag A|B=") + line + ")");
+    log(LogLevel::info, "[NAV-A] current location updated");
+    log(LogLevel::info, "[NAV-A] route guidance started");
     runNavigationMainLoop();
+}
+
+std::string NavigationFeature_A::navGuidanceForIteration(int iteration1Based) {
+    return "[NAV-A] NAV_GUIDANCE line=A step=" + std::to_string(iteration1Based) +
+        " status=guiding traffic=static";
 }
 
 }  // namespace sdv::feature
