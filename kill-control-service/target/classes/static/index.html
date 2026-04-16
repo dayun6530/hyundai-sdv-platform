@@ -70,6 +70,9 @@
 
     <script>
         (function () {
+            // Spring에서 띄우면 같은 origin(예: http://localhost:18080). 파일로 직접 열면 API만 18080으로 보냄.
+            var API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:18080' : '';
+
             async function sendKill(car, command, btn, statusEl) {
                 if (!window.confirm('정말 종료 명령을 보내시겠습니까?')) return;
 
@@ -78,7 +81,7 @@
                 statusEl.className = '';
 
                 try {
-                    const res = await fetch('/api/system/kill', {
+                    const res = await fetch(API_BASE + '/api/system/kill', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',

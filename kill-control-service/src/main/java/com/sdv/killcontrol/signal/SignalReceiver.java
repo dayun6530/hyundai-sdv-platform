@@ -1,6 +1,7 @@
 package com.sdv.killcontrol.signal;
 
 import com.sdv.killcontrol.event.KillSignalEvent;
+import com.sdv.killcontrol.runtime.CarProcessRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -40,10 +41,13 @@ public class SignalReceiver {
 
     private final Path externalSignalsA;
     private final Path externalSignalsB;
+    private final CarProcessRuntime runtime;
 
-    public SignalReceiver() {
-        // 기본값: repo root 기준 "sdv-feature-flag-platform/config/ExternalSignals_*.cmd"
-        final Path repoRoot = Path.of(System.getProperty("user.dir"));
+    public SignalReceiver(CarProcessRuntime runtime) {
+        this.runtime = runtime;
+        // Resolve repo root robustly: when launched from kill-control-service/, user.dir
+        // points to that module. The platform watches "<repo>/sdv-feature-flag-platform/config/ExternalSignals_*.cmd".
+        final Path repoRoot = resolveRepoRoot();
         final Path base = repoRoot.resolve("sdv-feature-flag-platform").resolve("config");
         this.externalSignalsA = base.resolve("ExternalSignals_A.cmd");
         this.externalSignalsB = base.resolve("ExternalSignals_B.cmd");
@@ -62,6 +66,16 @@ public class SignalReceiver {
 
         final Path target = "A".equals(event.getCar()) ? externalSignalsA : externalSignalsB;
         appendExternalSignal(target, event.getCommand());
+
+        // Preserve legacy behavior: HTTP kill should trigger immediate local shutdown
+        // in addition to writing external signal for platform components.
+        try {
+            if (event.getCommand() != null && event.getCommand().toUpperCase().startsWith("KILL:")) {
+                runtime.shutdownAllGracefully();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to trigger immediate shutdown (ignored): {}", e.toString());
+        }
     }
 
     private static void appendExternalSignal(Path file, String command) {
@@ -79,5 +93,20 @@ public class SignalReceiver {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write external signal file: " + file.toAbsolutePath(), e);
         }
+    }
+
+    private static Path resolveRepoRoot() {
+        Path p = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        for (int i = 0; i < 6 && p != null; i++) {
+            // Prefer monorepo root where modules are siblings:
+            // <repo>/kill-control-service and <repo>/sdv-feature-flag-platform
+            if (Files.isDirectory(p.resolve("kill-control-service"))
+                    && Files.isDirectory(p.resolve("sdv-feature-flag-platform"))) {
+                return p;
+            }
+            p = p.getParent();
+        }
+        // Fallback: current working directory
+        return Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
     }
 }

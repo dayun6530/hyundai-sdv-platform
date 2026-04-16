@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src/DataCollector.cpp.o -o DataCollector  src/Platform/CenterCommunication/libCenterCommunicationLib.a 

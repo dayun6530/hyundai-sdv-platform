@@ -38,7 +38,7 @@ public class SystemKillController {
     @PostMapping("/kill")
     public ResponseEntity<Map<String, Object>> requestKill(@RequestBody KillRequest request) {
         final String car = normalizeCar(request.car());
-        final String command = normalizeCommand(request.command());
+        final String command = normalizeCommandForCar(normalizeCommand(request.command()), car);
 
         eventPublisher.publishEvent(new KillSignalEvent(this, Instant.now(), "web-api", car, command));
         return ResponseEntity
@@ -77,5 +77,29 @@ public class SystemKillController {
             throw new IllegalArgumentException("command must start with 'KILL:'");
         }
         return cmd;
+    }
+
+    private static String normalizeCommandForCar(String command, String car) {
+        // Map "KILL:AdasFeature" to "KILL:AdasFeature_A|_B" to match the platform's
+        // car-line executables (AdasFeature_A, AdasFeature_B, ...). If the caller already
+        // provided a suffix, keep it.
+        final String v = car; // "A" or "B"
+
+        final String raw = command.trim();
+        final int first = raw.indexOf(':');
+        if (first < 0) return raw;
+
+        final String action = raw.substring(0, first).trim(); // "KILL"
+        final String rest = raw.substring(first + 1);
+
+        final int second = rest.indexOf(':'); // optional reason segment
+        final String feature = ((second >= 0) ? rest.substring(0, second) : rest).trim();
+        final String extra = (second >= 0) ? rest.substring(second) : "";
+
+        if (feature.isEmpty()) return raw;
+        if (feature.contains("_A") || feature.contains("_B")) return raw;
+
+        final String mapped = feature + "_" + v;
+        return action + ":" + mapped + extra;
     }
 }
