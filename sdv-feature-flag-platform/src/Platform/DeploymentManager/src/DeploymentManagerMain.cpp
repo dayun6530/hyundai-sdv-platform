@@ -11,7 +11,7 @@ void usage() {
     std::cout
         << "DeploymentMgr — file-based deploy helper\n"
         << "  Use the repository root (sdv-feature-flag-platform) as cwd so deploy/ and config/ resolve "
-           "like ./build/car_A.\n"
+           "like ./build/car_1.\n"
         << "\n"
         << "  DeploymentMgr [--config <path>] <command> [args]\n"
         << "\n"
@@ -23,7 +23,7 @@ void usage() {
         << "  rollback <DOM>         Restore previous active version for domain\n"
         << "  sync-config            Apply deploy/active_selection.conf to config only\n"
         << "\n"
-        << "Default config: config/SdvPlatform.conf (override with --config, e.g. config/car_A.conf)\n";
+        << "Default config: config/SdvPlatform.conf (override with --config, e.g. config/car/car_1.conf)\n";
 }
 
 std::string defaultConfigPath() {

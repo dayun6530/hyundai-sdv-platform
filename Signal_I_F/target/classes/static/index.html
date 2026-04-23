@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>시스템 제어 — KILL</title>
+    <style>
+        :root {
+            font-family: system-ui, sans-serif;
+            color: #1a1a1a;
+            background: #f4f4f5;
+        }
+        body {
+            max-width: 32rem;
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+        h1 { font-size: 1.25rem; }
+        p { color: #52525b; line-height: 1.5; }
+        button {
+            background: #b91c1c;
+            color: #fff;
+            border: none;
+            padding: 0.65rem 1.25rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        button:hover { background: #991b1b; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #status { margin-top: 1rem; font-size: 0.9rem; }
+        .ok { color: #15803d; }
+        .err { color: #b91c1c; }
+        .actionRow {
+            margin-top: .75rem;
+            display: flex;
+            gap: .5rem;
+            align-items: flex-start;
+        }
+        .statusText {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: .9rem;
+            line-height: 1.35;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            min-height: 2.4em; /* keep card from jittering on 2-line messages */
+        }
+    </style>
+</head>
+<body>
+    <h1>프로세스 제어 (Web)</h1>
+    <p>Car A/B 입력란에 <code>KILL:AdasFeature</code>처럼 넣으면, 플랫폼은 <strong>LifeCycleMgr가 읽은 config</strong>의 <code>feature</code> 줄에 실제로 있는 이름(예: <code>AdasFeature_B</code>)만 골라 KILL합니다. config에 없는 축약은 예전처럼 A·B 둘 다 시도합니다. 한 줄만 확실히 지정하려면 <code>KILL:AdasFeature_B</code>처럼 풀 이름을 써도 됩니다.</p>
+
+    <!--
+      전체 데이터 흐름 (주석):
+      1) HTML: A/B 입력 + 버튼 클릭 → confirm("정말 종료 명령을 보내시겠습니까?")
+      2) JS fetch: POST /api/system/kill (JSON: { car, command })
+      3) Controller: config/signals/ExternalSignals_<carId>.cmd에 동기 기록 후, logs/<carId>/... 확인
+      4) (기존 플랫폼) SignalReceiver → FeatureEvaluator → WARNING:…:KillSwitch 로그
+    -->
+    <div style="display:grid; gap: 1rem; margin-top: 1rem;">
+        <section style="background:#fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h2 style="margin:0; font-size: 1.05rem;">Target car</h2>
+                <label style="display:flex; align-items:center; gap:.5rem; color:#52525b; font-size:.9rem;">
+                    <span>carId</span>
+                    <select id="carSelect" style="padding:.45rem .55rem; border:1px solid #e4e4e7; border-radius:6px; background:#fff;">
+                        <option value="car_1">car_1</option>
+                        <option value="car_2">car_2</option>
+                        <option value="car_3">car_3</option>
+                        <option value="car_4">car_4</option>
+                        <option value="car_5">car_5</option>
+                        <option value="car_6">car_6</option>
+                        <option value="car_7">car_7</option>
+                        <option value="car_8">car_8</option>
+                        <option value="car_9">car_9</option>
+                        <option value="car_10">car_10</option>
+                    </select>
+                </label>
+            </div>
+
+            <div style="margin-top:.65rem; display:flex; flex-wrap:wrap; gap:.4rem;">
+                <button type="button" class="quickCar" data-car="car_1" style="background:#e4e4e7; color:#111827;">1</button>
+                <button type="button" class="quickCar" data-car="car_2" style="background:#e4e4e7; color:#111827;">2</button>
+                <button type="button" class="quickCar" data-car="car_3" style="background:#e4e4e7; color:#111827;">3</button>
+                <button type="button" class="quickCar" data-car="car_4" style="background:#e4e4e7; color:#111827;">4</button>
+                <button type="button" class="quickCar" data-car="car_5" style="background:#e4e4e7; color:#111827;">5</button>
+                <button type="button" class="quickCar" data-car="car_6" style="background:#e4e4e7; color:#111827;">6</button>
+                <button type="button" class="quickCar" data-car="car_7" style="background:#e4e4e7; color:#111827;">7</button>
+                <button type="button" class="quickCar" data-car="car_8" style="background:#e4e4e7; color:#111827;">8</button>
+                <button type="button" class="quickCar" data-car="car_9" style="background:#e4e4e7; color:#111827;">9</button>
+                <button type="button" class="quickCar" data-car="car_10" style="background:#e4e4e7; color:#111827;">10</button>
+            </div>
+
+            <input id="cmd" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px; margin-top:.75rem;"
+                   placeholder="예) KILL:AdasFeature"
+                   autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <div class="actionRow">
+                <button type="button" id="killBtn">Send KILL</button>
+                <span id="status" class="statusText" aria-live="polite"></span>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        (function () {
+            function sleep(ms) {
+                return new Promise(function (resolve) { setTimeout(resolve, ms); });
+            }
+
+            async function pollKillStatus(requestId, statusEl) {
+                // Keep polling until done or server forgets requestId.
+                for (var i = 0; i < 80; i++) { // ~80 * 350ms ≈ 28s upper bound on UI side
+                    const res = await fetch('/api/system/kill/status?requestId=' + encodeURIComponent(requestId), {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const body = await res.json().catch(function () { return {}; });
+                    if (!res.ok) {
+                        statusEl.textContent = (body && body.error) ? body.error : ('오류: HTTP ' + res.status);
+                        statusEl.className = 'err';
+                        return;
+                    }
+                    if (body && body.done) {
+                        var outcome = body.killOutcome || '';
+                        var baseMsg = statusEl.dataset.baseMsg || '';
+                        var finalMsg = body.message || '처리 완료';
+                        statusEl.textContent = baseMsg ? (baseMsg + ' / ' + finalMsg) : finalMsg;
+                        statusEl.className = (outcome === 'failed') ? 'err' : 'ok';
+                        return;
+                    }
+                    // pending
+                    statusEl.textContent = (body && body.message) ? body.message : 'KILL 확인 중…';
+                    statusEl.className = '';
+                    await sleep(350);
+                }
+                statusEl.textContent = 'KILL 확인 시간 초과 (웹)';
+                statusEl.className = 'err';
+            }
+
+            async function sendKill(car, command, btn, statusEl) {
+                if (!window.confirm('정말 종료 명령을 보내시겠습니까?')) return;
+
+                btn.disabled = true;
+                statusEl.textContent = '전송 중…';
+                statusEl.className = '';
+                statusEl.dataset.baseMsg = '';
+
+                try {
+                    const res = await fetch('/api/system/kill', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ car: car, command: command })
+                    });
+                    const body = await res.json().catch(function () { return {}; });
+                    if (res.ok) {
+                        // phase 2: accepted by server (written to ExternalSignals)
+                        var acceptedMsg = (body && body.message) ? body.message : '성공적으로 전송했습니다.';
+                        statusEl.dataset.baseMsg = acceptedMsg;
+                        statusEl.textContent = acceptedMsg;
+                        statusEl.className = 'ok';
+
+                        // phase 3: poll platform ack
+                        if (body && body.requestId) {
+                            await pollKillStatus(body.requestId, statusEl);
+                        }
+                    } else {
+                        var errText = '오류: HTTP ' + res.status;
+                        if (body && body.error) {
+                            errText = body.error;
+                        }
+                        statusEl.textContent = errText;
+                        statusEl.className = 'err';
+                    }
+                } catch (e) {
+                    statusEl.textContent = '네트워크 오류: ' + (e && e.message ? e.message : e);
+                    statusEl.className = 'err';
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+
+            const carSelect = document.getElementById('carSelect');
+            const cmd = document.getElementById('cmd');
+            const killBtn = document.getElementById('killBtn');
+            const status = document.getElementById('status');
+
+            function setCar(carId) {
+                if (!carSelect) return;
+                carSelect.value = carId;
+            }
+
+            document.querySelectorAll('.quickCar').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const car = btn.getAttribute('data-car');
+                    if (car) setCar(car);
+                });
+            });
+
+            killBtn.addEventListener('click', function () {
+                const car = carSelect ? carSelect.value : 'car_1';
+                sendKill(car, cmd.value, killBtn, status);
+            });
+        })();
+    </script>
+</body>
+</html>
