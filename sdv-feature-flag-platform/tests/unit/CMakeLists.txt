@@ -131,13 +131,21 @@ add_sqa_unit_test(
     unit_signal_receiver
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/centercommunication/SignalReceiverTest.cpp
 )
-target_link_libraries(unit_signal_receiver PRIVATE CenterCommunicationLib)
+target_sources(unit_signal_receiver PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/Platform/CenterCommunication/src/SignalReceiver.cpp
+)
+target_compile_definitions(unit_signal_receiver PRIVATE SDV_CENTERCOMM_NO_MAIN=1)
+target_link_libraries(unit_signal_receiver PRIVATE CenterCommunicationLib EventBus)
 
 add_sqa_unit_test(
     unit_signal_sender
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/centercommunication/SignalSenderTest.cpp
 )
-target_link_libraries(unit_signal_sender PRIVATE CenterCommunicationLib)
+target_sources(unit_signal_sender PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/Platform/CenterCommunication/src/SignalSender.cpp
+)
+target_compile_definitions(unit_signal_sender PRIVATE SDV_CENTERCOMM_NO_MAIN=1)
+target_link_libraries(unit_signal_sender PRIVATE CenterCommunicationLib EventBus)
 
 add_sqa_unit_test(
     unit_data_collector

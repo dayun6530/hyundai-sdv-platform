@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>시스템 제어 — KILL</title>
     <link rel="stylesheet" href="/styles.css" />
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
     <main class="app-shell">
@@ -14,15 +15,15 @@
                 <p>차량(<span class="mono">car_1</span> ~ <span class="mono">car_10</span>) 대상에 <span class="mono">KILL:FeatureName</span> 명령을 전송합니다. 플랫폼은 config의 실제 feature 이름(예: <span class="mono">AdasFeature_B</span>)만 KILL 대상으로 인식합니다.</p>
             </div>
             <div class="header-badges">
-                <span class="pill pill-neutral">endpoint: <span class="mono">POST /api/system/kill</span></span>
+                <span class="pill pill-neutral">broker: <span class="mono">ws://127.0.0.1:9002</span></span>
             </div>
         </header>
 
     <!--
       전체 데이터 흐름 (주석):
       1) HTML: A/B 입력 + 버튼 클릭 → confirm("정말 종료 명령을 보내시겠습니까?")
-      2) JS fetch: POST /api/system/kill (JSON: { car, command })
-      3) Controller: MQTT publish (/sdv/vehicle/<carId>/control) 후 telemetry ACK 대기
+      2) JS mqtt.publish: /sdv/vehicle/<carId>/control (v1 JSON)
+      3) Platform: /sdv/vehicle/<carId>/telemetry 로 ACK publish
     -->
         <section class="card">
             <div class="card-header">
@@ -72,47 +73,124 @@
                 <button type="button" id="killBtn" class="btn btn-primary">Send KILL</button>
                 <span id="status" class="statusText" aria-live="polite"></span>
             </div>
+            <div class="divider" style="margin-top: 16px;"></div>
+            <div class="mono" style="font-size: 12px; opacity: .9; margin-bottom: 8px;">MQTT trace (UI ↔ SignalReceiver/SignalSender)</div>
+            <pre id="trace" class="mono" style="white-space: pre-wrap; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 12px; min-height: 120px; max-height: 240px; overflow: auto; margin: 0;"></pre>
         </section>
 
     <script>
         (function () {
-            function sleep(ms) {
-                return new Promise(function (resolve) { setTimeout(resolve, ms); });
+            function nowIsoUtc() {
+                return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
             }
 
-            async function sendKill(car, command, btn, statusEl) {
+            function uuidV4() {
+                if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+                // fallback (RFC4122-ish) if randomUUID is unavailable
+                return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+                    var r = (Math.random() * 16) | 0;
+                    var v = c === "x" ? r : (r & 0x3) | 0x8;
+                    return v.toString(16);
+                });
+            }
+
+            function extractFeatureName(command) {
+                var raw = (command || "").trim();
+                if (!raw.toUpperCase().startsWith("KILL:")) return "";
+                var rest = raw.substring(5);
+                var second = rest.indexOf(":");
+                var feature = (second >= 0 ? rest.substring(0, second) : rest).trim();
+                return feature;
+            }
+
+            function buildKillSwitchV1(vehicleId, featureName) {
+                return {
+                    protocol_version: "1.0",
+                    header: {
+                        msg_id: uuidV4(),
+                        timestamp: nowIsoUtc(),
+                        vehicle_id: vehicleId
+                    },
+                    command: "KILL_SWITCH",
+                    payload: {
+                        feature_name: featureName,
+                        version: "",
+                        action: "",
+                        binary_path: ""
+                    }
+                };
+            }
+
+            function connectMqtt(statusEl) {
+                var url = "ws://127.0.0.1:9002";
+                var clientId = "signal-ui-" + Math.random().toString(16).slice(2);
+                statusEl.textContent = "MQTT 연결 중…";
+                statusEl.className = "";
+
+                // mqtt.js global is injected by the script tag above
+                var client = window.mqtt.connect(url, {
+                    clientId: clientId,
+                    clean: true,
+                    reconnectPeriod: 1000,
+                    keepalive: 30
+                });
+
+                client.on("connect", function () {
+                    statusEl.textContent = "MQTT 연결됨";
+                    statusEl.className = "status-ok";
+                });
+                client.on("reconnect", function () {
+                    statusEl.textContent = "MQTT 재연결 중…";
+                    statusEl.className = "";
+                });
+                client.on("error", function (err) {
+                    statusEl.textContent = "MQTT 오류: " + (err && err.message ? err.message : err);
+                    statusEl.className = "status-err";
+                });
+
+                return client;
+            }
+
+            async function sendKill(car, command, btn, statusEl, mqttClient, state) {
                 if (!window.confirm('정말 종료 명령을 보내시겠습니까?')) return;
 
                 btn.disabled = true;
-                statusEl.textContent = '전송 중…';
+                statusEl.textContent = 'MQTT 전송 중…';
                 statusEl.className = '';
-                statusEl.dataset.baseMsg = '';
+                state.pendingRequestId = "";
+                state.pendingCar = car;
+                state.pendingCommand = command;
 
                 try {
-                    const res = await fetch('/api/system/kill', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ car: car, command: command })
-                    });
-                    const body = await res.json().catch(function () { return {}; });
-                    if (res.ok) {
-                        var msg = (body && body.message) ? body.message : '전송 완료';
-                        var detail = (body && body.detail) ? (' / ' + body.detail) : '';
-                        statusEl.textContent = msg + detail;
-                        statusEl.className = 'status-ok';
-                    } else {
-                        var errText = '오류: HTTP ' + res.status;
-                        if (body && body.error) {
-                            errText = body.error;
-                        }
-                        statusEl.textContent = errText;
-                        statusEl.className = 'status-err';
+                    if (!mqttClient || !mqttClient.connected) {
+                        throw new Error("MQTT not connected");
                     }
+                    var feature = extractFeatureName(command);
+                    if (!feature) {
+                        throw new Error("command must start with 'KILL:'");
+                    }
+
+                    var msg = buildKillSwitchV1(car, feature);
+                    state.pendingRequestId = msg.header.msg_id;
+
+                    // Force all web KILL commands through SignalReceiver (signals/inbound).
+                    var inboundTopic = "/sdv/vehicle/" + car + "/signals/inbound";
+                    var outboundTopic = "/sdv/vehicle/" + car + "/signals/outbound";
+
+                    // subscribe first to avoid missing fast ACKs
+                    mqttClient.subscribe(outboundTopic, { qos: 1 }, function (err) {
+                        if (err) {
+                            throw err;
+                        }
+                        mqttClient.publish(inboundTopic, JSON.stringify(msg), { qos: 1 }, function (err2) {
+                            if (err2) throw err2;
+                            traceLine("TX(inbound): KILL_SWITCH " + feature);
+                            statusEl.textContent = "전송 완료. SignalSender ACK 대기 중… (" + car + ")";
+                            statusEl.className = "";
+                        });
+                    });
                 } catch (e) {
-                    statusEl.textContent = '네트워크 오류: ' + (e && e.message ? e.message : e);
+                    statusEl.textContent = '전송 실패: ' + (e && e.message ? e.message : e);
                     statusEl.className = 'status-err';
                 } finally {
                     btn.disabled = false;
@@ -123,6 +201,50 @@
             const cmd = document.getElementById('cmd');
             const killBtn = document.getElementById('killBtn');
             const status = document.getElementById('status');
+            const trace = document.getElementById('trace');
+
+            function traceLine(s) {
+                if (!trace) return;
+                var line = (new Date()).toISOString() + "  " + s;
+                trace.textContent = (trace.textContent ? (trace.textContent + "\n") : "") + line;
+                trace.scrollTop = trace.scrollHeight;
+            }
+
+            var state = {
+                pendingRequestId: "",
+                pendingCar: "",
+                pendingCommand: ""
+            };
+
+            var mqttClient = null;
+            if (window.mqtt && window.mqtt.connect) {
+                mqttClient = connectMqtt(status);
+                mqttClient.on("message", function (_topic, payloadBytes) {
+                    try {
+                        var text = payloadBytes ? payloadBytes.toString() : "";
+                        // Show compact signal logs only (not full JSON dump).
+                        var body = JSON.parse(text);
+                        // SignalSender publishes generic EventBus events; show immediately.
+                        // If it is a KillSwitchAck, treat it as success.
+                        var en = (body && body.event_name) ? String(body.event_name) : "";
+                        var msg = (body && body.message) ? String(body.message) : "";
+                        if (en === "KillSwitchAck") {
+                            status.textContent = "ACK: " + (msg || "OK");
+                            status.className = "status-ok";
+                            // msg format: "<feature>|ACK"
+                            var feat = msg ? String(msg).split("|")[0] : "";
+                            traceLine("RX(outbound): KILL_ACK " + (feat || msg || "OK"));
+                        } else {
+                            // Ignore other events for UI noise reduction.
+                        }
+                    } catch (_e) {
+                        // ignore parse errors for non-json telemetry
+                    }
+                });
+            } else {
+                status.textContent = "MQTT client load failed";
+                status.className = "status-err";
+            }
 
             function setCar(carId) {
                 if (!carSelect) return;
@@ -138,7 +260,7 @@
 
             killBtn.addEventListener('click', function () {
                 const car = carSelect ? carSelect.value : 'car_1';
-                sendKill(car, cmd.value, killBtn, status);
+                sendKill(car, cmd.value, killBtn, status, mqttClient, state);
             });
         })();
     </script>

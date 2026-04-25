@@ -22,7 +22,7 @@ protected:
     void execute() override;
 
 private:
-    void processSignals();
+    void processSignals(); // legacy file input disabled (kept for API compatibility)
     /// After startup delay: turn on Shadow mirroring for every Primary that has a Shadow pair (car-line + legacy).
     void emitAutoShadowModeForAllPrimaries();
     void broadcastKillSwitchToAllTargetFeatures();
@@ -37,6 +37,10 @@ private:
 
     std::string inboundPath_;
     std::string outboundPath_;
+
+    // File-based inbound/outbound signals are deprecated in the MQTT-only flow.
+    // Keep the fields for backward-compatible logging only.
+    bool fileSignalsEnabled_{false};
 };
 
 }  // namespace sdv::platform::lifecyclemgr

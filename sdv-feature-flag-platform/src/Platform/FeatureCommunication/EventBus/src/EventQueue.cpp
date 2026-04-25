@@ -13,6 +13,7 @@ bool isCriticalControlEvent(const Event& e) {
     case EventId::FeatureFlagOn:
     case EventId::FeatureFlagOff:
     case EventId::KillSwitch:
+    case EventId::KillSwitchAck:
     case EventId::ShadowModeOn:
     case EventId::ShadowModeOff:
     case EventId::AbVariantAssign:

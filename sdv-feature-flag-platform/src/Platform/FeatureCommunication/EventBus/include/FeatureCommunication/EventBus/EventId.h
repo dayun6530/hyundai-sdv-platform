@@ -14,6 +14,9 @@ enum class EventId : int32_t {
     FeatureFlagOn = 10,
     FeatureFlagOff = 11,
     KillSwitch = 12,
+    /// Emitted by the target feature process when it accepts a KillSwitch and begins stopping.
+    /// Message format: "<feature_name>|ACK"
+    KillSwitchAck = 13,
 
     // Shadow Mode + A/B
     ShadowMirrorData = 20,

@@ -53,7 +53,8 @@ void WatchDog::analyzeEvent(const Event& event) {
 
     if (eid == EventId::FeatureFlagOn ||
         eid == EventId::FeatureFlagOff ||
-        eid == EventId::KillSwitch) {
+        eid == EventId::KillSwitch ||
+        eid == EventId::KillSwitchAck) {
         logFlagEvent(event);
         return;
     }
@@ -69,6 +70,7 @@ void WatchDog::analyzeEvent(const Event& event) {
         eid != EventId::FeatureFlagOn &&
         eid != EventId::FeatureFlagOff &&
         eid != EventId::KillSwitch &&
+        eid != EventId::KillSwitchAck &&
         eid != EventId::ShadowMirrorData &&
         eid != EventId::ShadowModeOn &&
         eid != EventId::ShadowModeOff &&
@@ -89,6 +91,8 @@ void WatchDog::logFlagEvent(const Event& event) {
         action = "FLAG_OFF";
     } else if (eid == EventId::KillSwitch) {
         action = "KILL_SWITCH";
+    } else if (eid == EventId::KillSwitchAck) {
+        action = "KILL_ACK";
     }
 
     log(LogLevel::info, "[FLAG] " + action + " -> " + event.getMessage());

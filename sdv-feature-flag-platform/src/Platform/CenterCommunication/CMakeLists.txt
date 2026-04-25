@@ -45,7 +45,7 @@ if(SDV_ENABLE_MQTT_VEHICLE_AGENT)
             src/MqttVehicleAgentHost.cpp
         )
         target_include_directories(MqttVehicleAgentHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-        target_link_libraries(MqttVehicleAgentHost PRIVATE CenterCommunicationLib)
+        target_link_libraries(MqttVehicleAgentHost PRIVATE CenterCommunicationLib EventBus)
         set_target_properties(MqttVehicleAgentHost PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     endif()
 endif()

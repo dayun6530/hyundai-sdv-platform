@@ -17,63 +17,20 @@ namespace {
 
 constexpr const char* kLogTag = "MqttVehicleAgent";
 
-std::filesystem::path resolveMonorepoRoot() {
-    auto p = std::filesystem::current_path();
-    for (int i = 0; i < 6; ++i) {
-        if (std::filesystem::exists(p / "sdv-feature-flag-platform") &&
-            std::filesystem::exists(p / "kill-control-service")) {
-            return p;
-        }
-        if (!p.has_parent_path()) break;
-        p = p.parent_path();
-    }
-    return std::filesystem::current_path();
-}
-
-std::filesystem::path resolveExternalSignalsFile(const std::string& logicalName) {
-    const auto repoRoot = resolveMonorepoRoot();
-    const auto configDir = repoRoot / "sdv-feature-flag-platform" / "config";
-
-    const bool lineA = logicalName.find("_A") != std::string::npos;
-    const bool lineB = logicalName.find("_B") != std::string::npos;
-
-    if (lineA) return configDir / "ExternalSignals_A.cmd";
-    if (lineB) return configDir / "ExternalSignals_B.cmd";
-    return configDir / "ExternalSignals.cmd";
-}
-
-class DefaultFeatureController final : public IFeatureController {
+class MissingFeatureController final : public IFeatureController {
 public:
     void stopFeature(const std::string& logicalName) override {
-        const auto signalFile = resolveExternalSignalsFile(logicalName);
-        const std::string signal = "KILL:" + logicalName;
-
-        std::filesystem::create_directories(signalFile.parent_path());
-        std::ofstream out(signalFile, std::ios::app);
-        if (!out.is_open()) {
-            throw std::runtime_error("failed to open external signal file: " + signalFile.string());
-        }
-
-        out << signal << '\n';
-        out.flush();
-        if (!out.good()) {
-            throw std::runtime_error("failed to write external signal: " + signalFile.string());
-        }
-
-        spdlog::warn("[{}] stopFeature routed to external signal: {} -> {}",
-                     kLogTag,
-                     signal,
-                     signalFile.string());
+        (void)logicalName;
+        throw std::runtime_error("FeatureController is not configured (expected EventBusFeatureController)");
     }
 
     void deployFeatureBinary(const std::string& logicalName,
                              const std::string& version,
                              const std::string& payloadUrl) override {
-        spdlog::info("[{}] deployFeatureBinary called (stub): feature={} version={} url={}",
-                     kLogTag,
-                     logicalName,
-                     version,
-                     payloadUrl);
+        (void)logicalName;
+        (void)version;
+        (void)payloadUrl;
+        throw std::runtime_error("FeatureController is not configured (expected EventBusFeatureController)");
     }
 };
 
@@ -142,7 +99,7 @@ MqttVehicleAgent& MqttVehicleAgent::instance() {
 }
 
 MqttVehicleAgent::MqttVehicleAgent()
-    : featureController_(std::make_shared<DefaultFeatureController>()) {}
+    : featureController_(std::make_shared<MissingFeatureController>()) {}
 
 MqttVehicleAgent::~MqttVehicleAgent() {
     stop();

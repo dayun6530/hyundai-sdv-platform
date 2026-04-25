@@ -43,10 +43,10 @@ add_executable(DataCollector src/Platform/CenterCommunication/src/DataCollector.
 target_link_libraries(DataCollector PRIVATE CenterCommunicationLib)
 
 add_executable(SignalReceiver src/Platform/CenterCommunication/src/SignalReceiver.cpp)
-target_link_libraries(SignalReceiver PRIVATE CenterCommunicationLib)
+target_link_libraries(SignalReceiver PRIVATE CenterCommunicationLib EventBus)
 
 add_executable(SignalSender src/Platform/CenterCommunication/src/SignalSender.cpp)
-target_link_libraries(SignalSender PRIVATE CenterCommunicationLib)
+target_link_libraries(SignalSender PRIVATE CenterCommunicationLib EventBus)
 
 # Symlink compile_commands.json to repo root for clangd/Cursor (best-effort; needs Unix + existing build dir).
 if(CMAKE_EXPORT_COMPILE_COMMANDS AND UNIX)

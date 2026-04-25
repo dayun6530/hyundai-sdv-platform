@@ -318,112 +318,10 @@ void FeatureEvaluator::execute() {
 }
 
 void FeatureEvaluator::processSignals() {
-    std::ifstream input(inboundPath_);
-    if (!input.is_open()) return;
-
-    std::vector<std::string> lines;
-    std::string line;
-    while (std::getline(input, line)) {
-        trimInPlace(line);
-        if (!line.empty()) lines.push_back(line);
-    }
-    input.close();
-
-    if (lines.empty()) return;
-
-    std::ofstream clear(inboundPath_, std::ios::trunc);
-    clear.close();
-
-    for (const auto& cmd : lines) {
-        if (isPlatformKillSwitchTriggerText(cmd)) {
-            broadcastKillSwitchToAllTargetFeatures();
-            continue;
-        }
-
-        auto firstColon = cmd.find(':');
-        if (firstColon == std::string::npos) {
-            log(LogLevel::warn, "invalid signal format: " + cmd);
-            continue;
-        }
-
-        std::string action = cmd.substr(0, firstColon);
-        std::string rest = cmd.substr(firstColon + 1);
-
-        auto secondColon = rest.find(':');
-        std::string featureName = (secondColon != std::string::npos)
-            ? rest.substr(0, secondColon) : rest;
-        std::string extra = (secondColon != std::string::npos)
-            ? rest.substr(secondColon + 1) : "";
-        trimInPlace(extra);
-        trimInPlace(action);
-        trimInPlace(featureName);
-
-        const std::string rawTarget = featureName;
-        const std::string normalizedTarget =
-            normalizeCarLineTarget(rawTarget, getAbVariant());
-
-        if (action == "FLAG_ON") {
-            sendFlagOn(normalizedTarget);
-        } else if (action == "FLAG_OFF") {
-            sendFlagOff(normalizedTarget);
-        } else if (action == "KILL") {
-            const std::unordered_set<std::string> deployed =
-                loadFeatureExecNamesFromLifecycleConfig();
-            std::vector<std::string> killTargets =
-                resolveCarLineKillTargetsUsingConfig(rawTarget, deployed);
-            if (killTargets.empty()) {
-                killTargets = expandAmbiguousCarLineKillTargets(rawTarget);
-            }
-            if (killTargets.empty()) {
-                killTargets.push_back(normalizedTarget);
-            }
-            static constexpr const char kKillAllSuffix[] = "_ALL";
-            constexpr std::size_t kAllLen = sizeof(kKillAllSuffix) - 1;
-            for (const std::string& killName : killTargets) {
-                if (killName.size() > kAllLen &&
-                    killName.compare(killName.size() - kAllLen, kAllLen, kKillAllSuffix) == 0) {
-                    const std::string base = killName.substr(0, killName.size() - kAllLen);
-                    const std::string shadowName = shadowLogicalNameForPrimaryBase(base);
-                    log(LogLevel::warn,
-                        "KILL_ALL -> Shadow " + shadowName + " then Primary " + base);
-                    // Shadow first: each queue processes Shadow-target kill before Primary-target,
-                    // so paired Shadow exits cleanly; Primary ignores the Shadow kill line.
-                    sendKillSwitch(shadowName);
-                    sendKillSwitch(base);
-                } else {
-                    sendKillSwitch(killName);
-                }
-            }
-        } else if (
-            // Demo-friendly canonical situation types
-            action == "DMS_SLEEP" ||
-            action == "ADAS_FATAL" ||
-            action == "SENSOR_FATAL" ||
-            action == "MANUAL_KILL" ||
-            // Backward-compatible aliases
-            action == "DRIVER_SLEEP" ||
-            action == "DMS_DRIVER_SLEEP" ||
-            action == "DRIVER_DROWSY") {
-            // External situation signals (from SignalReceiver) mapped to KillSwitch.
-            log(LogLevel::warn, action + " -> KILL " + normalizedTarget);
-            sendKillSwitch(normalizedTarget);
-        } else if (action == "SHADOW_ON") {
-            sendShadowOn(normalizedTarget);
-        } else if (action == "SHADOW_OFF") {
-            sendShadowOff(normalizedTarget);
-        } else if (action == "SHADOW_PROMOTE") {
-            sendShadowPromotionRequest(normalizedTarget);
-        } else if (action == "AB_SET") {
-            if (extra.size() != 1 || (extra[0] != 'A' && extra[0] != 'B')) {
-                log(LogLevel::warn,
-                    "invalid AB_SET format (expected AB_SET:FeatureName:A or AB_SET:FeatureName:B): " + cmd);
-                continue;
-            }
-            sendAbSet(normalizedTarget, extra[0]);
-        } else {
-            log(LogLevel::warn, "unknown action: " + action);
-        }
-    }
+    // MQTT-only flow: disable file-based signal ingress.
+    // All control events should arrive through EventBus (e.g., from MqttVehicleAgentHost).
+    // Keeping the method avoids touching call sites and preserves internal loop cadence.
+    return;
 }
 
 bool FeatureEvaluator::sendFlagOn(const std::string& featureName) {
@@ -497,11 +395,8 @@ bool FeatureEvaluator::sendAbSet(const std::string& featureName, char variant) {
 
 void FeatureEvaluator::sendWarning(const std::string& target,
                                    const std::string& message) {
-    std::ofstream out(outboundPath_, std::ios::app);
-    if (out.is_open()) {
-        out << "WARNING:" << target << ":" << message << std::endl;
-        log(LogLevel::info, "warning -> SignalSender: " + target + " " + message);
-    }
+    // MQTT-only flow: avoid file-based warning fan-out. Keep logs for observability.
+    log(LogLevel::info, "warning: " + target + " " + message);
 }
 
 }  // namespace sdv::platform::lifecyclemgr

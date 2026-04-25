@@ -181,6 +181,9 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
                 "Primary stopping: mirroring output off (Shadow peer not stopped by this kill)");
         }
         flag_.setKillSwitchLatched(true);
+        // Publish a best-effort ACK so external observers (SignalSender/UI) can show progress.
+        // The process is about to stop, so do not block on failure.
+        (void)eventBus_.sendEvent(Event(EventId::KillSwitchAck, name_ + "|ACK"));
         requestStop();
         return true;
     }
@@ -332,6 +335,7 @@ static const char* shadowEventIdToString(EventId id) {
     case EventId::FeatureFlagOn: return "FeatureFlagOn";
     case EventId::FeatureFlagOff: return "FeatureFlagOff";
     case EventId::KillSwitch: return "KillSwitch";
+    case EventId::KillSwitchAck: return "KillSwitchAck";
     case EventId::ShadowMirrorData: return "ShadowMirrorData";
     case EventId::ShadowModeOn: return "ShadowModeOn";
     case EventId::ShadowModeOff: return "ShadowModeOff";
