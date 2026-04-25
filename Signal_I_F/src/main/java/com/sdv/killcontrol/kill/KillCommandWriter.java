@@ -22,10 +22,21 @@ public class KillCommandWriter {
     private final Path externalSignalsDir;
 
     public KillCommandWriter() {
-        Path repoRoot = Path.of(System.getProperty("user.dir"));
+        Path repoRoot = resolveRepoRoot();
         this.externalSignalsDir = repoRoot.resolve("sdv-feature-flag-platform")
                 .resolve("config")
                 .resolve("signals");
+    }
+
+    private static Path resolveRepoRoot() {
+        Path p = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        for (int i = 0; i < 8 && p != null; i++) {
+            if (Files.isDirectory(p.resolve("sdv-feature-flag-platform"))) {
+                return p;
+            }
+            p = p.getParent();
+        }
+        return Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
     }
 
     public void appendKill(String carId, String command) {

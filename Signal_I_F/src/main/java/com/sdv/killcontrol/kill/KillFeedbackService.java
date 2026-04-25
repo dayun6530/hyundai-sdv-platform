@@ -29,13 +29,25 @@ public class KillFeedbackService {
     private static final String KILL_PREFIX = "KILL:";
     private static final String KILL_ALL_SUFFIX = "_ALL";
     private static final String[] DOMAINS = {"NavigationFeature", "AdasFeature", "EvEnergyFeature"};
-    private static final int POLL_MS = 350;
     private static final int TIMEOUT_MS = 12_000;
 
     private final Path platformRoot;
 
     public KillFeedbackService() {
-        this.platformRoot = Path.of(System.getProperty("user.dir")).resolve("sdv-feature-flag-platform");
+        this.platformRoot = resolveRepoRoot().resolve("sdv-feature-flag-platform");
+    }
+
+    private static Path resolveRepoRoot() {
+        Path p = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        // When running via Spring Boot, user.dir may be ".../Signal_I_F/target/classes".
+        // Walk up a few levels until the repo layout is found.
+        for (int i = 0; i < 8 && p != null; i++) {
+            if (Files.isDirectory(p.resolve("sdv-feature-flag-platform"))) {
+                return p;
+            }
+            p = p.getParent();
+        }
+        return Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
     }
 
     public Path outboundSignalsPath(String car) {
