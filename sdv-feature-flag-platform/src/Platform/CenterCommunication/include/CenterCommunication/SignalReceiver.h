@@ -16,7 +16,8 @@ public:
     void stop() override;
 
 private:
-    void pollExternalSignals();
+    void runMqttLoop();
+    std::atomic<bool> stopRequested_{false};
 };
 
 }  // namespace sdv::platform::centercommunication

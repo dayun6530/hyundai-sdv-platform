@@ -49,20 +49,21 @@
     </style>
 </head>
 <body>
-    <h1>프로세스 제어 (Web)</h1>
-    <p>Car A/B 입력란에 <code>KILL:AdasFeature</code>처럼 넣으면, 플랫폼은 <strong>LifeCycleMgr가 읽은 config</strong>의 <code>feature</code> 줄에 실제로 있는 이름(예: <code>AdasFeature_B</code>)만 골라 KILL합니다. config에 없는 축약은 예전처럼 A·B 둘 다 시도합니다. 한 줄만 확실히 지정하려면 <code>KILL:AdasFeature_B</code>처럼 풀 이름을 써도 됩니다.</p>
+    <h1>MQTT Kill Switch (Web)</h1>
+    <p>Spring Boot가 MQTT로 <code>/sdv/vehicle/&lt;vehicleId&gt;/control</code>에 <code>KILL_SWITCH</code>를 publish하고, 차량(또는 mock vehicle)이 <code>/sdv/vehicle/&lt;vehicleId&gt;/telemetry</code>로 ACK를 publish하면 완료로 표시됩니다.</p>
 
     <!--
       전체 데이터 흐름 (주석):
-      1) HTML: A/B 입력 + 버튼 클릭 → confirm("정말 종료 명령을 보내시겠습니까?")
-      2) JS fetch: POST /api/system/kill (JSON: { car, command })
-      3) Controller: config/signals/ExternalSignals_<carId>.cmd에 동기 기록 후, logs/<carId>/... 확인
-      4) (기존 플랫폼) SignalReceiver → FeatureEvaluator → WARNING:…:KillSwitch 로그
+      1) HTML: car 선택(=vehicleId 변환) + targetFeature 입력 + 버튼 클릭
+      2) JS fetch: POST /api/v1/control/kill-switch (JSON: { vehicleId, targetFeature, timeoutMs })
+      3) Spring: MQTT publish (/sdv/vehicle/<vehicleId>/control)
+      4) Vehicle: telemetry ACK publish (/sdv/vehicle/<vehicleId>/telemetry)
+      5) Spring: telemetry subscribe로 ACK 수신 → REST completed
     -->
     <div style="display:grid; gap: 1rem; margin-top: 1rem;">
         <section style="background:#fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
-                <h2 style="margin:0; font-size: 1.05rem;">Target car</h2>
+                <h2 style="margin:0; font-size: 1.05rem;">Target</h2>
                 <label style="display:flex; align-items:center; gap:.5rem; color:#52525b; font-size:.9rem;">
                     <span>carId</span>
                     <select id="carSelect" style="padding:.45rem .55rem; border:1px solid #e4e4e7; border-radius:6px; background:#fff;">
@@ -93,11 +94,20 @@
                 <button type="button" class="quickCar" data-car="car_10" style="background:#e4e4e7; color:#111827;">10</button>
             </div>
 
-            <input id="cmd" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px; margin-top:.75rem;"
-                   placeholder="예) KILL:AdasFeature"
-                   autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <div style="margin-top:.75rem; display:grid; gap:.5rem;">
+                <label style="display:flex; align-items:center; justify-content:space-between; gap:.75rem; color:#52525b; font-size:.9rem;">
+                    <span>vehicleId</span>
+                    <code id="vehicleIdPreview" style="color:#111827;">001</code>
+                </label>
+                <input id="targetFeature" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px;"
+                       placeholder="예) AdasFeature_B"
+                       autocomplete="off" autocapitalize="off" spellcheck="false" />
+                <input id="timeoutMs" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px;"
+                       placeholder="timeoutMs (기본 5000)"
+                       inputmode="numeric" />
+            </div>
             <div class="actionRow">
-                <button type="button" id="killBtn">Send KILL</button>
+                <button type="button" id="killBtn">Send KILL_SWITCH</button>
                 <span id="status" class="statusText" aria-live="polite"></span>
             </div>
         </section>
@@ -105,73 +115,57 @@
 
     <script>
         (function () {
-            function sleep(ms) {
-                return new Promise(function (resolve) { setTimeout(resolve, ms); });
+            function parseCarNumber(carId) {
+                var m = String(carId || '').match(/^car_(\\d+)$/);
+                if (!m) return null;
+                return parseInt(m[1], 10);
             }
 
-            async function pollKillStatus(requestId, statusEl) {
-                // Keep polling until done or server forgets requestId.
-                for (var i = 0; i < 80; i++) { // ~80 * 350ms ≈ 28s upper bound on UI side
-                    const res = await fetch('/api/system/kill/status?requestId=' + encodeURIComponent(requestId), {
-                        method: 'GET',
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    const body = await res.json().catch(function () { return {}; });
-                    if (!res.ok) {
-                        statusEl.textContent = (body && body.error) ? body.error : ('오류: HTTP ' + res.status);
-                        statusEl.className = 'err';
-                        return;
-                    }
-                    if (body && body.done) {
-                        var outcome = body.killOutcome || '';
-                        var baseMsg = statusEl.dataset.baseMsg || '';
-                        var finalMsg = body.message || '처리 완료';
-                        statusEl.textContent = baseMsg ? (baseMsg + ' / ' + finalMsg) : finalMsg;
-                        statusEl.className = (outcome === 'failed') ? 'err' : 'ok';
-                        return;
-                    }
-                    // pending
-                    statusEl.textContent = (body && body.message) ? body.message : 'KILL 확인 중…';
-                    statusEl.className = '';
-                    await sleep(350);
-                }
-                statusEl.textContent = 'KILL 확인 시간 초과 (웹)';
-                statusEl.className = 'err';
+            function carIdToVehicleId(carId) {
+                // Demo convention: car_1 -> "001", car_10 -> "010"
+                var n = parseCarNumber(carId);
+                if (!n || n < 1) return '001';
+                var s = String(n);
+                while (s.length < 3) s = '0' + s;
+                return s;
             }
 
-            async function sendKill(car, command, btn, statusEl) {
+            async function sendKillSwitch(vehicleId, targetFeature, timeoutMs, btn, statusEl) {
                 if (!window.confirm('정말 종료 명령을 보내시겠습니까?')) return;
 
                 btn.disabled = true;
                 statusEl.textContent = '전송 중…';
                 statusEl.className = '';
-                statusEl.dataset.baseMsg = '';
 
                 try {
-                    const res = await fetch('/api/system/kill', {
+                    var body = {
+                        vehicleId: String(vehicleId || '').trim(),
+                        targetFeature: String(targetFeature || '').trim()
+                    };
+                    var t = String(timeoutMs || '').trim();
+                    if (t) {
+                        var n = parseInt(t, 10);
+                        if (!isNaN(n) && n > 0) body.timeoutMs = n;
+                    }
+
+                    const res = await fetch('/api/v1/control/kill-switch', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ car: car, command: command })
+                        body: JSON.stringify(body)
                     });
-                    const body = await res.json().catch(function () { return {}; });
+                    const resp = await res.json().catch(function () { return {}; });
                     if (res.ok) {
-                        // phase 2: accepted by server (written to ExternalSignals)
-                        var acceptedMsg = (body && body.message) ? body.message : '성공적으로 전송했습니다.';
-                        statusEl.dataset.baseMsg = acceptedMsg;
-                        statusEl.textContent = acceptedMsg;
-                        statusEl.className = 'ok';
-
-                        // phase 3: poll platform ack
-                        if (body && body.requestId) {
-                            await pollKillStatus(body.requestId, statusEl);
-                        }
+                        var st = (resp && resp.status) ? resp.status : 'OK';
+                        var detail = (resp && resp.detail) ? resp.detail : '';
+                        statusEl.textContent = 'completed=' + String(resp && resp.completed) + ' status=' + st + (detail ? (' / ' + detail) : '');
+                        statusEl.className = (String(resp && resp.completed) === 'true') ? 'ok' : '';
                     } else {
                         var errText = '오류: HTTP ' + res.status;
-                        if (body && body.error) {
-                            errText = body.error;
+                        if (resp && resp.error) {
+                            errText = resp.error;
                         }
                         statusEl.textContent = errText;
                         statusEl.className = 'err';
@@ -185,13 +179,18 @@
             }
 
             const carSelect = document.getElementById('carSelect');
-            const cmd = document.getElementById('cmd');
+            const vehicleIdPreview = document.getElementById('vehicleIdPreview');
+            const targetFeature = document.getElementById('targetFeature');
+            const timeoutMs = document.getElementById('timeoutMs');
             const killBtn = document.getElementById('killBtn');
             const status = document.getElementById('status');
 
             function setCar(carId) {
                 if (!carSelect) return;
                 carSelect.value = carId;
+                if (vehicleIdPreview) {
+                    vehicleIdPreview.textContent = carIdToVehicleId(carId);
+                }
             }
 
             document.querySelectorAll('.quickCar').forEach(function (btn) {
@@ -201,9 +200,21 @@
                 });
             });
 
+            if (carSelect) {
+                carSelect.addEventListener('change', function () {
+                    setCar(carSelect.value);
+                });
+                setCar(carSelect.value);
+            }
+
             killBtn.addEventListener('click', function () {
                 const car = carSelect ? carSelect.value : 'car_1';
-                sendKill(car, cmd.value, killBtn, status);
+                const vehicleId = carIdToVehicleId(car);
+                sendKillSwitch(vehicleId,
+                    targetFeature ? targetFeature.value : '',
+                    timeoutMs ? timeoutMs.value : '',
+                    killBtn,
+                    status);
             });
         })();
     </script>

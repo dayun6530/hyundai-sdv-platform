@@ -300,10 +300,21 @@ void LifeCycleMgr::start() {
     }
     // Export per-car log root for all child processes.
     setenv("SDV_LOG_DIR", logRootDir_.c_str(), 1);
-    // External signal file: one per instance to avoid cross-talk.
-    if (!carInstanceId_.empty()) {
-        const std::string ext = "config/signals/ExternalSignals_" + carInstanceId_ + ".cmd";
-        setenv("SDV_EXTERNAL_SIGNALS", ext.c_str(), 1);
+
+    // Vehicle id derived from car instance id (car_1 -> 001) for MQTT routing.
+    // This is the id used in MQTT topics: /sdv/vehicle/<vehicleId>/control and /telemetry.
+    if (!carInstanceId_.empty() && carInstanceId_.rfind("car_", 0) == 0) {
+        std::string n = carInstanceId_.substr(4);
+        // Keep only digits.
+        std::string digits;
+        for (char c : n) {
+            if (c >= '0' && c <= '9') digits.push_back(c);
+        }
+        if (!digits.empty()) {
+            while (digits.size() < 3) digits.insert(digits.begin(), '0');
+            if (digits.size() > 3) digits = digits.substr(digits.size() - 3);
+            setenv("SDV_VEHICLE_ID", digits.c_str(), 1);
+        }
     }
 
     // Ensure directories exist: logs/ then logs/<carId>.

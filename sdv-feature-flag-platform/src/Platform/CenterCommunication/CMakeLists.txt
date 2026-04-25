@@ -1,5 +1,7 @@
 add_library(CenterCommunicationLib
     src/Signal.cpp
+    src/SignalReceiver.cpp
+    src/SignalSender.cpp
 )
 
 target_include_directories(CenterCommunicationLib
@@ -7,8 +9,8 @@ target_include_directories(CenterCommunicationLib
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# --- Optional: MQTT vehicle agent (Paho MQTT C++ + nlohmann/json + spdlog) ---
-option(SDV_ENABLE_MQTT_VEHICLE_AGENT "Build MqttVehicleAgent (requires Paho MQTT C++, spdlog, nlohmann/json)" ON)
+# --- Optional: MQTT control (Paho MQTT C++ + nlohmann/json + spdlog) ---
+option(SDV_ENABLE_MQTT_VEHICLE_AGENT "Build MQTT components (requires Paho MQTT C++, spdlog, nlohmann/json)" ON)
 
 if(SDV_ENABLE_MQTT_VEHICLE_AGENT)
     find_package(spdlog CONFIG QUIET)
@@ -21,6 +23,10 @@ if(SDV_ENABLE_MQTT_VEHICLE_AGENT)
             "Disabling MqttVehicleAgent build. "
             "(need: spdlog, nlohmann_json, PahoMqttCpp)")
     else()
+        # Ensure SignalReceiver.cpp is compiled with MQTT deps available.
+        # (SignalReceiver subscribes to /sdv/vehicle/<id>/control and writes SignalsInbound.cmd)
+        # Sources were already added to the library above.
+
         target_sources(CenterCommunicationLib PRIVATE
             src/MqttVehicleAgent.cpp
         )

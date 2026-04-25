@@ -19,6 +19,13 @@ constexpr const char* kLogTag = "MqttVehicleAgent";
 
 std::filesystem::path resolveMonorepoRoot() {
     auto p = std::filesystem::current_path();
+    // Common layout (this repo): current_path is already ".../sdv-feature-flag-platform".
+    // In that case, treat it as the platform root (so config lives at "<root>/config", not nested).
+    if (std::filesystem::exists(p / "CMakeLists.txt") &&
+        std::filesystem::exists(p / "config") &&
+        std::filesystem::exists(p / "src")) {
+        return p;
+    }
     for (int i = 0; i < 6; ++i) {
         if (std::filesystem::exists(p / "sdv-feature-flag-platform") &&
             std::filesystem::exists(p / "kill-control-service")) {
@@ -31,8 +38,16 @@ std::filesystem::path resolveMonorepoRoot() {
 }
 
 std::filesystem::path resolveExternalSignalsFile(const std::string& logicalName) {
+    // Highest priority: allow orchestrator / car instance to choose its own external signal file.
+    // (car_1..car_10 set SDV_EXTERNAL_SIGNALS to config/signals/ExternalSignals_<car>.cmd)
+    if (const char* env = std::getenv("SDV_EXTERNAL_SIGNALS"); env != nullptr && *env != '\0') {
+        return std::filesystem::path(env);
+    }
+
     const auto repoRoot = resolveMonorepoRoot();
-    const auto configDir = repoRoot / "sdv-feature-flag-platform" / "config";
+    const auto configDir = std::filesystem::exists(repoRoot / "config")
+            ? (repoRoot / "config")
+            : (repoRoot / "sdv-feature-flag-platform" / "config");
 
     const bool lineA = logicalName.find("_A") != std::string::npos;
     const bool lineB = logicalName.find("_B") != std::string::npos;
