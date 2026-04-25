@@ -31,113 +31,47 @@
         #status { margin-top: 1rem; font-size: 0.9rem; }
         .ok { color: #15803d; }
         .err { color: #b91c1c; }
-        .actionRow {
-            margin-top: .75rem;
-            display: flex;
-            gap: .5rem;
-            align-items: flex-start;
-        }
-        .statusText {
-            flex: 1 1 auto;
-            min-width: 0;
-            font-size: .9rem;
-            line-height: 1.35;
-            white-space: normal;
-            overflow-wrap: anywhere;
-            min-height: 2.4em; /* keep card from jittering on 2-line messages */
-        }
     </style>
 </head>
 <body>
-    <h1>프로세스 제어 (Web)</h1>
-    <p>Car A/B 입력란에 <code>KILL:AdasFeature</code>처럼 넣으면, 플랫폼은 <strong>LifeCycleMgr가 읽은 config</strong>의 <code>feature</code> 줄에 실제로 있는 이름(예: <code>AdasFeature_B</code>)만 골라 KILL합니다. config에 없는 축약은 예전처럼 A·B 둘 다 시도합니다. 한 줄만 확실히 지정하려면 <code>KILL:AdasFeature_B</code>처럼 풀 이름을 써도 됩니다.</p>
+    <h1>프로세스 A / B 제어 (Web)</h1>
+    <p>A/B 각각에 <code>KILL:AdasFeature</code> 같은 명령을 입력해 전송합니다. (기존처럼 A는 A만, B는 B만)</p>
 
     <!--
       전체 데이터 흐름 (주석):
       1) HTML: A/B 입력 + 버튼 클릭 → confirm("정말 종료 명령을 보내시겠습니까?")
-      2) JS fetch: POST /api/system/kill (JSON: { car, command })
-      3) Controller: config/signals/ExternalSignals_<carId>.cmd에 동기 기록 후, logs/<carId>/... 확인
-      4) (기존 플랫폼) SignalReceiver → FeatureEvaluator → WARNING:…:KillSwitch 로그
+      2) JS fetch: POST /api/system/kill (JSON: { car, command }) 비동기
+      3) Controller: KillSignalEvent 발행 (직접 kill 없음)
+      4) SignalReceiver @EventListener(@Async): 이벤트 수신
+      5) SignalReceiver: car에 맞는 ExternalSignals_A.cmd / ExternalSignals_B.cmd에 "KILL:..." 기록
+      6) (기존 플랫폼) FeatureEvaluator 등이 파일을 읽고 비우며 기존 graceful shutdown 로직 그대로 실행
     -->
     <div style="display:grid; gap: 1rem; margin-top: 1rem;">
         <section style="background:#fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
-                <h2 style="margin:0; font-size: 1.05rem;">Target car</h2>
-                <label style="display:flex; align-items:center; gap:.5rem; color:#52525b; font-size:.9rem;">
-                    <span>carId</span>
-                    <select id="carSelect" style="padding:.45rem .55rem; border:1px solid #e4e4e7; border-radius:6px; background:#fff;">
-                        <option value="car_1">car_1</option>
-                        <option value="car_2">car_2</option>
-                        <option value="car_3">car_3</option>
-                        <option value="car_4">car_4</option>
-                        <option value="car_5">car_5</option>
-                        <option value="car_6">car_6</option>
-                        <option value="car_7">car_7</option>
-                        <option value="car_8">car_8</option>
-                        <option value="car_9">car_9</option>
-                        <option value="car_10">car_10</option>
-                    </select>
-                </label>
+            <h2 style="margin:0 0 .5rem 0; font-size: 1.05rem;">Car A</h2>
+            <input id="cmdA" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px;"
+                   placeholder="예) KILL:AdasFeature" />
+            <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center;">
+                <button type="button" id="killA">Send KILL to A</button>
+                <span id="statusA" style="font-size:.9rem;" aria-live="polite"></span>
             </div>
+        </section>
 
-            <div style="margin-top:.65rem; display:flex; flex-wrap:wrap; gap:.4rem;">
-                <button type="button" class="quickCar" data-car="car_1" style="background:#e4e4e7; color:#111827;">1</button>
-                <button type="button" class="quickCar" data-car="car_2" style="background:#e4e4e7; color:#111827;">2</button>
-                <button type="button" class="quickCar" data-car="car_3" style="background:#e4e4e7; color:#111827;">3</button>
-                <button type="button" class="quickCar" data-car="car_4" style="background:#e4e4e7; color:#111827;">4</button>
-                <button type="button" class="quickCar" data-car="car_5" style="background:#e4e4e7; color:#111827;">5</button>
-                <button type="button" class="quickCar" data-car="car_6" style="background:#e4e4e7; color:#111827;">6</button>
-                <button type="button" class="quickCar" data-car="car_7" style="background:#e4e4e7; color:#111827;">7</button>
-                <button type="button" class="quickCar" data-car="car_8" style="background:#e4e4e7; color:#111827;">8</button>
-                <button type="button" class="quickCar" data-car="car_9" style="background:#e4e4e7; color:#111827;">9</button>
-                <button type="button" class="quickCar" data-car="car_10" style="background:#e4e4e7; color:#111827;">10</button>
-            </div>
-
-            <input id="cmd" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px; margin-top:.75rem;"
-                   placeholder="예) KILL:AdasFeature"
-                   autocomplete="off" autocapitalize="off" spellcheck="false" />
-            <div class="actionRow">
-                <button type="button" id="killBtn">Send KILL</button>
-                <span id="status" class="statusText" aria-live="polite"></span>
+        <section style="background:#fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+            <h2 style="margin:0 0 .5rem 0; font-size: 1.05rem;">Car B</h2>
+            <input id="cmdB" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px;"
+                   placeholder="예) KILL:NavigationFeature" />
+            <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center;">
+                <button type="button" id="killB">Send KILL to B</button>
+                <span id="statusB" style="font-size:.9rem;" aria-live="polite"></span>
             </div>
         </section>
     </div>
 
     <script>
         (function () {
-            function sleep(ms) {
-                return new Promise(function (resolve) { setTimeout(resolve, ms); });
-            }
-
-            async function pollKillStatus(requestId, statusEl) {
-                // Keep polling until done or server forgets requestId.
-                for (var i = 0; i < 80; i++) { // ~80 * 350ms ≈ 28s upper bound on UI side
-                    const res = await fetch('/api/system/kill/status?requestId=' + encodeURIComponent(requestId), {
-                        method: 'GET',
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    const body = await res.json().catch(function () { return {}; });
-                    if (!res.ok) {
-                        statusEl.textContent = (body && body.error) ? body.error : ('오류: HTTP ' + res.status);
-                        statusEl.className = 'err';
-                        return;
-                    }
-                    if (body && body.done) {
-                        var outcome = body.killOutcome || '';
-                        var baseMsg = statusEl.dataset.baseMsg || '';
-                        var finalMsg = body.message || '처리 완료';
-                        statusEl.textContent = baseMsg ? (baseMsg + ' / ' + finalMsg) : finalMsg;
-                        statusEl.className = (outcome === 'failed') ? 'err' : 'ok';
-                        return;
-                    }
-                    // pending
-                    statusEl.textContent = (body && body.message) ? body.message : 'KILL 확인 중…';
-                    statusEl.className = '';
-                    await sleep(350);
-                }
-                statusEl.textContent = 'KILL 확인 시간 초과 (웹)';
-                statusEl.className = 'err';
-            }
+            // Spring에서 띄우면 같은 origin(예: http://localhost:18080). 파일로 직접 열면 API만 18080으로 보냄.
+            var API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:18080' : '';
 
             async function sendKill(car, command, btn, statusEl) {
                 if (!window.confirm('정말 종료 명령을 보내시겠습니까?')) return;
@@ -145,10 +79,9 @@
                 btn.disabled = true;
                 statusEl.textContent = '전송 중…';
                 statusEl.className = '';
-                statusEl.dataset.baseMsg = '';
 
                 try {
-                    const res = await fetch('/api/system/kill', {
+                    const res = await fetch(API_BASE + '/api/system/kill', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -158,22 +91,10 @@
                     });
                     const body = await res.json().catch(function () { return {}; });
                     if (res.ok) {
-                        // phase 2: accepted by server (written to ExternalSignals)
-                        var acceptedMsg = (body && body.message) ? body.message : '성공적으로 전송했습니다.';
-                        statusEl.dataset.baseMsg = acceptedMsg;
-                        statusEl.textContent = acceptedMsg;
+                        statusEl.textContent = (body && body.message) ? body.message : '접수됨';
                         statusEl.className = 'ok';
-
-                        // phase 3: poll platform ack
-                        if (body && body.requestId) {
-                            await pollKillStatus(body.requestId, statusEl);
-                        }
                     } else {
-                        var errText = '오류: HTTP ' + res.status;
-                        if (body && body.error) {
-                            errText = body.error;
-                        }
-                        statusEl.textContent = errText;
+                        statusEl.textContent = '오류: HTTP ' + res.status;
                         statusEl.className = 'err';
                     }
                 } catch (e) {
@@ -184,26 +105,18 @@
                 }
             }
 
-            const carSelect = document.getElementById('carSelect');
-            const cmd = document.getElementById('cmd');
-            const killBtn = document.getElementById('killBtn');
-            const status = document.getElementById('status');
+            const cmdA = document.getElementById('cmdA');
+            const cmdB = document.getElementById('cmdB');
+            const killA = document.getElementById('killA');
+            const killB = document.getElementById('killB');
+            const statusA = document.getElementById('statusA');
+            const statusB = document.getElementById('statusB');
 
-            function setCar(carId) {
-                if (!carSelect) return;
-                carSelect.value = carId;
-            }
-
-            document.querySelectorAll('.quickCar').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    const car = btn.getAttribute('data-car');
-                    if (car) setCar(car);
-                });
+            killA.addEventListener('click', function () {
+                sendKill('A', cmdA.value, killA, statusA);
             });
-
-            killBtn.addEventListener('click', function () {
-                const car = carSelect ? carSelect.value : 'car_1';
-                sendKill(car, cmd.value, killBtn, status);
+            killB.addEventListener('click', function () {
+                sendKill('B', cmdB.value, killB, statusB);
             });
         })();
     </script>
