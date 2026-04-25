@@ -1,2 +1,8 @@
 ADAS|B|AdasFeature_B|./deploy/active/AdasFeature_B|2026-04-14T04:51:24|success|primary
+<<<<<<< HEAD
 ADAS|B|AdasFeature_B|./deploy/active/AdasFeature_B|2026-04-14T13:42:58|success|primary
+=======
+ADAS|B|AdasFeature_B|./deploy/active/AdasFeature_B|2026-04-14T13:19:47|success|primary
+ADAS|B|AdasFeature_B|./deploy/active/AdasFeature_B|2026-04-14T13:38:25|success|primary
+ADAS|B|AdasFeature_B|./deploy/active/AdasFeature_B|2026-04-14T15:24:42|success|primary
+>>>>>>> origin/feature/killswitch_update

@@ -11,11 +11,6 @@ namespace sdv::platform::centercommunication {
 
 namespace {
 
-static bool endsWith(const std::string& s, const std::string& suffix) {
-    return s.size() >= suffix.size() &&
-        s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
 static std::string resolveExternalSignalsPath() {
     // Highest priority: explicitly set by orchestrator.
     if (const char* envPath = std::getenv("SDV_EXTERNAL_SIGNALS");
@@ -28,12 +23,17 @@ static std::string resolveExternalSignalsPath() {
     if (const char* envLogDir = std::getenv("SDV_LOG_DIR");
         envLogDir != nullptr && *envLogDir != '\0') {
         const std::string d(envLogDir);
-        if (endsWith(d, "/A") || endsWith(d, "\\A")) return "config/ExternalSignals_A.cmd";
-        if (endsWith(d, "/B") || endsWith(d, "\\B")) return "config/ExternalSignals_B.cmd";
+        // Generalized: logs/<carId> -> config/signals/ExternalSignals_<carId>.cmd
+        // Example: logs/car_1 -> config/signals/ExternalSignals_car_1.cmd
+        const std::size_t slash = d.find_last_of("/\\");
+        const std::string tail = (slash == std::string::npos) ? d : d.substr(slash + 1);
+        if (!tail.empty() && tail != "logs") {
+            return "config/signals/ExternalSignals_" + tail + ".cmd";
+        }
     }
 
-    // Backward-compatible default.
-    return "config/ExternalSignals.cmd";
+    // Default single-instance fallback.
+    return "config/signals/ExternalSignals.cmd";
 }
 
 }  // namespace
@@ -65,7 +65,7 @@ void SignalReceiver::pollExternalSignals() {
     // httpGet("/api/signals") → parse → writeToFile()
     //
     // For prototype: reads from a command file shared with the operator/terminal.
-    // IMPORTANT: when running multiple platforms (car_A + car_B) concurrently,
+    // IMPORTANT: when running multiple platforms (car_1..car_10) concurrently,
     // each must read its own input file to avoid cross-talk.
     const std::string externalPath = resolveExternalSignalsPath();
 

@@ -35,6 +35,10 @@ private:
     std::string resolveExecPath(const std::string& execName);
 
     std::string address_;
+    /// Path passed to \ref loadConfig (exported as \c SDV_LIFECYCLE_CONFIG for FeatureEvaluator KILL resolution).
+    std::string lifecycleConfigPath_;
+    /// Instance identifier used for log/signal file names (e.g., car_1, car_2, ...).
+    std::string carInstanceId_;
     /// Optional argv[2] `A`/`B` for processes whose exec name has no `Feature_A`/`Feature_B` (car-line names infer A|B).
     std::string launchAbVariant_;
     /// Platform-wide log root for this instance (e.g., logs/A or logs/B).

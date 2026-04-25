@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.sdv</groupId>
-    <artifactId>kill-control-service</artifactId>
+    <artifactId>Signal_I_F</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>kill-control-service</name>
+    <name>Signal_I_F</name>
     <description>Web-based kill signal gateway (replaces CMD stdin)</description>
 
     <properties>

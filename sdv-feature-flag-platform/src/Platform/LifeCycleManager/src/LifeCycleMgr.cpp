@@ -9,9 +9,11 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <cerrno>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <linux/limits.h>
+#include <regex>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -49,6 +51,7 @@ std::string cmdlineArgv0BaseName(const std::string& cmdlineFirstArg) {
 
 LifeCycleMgr::LifeCycleMgr()
     : address_("0.0.0.0:50051")
+    , carInstanceId_("")
     , logRootDir_("logs") {}
 
 LifeCycleMgr::~LifeCycleMgr() {
@@ -81,6 +84,18 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
         return false;
     }
 
+    lifecycleConfigPath_ = configPath;
+    if (carInstanceId_.empty()) {
+        // Derive instance id from config file name if caller didn't set it.
+        // config/car/car_1.conf -> car_1.
+        const std::size_t slash = configPath.find_last_of("/\\");
+        std::string base = (slash == std::string::npos) ? configPath : configPath.substr(slash + 1);
+        static constexpr const char* kConf = ".conf";
+        if (base.size() > 5 && base.compare(base.size() - 5, 5, kConf) == 0) {
+            base.resize(base.size() - 5);
+        }
+        carInstanceId_ = base;
+    }
     std::cout << "[LifeCycleMgr] Loading config: " << configPath << std::endl;
 
     std::string line;
@@ -124,8 +139,11 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
     std::cout << "[LifeCycleMgr] " << communications_.size() << " communication(s), "
               << features_.size() << " feature(s) loaded.\n" << std::endl;
 
-    // Derive per-car log root. This avoids crosstalk/cleanup issues when two platforms run together.
-    if (launchAbVariant_ == "A") {
+    // Derive per-instance log root. This avoids crosstalk/cleanup issues when multiple platforms run together.
+    // Keep backward-compatible fallback if instance id is missing.
+    if (!carInstanceId_.empty()) {
+        logRootDir_ = "logs/" + carInstanceId_;
+    } else if (launchAbVariant_ == "A") {
         logRootDir_ = "logs/A";
     } else if (launchAbVariant_ == "B") {
         logRootDir_ = "logs/B";
@@ -153,10 +171,20 @@ void LifeCycleMgr::spawnProcess(const std::string& execName) {
 
     pid_t pid = fork();
     if (pid == 0) {
-        if (!abArgv.empty()) {
-            execl(execPath.c_str(), execName.c_str(), argv1Addr, abArgv.c_str(), nullptr);
+        // Always append instance id as the last argv to allow safe cleanup without
+        // killing other concurrently running car instances.
+        if (!carInstanceId_.empty()) {
+            if (!abArgv.empty()) {
+                execl(execPath.c_str(), execName.c_str(), argv1Addr, abArgv.c_str(), carInstanceId_.c_str(), nullptr);
+            } else {
+                execl(execPath.c_str(), execName.c_str(), argv1Addr, carInstanceId_.c_str(), nullptr);
+            }
         } else {
-            execl(execPath.c_str(), execName.c_str(), argv1Addr, nullptr);
+            if (!abArgv.empty()) {
+                execl(execPath.c_str(), execName.c_str(), argv1Addr, abArgv.c_str(), nullptr);
+            } else {
+                execl(execPath.c_str(), execName.c_str(), argv1Addr, nullptr);
+            }
         }
         std::cerr << "Failed to exec " << execPath << std::endl;
         _exit(1);
@@ -183,7 +211,13 @@ void LifeCycleMgr::spawnProcess(const std::string& execName) {
 void LifeCycleMgr::killExistingProcesses() {
     pid_t myPid = getpid();
 
-    auto killByName = [myPid](const std::string& name) {
+    const std::string instance = carInstanceId_;
+    if (instance.empty()) {
+        std::cout << "[LifeCycleMgr] No car instance id; skip stale process cleanup." << std::endl;
+        return;
+    }
+
+    auto killByName = [myPid, instance](const std::string& name) {
         DIR* procDir = opendir("/proc");
         if (!procDir) return;
 
@@ -198,18 +232,44 @@ void LifeCycleMgr::killExistingProcesses() {
             std::ifstream cmdline(cmdlinePath);
             if (!cmdline.is_open()) continue;
 
-            std::string cmd;
-            std::getline(cmdline, cmd, '\0');
+            // /proc/<pid>/cmdline is NUL-separated argv.
+            std::string all((std::istreambuf_iterator<char>(cmdline)),
+                            std::istreambuf_iterator<char>());
+            if (all.empty()) continue;
+
+            // argv0: first segment
+            const std::size_t nul = all.find('\0');
+            const std::string argv0 = (nul == std::string::npos) ? all : all.substr(0, nul);
+
+            // Must match exact exec name
+            if (cmdlineArgv0BaseName(argv0) != name) {
+                continue;
+            }
+
+            // Must contain our instance id as one of argv segments (we append it on spawn).
+            bool sameInstance = false;
+            std::size_t pos = 0;
+            while (pos < all.size()) {
+                std::size_t end = all.find('\0', pos);
+                if (end == std::string::npos) end = all.size();
+                const std::string arg = all.substr(pos, end - pos);
+                if (arg == instance) {
+                    sameInstance = true;
+                    break;
+                }
+                pos = end + 1;
+            }
+            if (!sameInstance) {
+                continue;
+            }
 
             // Exact argv0 basename only. Substring match wrongly kills e.g. AdasFeature_B_Shadow
             // when cleaning up AdasFeature_B (B-line Shadow names contain the Primary name).
-            if (cmdlineArgv0BaseName(cmd) == name) {
-                pid_t targetPid = static_cast<pid_t>(pidVal);
-                std::cout << "[LifeCycleMgr] Killing stale process: " << name
-                          << " (PID:" << targetPid << ")" << std::endl;
-                kill(targetPid, SIGKILL);
-                waitpid(targetPid, nullptr, WNOHANG);
-            }
+            pid_t targetPid = static_cast<pid_t>(pidVal);
+            std::cout << "[LifeCycleMgr] Killing stale process: " << name
+                      << " (PID:" << targetPid << ", carId=" << instance << ")" << std::endl;
+            kill(targetPid, SIGKILL);
+            waitpid(targetPid, nullptr, WNOHANG);
         }
         closedir(procDir);
     };
@@ -235,15 +295,18 @@ void LifeCycleMgr::cleanLogDirectory() {
 }
 
 void LifeCycleMgr::start() {
+    if (!lifecycleConfigPath_.empty()) {
+        setenv("SDV_LIFECYCLE_CONFIG", lifecycleConfigPath_.c_str(), 1);
+    }
     // Export per-car log root for all child processes.
     setenv("SDV_LOG_DIR", logRootDir_.c_str(), 1);
-    if (launchAbVariant_ == "A") {
-        setenv("SDV_EXTERNAL_SIGNALS", "config/ExternalSignals_A.cmd", 1);
-    } else if (launchAbVariant_ == "B") {
-        setenv("SDV_EXTERNAL_SIGNALS", "config/ExternalSignals_B.cmd", 1);
+    // External signal file: one per instance to avoid cross-talk.
+    if (!carInstanceId_.empty()) {
+        const std::string ext = "config/signals/ExternalSignals_" + carInstanceId_ + ".cmd";
+        setenv("SDV_EXTERNAL_SIGNALS", ext.c_str(), 1);
     }
 
-    // Ensure directories exist: logs/ then logs/A|logs/B.
+    // Ensure directories exist: logs/ then logs/<carId>.
     mkdir("logs", 0755);
     if (logRootDir_ != "logs") {
         mkdir(logRootDir_.c_str(), 0755);
@@ -274,7 +337,23 @@ void LifeCycleMgr::monitor() {
         if (!p.alive) return false;
         int status;
         pid_t result = waitpid(p.pid, &status, WNOHANG);
-        if (result != 0) p.alive = false;
+        if (result == 0) {
+            // Still running.
+            return true;
+        }
+        if (result > 0) {
+            // Child exited (reaped).
+            p.alive = false;
+            return false;
+        }
+        // result == -1: waitpid failed (e.g., ECHILD). Avoid false negatives by probing.
+        // On some mixed environments, the child relationship can be ambiguous even though the PID is alive.
+        if (errno == ECHILD) {
+            if (kill(p.pid, 0) == 0) {
+                return true;
+            }
+        }
+        p.alive = false;
         return p.alive;
     };
 
@@ -379,20 +458,25 @@ int main(int argc, char* argv[]) {
 
     auto resolveDefaultConfigPathFromArgv0 = [&](const char* argv0) -> std::string {
         const std::string exe = basenameOf(argv0);
-        if (exe == "car_A") return "config/car_A.conf";
-        if (exe == "car_B") return "config/car_B.conf";
+        // Generalized: car_1, car_2, ... -> config/car_1.conf, ...
+        static const std::regex kCarN("^car_([0-9]+)$");
+        std::smatch m;
+        if (std::regex_match(exe, m, kCarN) && m.size() == 2) {
+            // Group configs live under config/car/
+            return "config/car/" + exe + ".conf";
+        }
         return {};
     };
 
     // Priority:
     // 1) explicit argv[1] config path
-    // 2) infer by executable name (car_A / car_B)
+    // 2) infer by executable name (car_<n>)
     const std::string configPath = (argc >= 2 && argv != nullptr && argv[1] != nullptr)
         ? std::string(argv[1])
         : resolveDefaultConfigPathFromArgv0((argv != nullptr) ? argv[0] : nullptr);
 
     if (configPath.empty()) {
-        std::cerr << "[Error] Please specify a config file or run as 'car_A' / 'car_B'."
+        std::cerr << "[Error] Please specify a config file or run as 'car_<n>' (e.g., car_1)."
                   << std::endl;
         return 1;
     }

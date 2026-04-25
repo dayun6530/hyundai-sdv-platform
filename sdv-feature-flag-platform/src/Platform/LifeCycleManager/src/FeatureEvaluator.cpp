@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <unordered_set>
+#include <vector>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -97,13 +99,26 @@ static bool endsWith(const std::string& s, const std::string& suffix) {
         s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-// Convenience: when running a single-car platform (car_A or car_B),
+// Convenience: when running a single-car platform (car_<n>),
 // allow signals like "KILL:AdasFeature" and map them to AdasFeature_A / AdasFeature_B.
 static std::string normalizeCarLineTarget(const std::string& raw, std::optional<char> variantOpt) {
     if (!variantOpt.has_value()) return raw;
     const char v = *variantOpt;
     if (v != 'A' && v != 'B') return raw;
     if (raw.empty() || containsCarLineSuffix(raw)) return raw;
+
+    // Car-line shadow: "Foo_Shadow" where Foo has no _A/_B -> "Foo_A_Shadow" / "Foo_B_Shadow".
+    // Must run before the legacy "…Shadow" suffix rule, otherwise "AdasFeature_Shadow" is parsed
+    // as legacy base "AdasFeature_" and becomes "AdasFeature__A_Shadow" (wrong).
+    static constexpr const char kCarLineShadowSuffix[] = "_Shadow";
+    if (endsWith(raw, kCarLineShadowSuffix)) {
+        const std::string base =
+            raw.substr(0, raw.size() - (sizeof(kCarLineShadowSuffix) - 1));
+        if (base.empty() || containsCarLineSuffix(base)) {
+            return raw;
+        }
+        return base + "_" + std::string(1, v) + kCarLineShadowSuffix;
+    }
 
     // Handle legacy shadow names "FooShadow" -> "Foo_A_Shadow"
     if (endsWith(raw, "Shadow")) {
@@ -114,6 +129,119 @@ static std::string normalizeCarLineTarget(const std::string& raw, std::optional<
 
     // Plain feature base name "Foo" -> "Foo_A"
     return raw + "_" + std::string(1, v);
+}
+
+/// Reads \c feature lines from the config path in \c SDV_LIFECYCLE_CONFIG (set by LifeCycleMgr).
+static std::unordered_set<std::string> loadFeatureExecNamesFromLifecycleConfig() {
+    std::unordered_set<std::string> names;
+    const char* env = std::getenv("SDV_LIFECYCLE_CONFIG");
+    if (env == nullptr || *env == '\0') {
+        return names;
+    }
+    std::ifstream file(env);
+    if (!file.is_open()) {
+        return names;
+    }
+    std::string line;
+    while (std::getline(file, line)) {
+        trimInPlace(line);
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+        std::istringstream iss(line);
+        std::string key;
+        std::string value;
+        if (!(iss >> key) || key[0] == '#') {
+            continue;
+        }
+        if (!(iss >> value)) {
+            continue;
+        }
+        if (key == "feature") {
+            names.insert(std::move(value));
+        }
+    }
+    return names;
+}
+
+/// Maps shorthand KILL targets (e.g. \c AdasFeature) to concrete exec names present in config.
+/// Returns empty if \p raw is not a known shorthand or nothing from the shorthand matches config.
+static std::vector<std::string> resolveCarLineKillTargetsUsingConfig(
+    const std::string& raw,
+    const std::unordered_set<std::string>& deployed) {
+    std::vector<std::string> matches;
+    static constexpr const char* kDomains[] = {
+        "NavigationFeature",
+        "AdasFeature",
+        "EvEnergyFeature",
+    };
+    for (const char* d : kDomains) {
+        const std::string dom(d);
+        if (raw == dom) {
+            const std::string a = dom + "_A";
+            const std::string b = dom + "_B";
+            if (deployed.count(a)) {
+                matches.push_back(a);
+            }
+            if (deployed.count(b)) {
+                matches.push_back(b);
+            }
+            return matches;
+        }
+        if (raw == dom + "_Shadow") {
+            const std::string as = dom + "_A_Shadow";
+            const std::string bs = dom + "_B_Shadow";
+            if (deployed.count(as)) {
+                matches.push_back(as);
+            }
+            if (deployed.count(bs)) {
+                matches.push_back(bs);
+            }
+            const std::string leg = dom + "Shadow";
+            if (deployed.count(leg)) {
+                matches.push_back(leg);
+            }
+            return matches;
+        }
+        if (raw == dom + "Shadow") {
+            const std::string as = dom + "_A_Shadow";
+            const std::string bs = dom + "_B_Shadow";
+            if (deployed.count(as)) {
+                matches.push_back(as);
+            }
+            if (deployed.count(bs)) {
+                matches.push_back(bs);
+            }
+            if (deployed.count(dom + "Shadow")) {
+                matches.push_back(dom + "Shadow");
+            }
+            return matches;
+        }
+    }
+    return {};
+}
+
+/// Fallback when \c SDV_LIFECYCLE_CONFIG is unset/unreadable or shorthand matched nothing in config:
+/// KILL both A and B car-line names for the domain.
+static std::vector<std::string> expandAmbiguousCarLineKillTargets(const std::string& raw) {
+    static constexpr const char* kDomains[] = {
+        "NavigationFeature",
+        "AdasFeature",
+        "EvEnergyFeature",
+    };
+    for (const char* d : kDomains) {
+        const std::string dom(d);
+        if (raw == dom) {
+            return {dom + "_A", dom + "_B"};
+        }
+        if (raw == dom + "_Shadow") {
+            return {dom + "_A_Shadow", dom + "_B_Shadow"};
+        }
+        if (raw == dom + "Shadow") {
+            return {dom + "_A_Shadow", dom + "_B_Shadow"};
+        }
+    }
+    return {};
 }
 
 }  // namespace
@@ -230,28 +358,41 @@ void FeatureEvaluator::processSignals() {
         trimInPlace(action);
         trimInPlace(featureName);
 
-        // Single-car convenience: infer _A/_B suffix when omitted.
-        featureName = normalizeCarLineTarget(featureName, getAbVariant());
+        const std::string rawTarget = featureName;
+        const std::string normalizedTarget =
+            normalizeCarLineTarget(rawTarget, getAbVariant());
 
         if (action == "FLAG_ON") {
-            sendFlagOn(featureName);
+            sendFlagOn(normalizedTarget);
         } else if (action == "FLAG_OFF") {
-            sendFlagOff(featureName);
+            sendFlagOff(normalizedTarget);
         } else if (action == "KILL") {
+            const std::unordered_set<std::string> deployed =
+                loadFeatureExecNamesFromLifecycleConfig();
+            std::vector<std::string> killTargets =
+                resolveCarLineKillTargetsUsingConfig(rawTarget, deployed);
+            if (killTargets.empty()) {
+                killTargets = expandAmbiguousCarLineKillTargets(rawTarget);
+            }
+            if (killTargets.empty()) {
+                killTargets.push_back(normalizedTarget);
+            }
             static constexpr const char kKillAllSuffix[] = "_ALL";
             constexpr std::size_t kAllLen = sizeof(kKillAllSuffix) - 1;
-            if (featureName.size() > kAllLen &&
-                featureName.compare(featureName.size() - kAllLen, kAllLen, kKillAllSuffix) == 0) {
-                const std::string base = featureName.substr(0, featureName.size() - kAllLen);
-                const std::string shadowName = shadowLogicalNameForPrimaryBase(base);
-                log(LogLevel::warn,
-                    "KILL_ALL -> Shadow " + shadowName + " then Primary " + base);
-                // Shadow first: each queue processes Shadow-target kill before Primary-target,
-                // so paired Shadow exits cleanly; Primary ignores the Shadow kill line.
-                sendKillSwitch(shadowName);
-                sendKillSwitch(base);
-            } else {
-                sendKillSwitch(featureName);
+            for (const std::string& killName : killTargets) {
+                if (killName.size() > kAllLen &&
+                    killName.compare(killName.size() - kAllLen, kAllLen, kKillAllSuffix) == 0) {
+                    const std::string base = killName.substr(0, killName.size() - kAllLen);
+                    const std::string shadowName = shadowLogicalNameForPrimaryBase(base);
+                    log(LogLevel::warn,
+                        "KILL_ALL -> Shadow " + shadowName + " then Primary " + base);
+                    // Shadow first: each queue processes Shadow-target kill before Primary-target,
+                    // so paired Shadow exits cleanly; Primary ignores the Shadow kill line.
+                    sendKillSwitch(shadowName);
+                    sendKillSwitch(base);
+                } else {
+                    sendKillSwitch(killName);
+                }
             }
         } else if (
             // Demo-friendly canonical situation types
@@ -264,21 +405,21 @@ void FeatureEvaluator::processSignals() {
             action == "DMS_DRIVER_SLEEP" ||
             action == "DRIVER_DROWSY") {
             // External situation signals (from SignalReceiver) mapped to KillSwitch.
-            log(LogLevel::warn, action + " -> KILL " + featureName);
-            sendKillSwitch(featureName);
+            log(LogLevel::warn, action + " -> KILL " + normalizedTarget);
+            sendKillSwitch(normalizedTarget);
         } else if (action == "SHADOW_ON") {
-            sendShadowOn(featureName);
+            sendShadowOn(normalizedTarget);
         } else if (action == "SHADOW_OFF") {
-            sendShadowOff(featureName);
+            sendShadowOff(normalizedTarget);
         } else if (action == "SHADOW_PROMOTE") {
-            sendShadowPromotionRequest(featureName);
+            sendShadowPromotionRequest(normalizedTarget);
         } else if (action == "AB_SET") {
             if (extra.size() != 1 || (extra[0] != 'A' && extra[0] != 'B')) {
                 log(LogLevel::warn,
                     "invalid AB_SET format (expected AB_SET:FeatureName:A or AB_SET:FeatureName:B): " + cmd);
                 continue;
             }
-            sendAbSet(featureName, extra[0]);
+            sendAbSet(normalizedTarget, extra[0]);
         } else {
             log(LogLevel::warn, "unknown action: " + action);
         }
