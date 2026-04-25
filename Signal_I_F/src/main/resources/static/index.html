@@ -4,74 +4,81 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>시스템 제어 — KILL</title>
-    <style>
-        :root {
-            font-family: system-ui, sans-serif;
-            color: #1a1a1a;
-            background: #f4f4f5;
-        }
-        body {
-            max-width: 32rem;
-            margin: 3rem auto;
-            padding: 0 1rem;
-        }
-        h1 { font-size: 1.25rem; }
-        p { color: #52525b; line-height: 1.5; }
-        button {
-            background: #b91c1c;
-            color: #fff;
-            border: none;
-            padding: 0.65rem 1.25rem;
-            border-radius: 6px;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-        button:hover { background: #991b1b; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        #status { margin-top: 1rem; font-size: 0.9rem; }
-        .ok { color: #15803d; }
-        .err { color: #b91c1c; }
-    </style>
+    <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-    <h1>프로세스 A / B 제어 (Web)</h1>
-    <p>A/B 각각에 <code>KILL:AdasFeature</code> 같은 명령을 입력해 전송합니다. (기존처럼 A는 A만, B는 B만)</p>
+    <main class="app-shell">
+        <header class="page-header">
+            <div>
+                <h1>Signal Control</h1>
+                <p>차량(<span class="mono">car_1</span> ~ <span class="mono">car_10</span>) 대상에 <span class="mono">KILL:FeatureName</span> 명령을 전송합니다. 플랫폼은 config의 실제 feature 이름(예: <span class="mono">AdasFeature_B</span>)만 KILL 대상으로 인식합니다.</p>
+            </div>
+            <div class="header-badges">
+                <span class="pill pill-neutral">endpoint: <span class="mono">POST /api/system/kill</span></span>
+            </div>
+        </header>
 
     <!--
       전체 데이터 흐름 (주석):
       1) HTML: A/B 입력 + 버튼 클릭 → confirm("정말 종료 명령을 보내시겠습니까?")
-      2) JS fetch: POST /api/system/kill (JSON: { car, command }) 비동기
-      3) Controller: KillSignalEvent 발행 (직접 kill 없음)
-      4) SignalReceiver @EventListener(@Async): 이벤트 수신
-      5) SignalReceiver: car에 맞는 ExternalSignals_A.cmd / ExternalSignals_B.cmd에 "KILL:..." 기록
-      6) (기존 플랫폼) FeatureEvaluator 등이 파일을 읽고 비우며 기존 graceful shutdown 로직 그대로 실행
+      2) JS fetch: POST /api/system/kill (JSON: { car, command })
+      3) Controller: MQTT publish (/sdv/vehicle/<carId>/control) 후 telemetry ACK 대기
     -->
-    <div style="display:grid; gap: 1rem; margin-top: 1rem;">
-        <section style="background:#fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
-            <h2 style="margin:0 0 .5rem 0; font-size: 1.05rem;">Car A</h2>
-            <input id="cmdA" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px;"
-                   placeholder="예) KILL:AdasFeature" />
-            <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center;">
-                <button type="button" id="killA">Send KILL to A</button>
-                <span id="statusA" style="font-size:.9rem;" aria-live="polite"></span>
+        <section class="card">
+            <div class="card-header">
+                <h2>Target car</h2>
+                <div class="control-row">
+                    <span class="label">carId</span>
+                    <select id="carSelect" aria-label="carId">
+                        <option value="car_1">car_1</option>
+                        <option value="car_2">car_2</option>
+                        <option value="car_3">car_3</option>
+                        <option value="car_4">car_4</option>
+                        <option value="car_5">car_5</option>
+                        <option value="car_6">car_6</option>
+                        <option value="car_7">car_7</option>
+                        <option value="car_8">car_8</option>
+                        <option value="car_9">car_9</option>
+                        <option value="car_10">car_10</option>
+                    </select>
+                </div>
             </div>
-        </section>
 
-        <section style="background:#fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
-            <h2 style="margin:0 0 .5rem 0; font-size: 1.05rem;">Car B</h2>
-            <input id="cmdB" style="width:100%; padding:.6rem; border:1px solid #e4e4e7; border-radius:6px;"
-                   placeholder="예) KILL:NavigationFeature" />
-            <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center;">
-                <button type="button" id="killB">Send KILL to B</button>
-                <span id="statusB" style="font-size:.9rem;" aria-live="polite"></span>
+            <div class="quick-row" aria-label="quick car select">
+                <button type="button" class="btn quickCar" data-car="car_1">1</button>
+                <button type="button" class="btn quickCar" data-car="car_2">2</button>
+                <button type="button" class="btn quickCar" data-car="car_3">3</button>
+                <button type="button" class="btn quickCar" data-car="car_4">4</button>
+                <button type="button" class="btn quickCar" data-car="car_5">5</button>
+                <button type="button" class="btn quickCar" data-car="car_6">6</button>
+                <button type="button" class="btn quickCar" data-car="car_7">7</button>
+                <button type="button" class="btn quickCar" data-car="car_8">8</button>
+                <button type="button" class="btn quickCar" data-car="car_9">9</button>
+                <button type="button" class="btn quickCar" data-car="car_10">10</button>
+            </div>
+
+            <div class="control-row" style="margin-bottom: 0;">
+                <span class="label">command</span>
+            </div>
+            <input
+                id="cmd"
+                type="text"
+                placeholder="예) KILL:AdasFeature"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+            />
+            <div class="actionRow">
+                <button type="button" id="killBtn" class="btn btn-primary">Send KILL</button>
+                <span id="status" class="statusText" aria-live="polite"></span>
             </div>
         </section>
-    </div>
 
     <script>
         (function () {
-            // Spring에서 띄우면 같은 origin(예: http://localhost:18080). 파일로 직접 열면 API만 18080으로 보냄.
-            var API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:18080' : '';
+            function sleep(ms) {
+                return new Promise(function (resolve) { setTimeout(resolve, ms); });
+            }
 
             async function sendKill(car, command, btn, statusEl) {
                 if (!window.confirm('정말 종료 명령을 보내시겠습니까?')) return;
@@ -79,9 +86,10 @@
                 btn.disabled = true;
                 statusEl.textContent = '전송 중…';
                 statusEl.className = '';
+                statusEl.dataset.baseMsg = '';
 
                 try {
-                    const res = await fetch(API_BASE + '/api/system/kill', {
+                    const res = await fetch('/api/system/kill', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -91,34 +99,49 @@
                     });
                     const body = await res.json().catch(function () { return {}; });
                     if (res.ok) {
-                        statusEl.textContent = (body && body.message) ? body.message : '접수됨';
-                        statusEl.className = 'ok';
+                        var msg = (body && body.message) ? body.message : '전송 완료';
+                        var detail = (body && body.detail) ? (' / ' + body.detail) : '';
+                        statusEl.textContent = msg + detail;
+                        statusEl.className = 'status-ok';
                     } else {
-                        statusEl.textContent = '오류: HTTP ' + res.status;
-                        statusEl.className = 'err';
+                        var errText = '오류: HTTP ' + res.status;
+                        if (body && body.error) {
+                            errText = body.error;
+                        }
+                        statusEl.textContent = errText;
+                        statusEl.className = 'status-err';
                     }
                 } catch (e) {
                     statusEl.textContent = '네트워크 오류: ' + (e && e.message ? e.message : e);
-                    statusEl.className = 'err';
+                    statusEl.className = 'status-err';
                 } finally {
                     btn.disabled = false;
                 }
             }
 
-            const cmdA = document.getElementById('cmdA');
-            const cmdB = document.getElementById('cmdB');
-            const killA = document.getElementById('killA');
-            const killB = document.getElementById('killB');
-            const statusA = document.getElementById('statusA');
-            const statusB = document.getElementById('statusB');
+            const carSelect = document.getElementById('carSelect');
+            const cmd = document.getElementById('cmd');
+            const killBtn = document.getElementById('killBtn');
+            const status = document.getElementById('status');
 
-            killA.addEventListener('click', function () {
-                sendKill('A', cmdA.value, killA, statusA);
+            function setCar(carId) {
+                if (!carSelect) return;
+                carSelect.value = carId;
+            }
+
+            document.querySelectorAll('.quickCar').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const car = btn.getAttribute('data-car');
+                    if (car) setCar(car);
+                });
             });
-            killB.addEventListener('click', function () {
-                sendKill('B', cmdB.value, killB, statusB);
+
+            killBtn.addEventListener('click', function () {
+                const car = carSelect ? carSelect.value : 'car_1';
+                sendKill(car, cmd.value, killBtn, status);
             });
         })();
     </script>
+    </main>
 </body>
 </html>

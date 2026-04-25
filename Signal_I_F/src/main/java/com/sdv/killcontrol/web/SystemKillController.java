@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * REST API entry for web UI kill requests.
@@ -30,6 +32,7 @@ import java.util.Objects;
 public class SystemKillController {
 
     private final ApplicationEventPublisher eventPublisher;
+    private static final Pattern CAR_ID_PATTERN = Pattern.compile("^car_(\\d{1,2})$", Pattern.CASE_INSENSITIVE);
 
     public SystemKillController(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
@@ -54,18 +57,29 @@ public class SystemKillController {
     /**
      * Web payload:
      * <ul>
-     *   <li>car: "A" | "B"</li>
+     *   <li>car: "A" | "B" | "car_1".."car_10"</li>
      *   <li>command: e.g. "KILL:AdasFeature" / "KILL:NavigationFeature:REASON"</li>
      * </ul>
      */
     public record KillRequest(String car, String command) {}
 
     private static String normalizeCar(String car) {
-        final String c = (car == null) ? "" : car.trim().toUpperCase();
-        if (!Objects.equals(c, "A") && !Objects.equals(c, "B")) {
-            throw new IllegalArgumentException("car must be 'A' or 'B'");
+        final String raw = (car == null) ? "" : car.trim();
+        final String c = raw.toUpperCase();
+        if (Objects.equals(c, "A") || Objects.equals(c, "B")) {
+            return c;
         }
-        return c;
+
+        final Matcher m = CAR_ID_PATTERN.matcher(raw);
+        if (m.matches()) {
+            final int n = Integer.parseInt(m.group(1));
+            if (n < 1 || n > 10) {
+                throw new IllegalArgumentException("car must be 'A', 'B', or 'car_1'..'car_10'");
+            }
+            return "car_" + n;
+        }
+
+        throw new IllegalArgumentException("car must be 'A', 'B', or 'car_1'..'car_10'");
     }
 
     private static String normalizeCommand(String command) {
@@ -80,9 +94,13 @@ public class SystemKillController {
     }
 
     private static String normalizeCommandForCar(String command, String car) {
-        // Map "KILL:AdasFeature" to "KILL:AdasFeature_A|_B" to match the platform's
-        // car-line executables (AdasFeature_A, AdasFeature_B, ...). If the caller already
-        // provided a suffix, keep it.
+        // Legacy A/B mode: Map "KILL:AdasFeature" to "KILL:AdasFeature_A|_B" to match the
+        // platform's car-line executables (AdasFeature_A, AdasFeature_B, ...).
+        // For car_1..car_10 mode, keep the command as-is (caller may send full name if needed).
+        if (!Objects.equals(car, "A") && !Objects.equals(car, "B")) {
+            return command;
+        }
+
         final String v = car; // "A" or "B"
 
         final String raw = command.trim();

@@ -41,6 +41,7 @@ public class SignalReceiver {
 
     private final Path externalSignalsA;
     private final Path externalSignalsB;
+    private final Path externalSignalsDir;
     private final CarProcessRuntime runtime;
 
     public SignalReceiver(CarProcessRuntime runtime) {
@@ -48,9 +49,10 @@ public class SignalReceiver {
         // Resolve repo root robustly: when launched from kill-control-service/, user.dir
         // points to that module. The platform watches "<repo>/sdv-feature-flag-platform/config/ExternalSignals_*.cmd".
         final Path repoRoot = resolveRepoRoot();
-        final Path base = repoRoot.resolve("sdv-feature-flag-platform").resolve("config");
-        this.externalSignalsA = base.resolve("ExternalSignals_A.cmd");
-        this.externalSignalsB = base.resolve("ExternalSignals_B.cmd");
+        final Path configBase = repoRoot.resolve("sdv-feature-flag-platform").resolve("config");
+        this.externalSignalsA = configBase.resolve("ExternalSignals_A.cmd");
+        this.externalSignalsB = configBase.resolve("ExternalSignals_B.cmd");
+        this.externalSignalsDir = configBase.resolve("signals");
     }
 
     @Async
@@ -64,7 +66,7 @@ public class SignalReceiver {
                 event.getCommand()
         );
 
-        final Path target = "A".equals(event.getCar()) ? externalSignalsA : externalSignalsB;
+        final Path target = resolveTargetFile(event.getCar());
         appendExternalSignal(target, event.getCommand());
 
         // Preserve legacy behavior: HTTP kill should trigger immediate local shutdown
@@ -76,6 +78,13 @@ public class SignalReceiver {
         } catch (Exception e) {
             log.warn("Failed to trigger immediate shutdown (ignored): {}", e.toString());
         }
+    }
+
+    private Path resolveTargetFile(String car) {
+        if ("A".equals(car)) return externalSignalsA;
+        if ("B".equals(car)) return externalSignalsB;
+        // car_1..car_10: write to sdv-feature-flag-platform/config/signals/ExternalSignals_<car>.cmd
+        return externalSignalsDir.resolve("ExternalSignals_" + car + ".cmd");
     }
 
     private static void appendExternalSignal(Path file, String command) {
