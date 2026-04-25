@@ -1,0 +1,6 @@
+stable_version=A
+candidate_version=A
+active_version=A
+last_deployment_status=ROLLED_BACK
+last_deployed_at=2026-04-16T21:49:53
+rollback_available=yes

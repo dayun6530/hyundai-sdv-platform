@@ -1,0 +1,13 @@
+action=deploy
+feature=ADAS
+version=A
+exec=AdasFeature_A
+mode=primary
+source=./deploy/packages/AdasFeature_A
+staging=./deploy/staging/AdasFeature_A
+active=./deploy/active/AdasFeature_A
+status=success
+deployedAt=2026-04-16T21:18:27
+validation_result=success
+validation_reason=basic checks passed
+validation_hash_fnv1a64=a91a53d0af08bd0d
