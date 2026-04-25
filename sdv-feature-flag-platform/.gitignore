@@ -23,3 +23,5 @@ tests/mockup/generated/*.conf
 tests/mockup/generated/*.cmd
 .DS_Store
 Thumbs.db
+node_modules/
+sdv-feature-flag-platform/dashboard/node_modules/
