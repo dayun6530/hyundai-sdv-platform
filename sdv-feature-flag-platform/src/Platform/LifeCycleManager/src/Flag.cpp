@@ -4,7 +4,8 @@ namespace sdv::platform::lifecyclemgr {
 
 Flag::Flag(const std::string& featureName)
     : featureName_(featureName)
-    , enabled_(true)
+    // Demo contract: features start OFF by default and wait for FLAG_ON.
+    , enabled_(false)
     , killed_(false)
     , shadowMirrorEnabled_(false)
     , abVariant_() {}

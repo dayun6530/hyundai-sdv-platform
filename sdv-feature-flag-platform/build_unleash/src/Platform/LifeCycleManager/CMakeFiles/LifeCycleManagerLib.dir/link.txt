@@ -1,0 +1,2 @@
+/usr/bin/ar qc libLifeCycleManagerLib.a CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.o CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.o CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o
+/usr/bin/ranlib libLifeCycleManagerLib.a

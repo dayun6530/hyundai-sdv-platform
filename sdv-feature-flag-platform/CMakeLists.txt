@@ -17,6 +17,26 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+option(SDV_ENABLE_UNLEASH "Enable Unleash flag sync via unleash-cpp-sdk" OFF)
+
+if(SDV_ENABLE_UNLEASH)
+    # Only enable if required dependencies are available (keeps default build working).
+    find_package(nlohmann_json CONFIG QUIET)
+    # Prefer CONFIG, but allow module-mode curl from system packages.
+    find_package(CURL CONFIG QUIET)
+    if(NOT CURL_FOUND)
+        find_package(CURL QUIET)
+    endif()
+    if(nlohmann_json_FOUND AND CURL_FOUND)
+        set(UNLEASH_BUILD_EXAMPLES OFF CACHE BOOL "Build Unleash SDK examples" FORCE)
+        set(UNLEASH_BUILD_TESTS OFF CACHE BOOL "Build Unleash SDK tests" FORCE)
+        add_subdirectory(third_party/unleash-cpp-sdk/unleash-cpp-sdk-main)
+        add_compile_definitions(SDV_WITH_UNLEASH=1)
+    else()
+        message(WARNING "SDV_ENABLE_UNLEASH=ON but nlohmann_json/CURL not found; Unleash integration disabled.")
+    endif()
+endif()
+
 add_subdirectory(src/Platform)
 add_subdirectory(src/Feature)
 add_subdirectory(tests)

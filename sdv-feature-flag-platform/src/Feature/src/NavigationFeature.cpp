@@ -35,13 +35,35 @@ NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
     : Feature("NavigationFeature", eventBus) {}
 
 void NavigationFeature::execute() {
-    runNavigationMainLoop();
+    log(LogLevel::info, "내비게이션 대기 중 — FLAG_ON 수신 시 브로드캐스트 시작");
+
+    while (!isStopRequested()) {
+        pollEvents();
+
+        if (!flag_.isEnabled()) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            continue;
+        }
+
+        log(LogLevel::info, "FLAG ON — 브로드캐스트 시작");
+        runNavigationMainLoop();
+
+        if (!isStopRequested()) {
+            log(LogLevel::info, "브로드캐스트 완료 — FLAG_OFF 후 다시 FLAG_ON 시 재시작");
+            flag_.disable();
+        }
+    }
 }
 
 void NavigationFeature::runNavigationMainLoop() {
     const int mod = navDemoPointCount();
     for (int i = 0; i < broadcastCount_ && !isStopRequested(); i++) {
         pollEvents();
+
+        if (!flag_.isEnabled()) {
+            // FLAG_OFF mid-run: stop emitting domain output immediately.
+            return;
+        }
 
         const int r = i % mod;
 
@@ -66,6 +88,9 @@ void NavigationFeature::runNavigationMainLoop() {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 pollEvents();
+                if (!flag_.isEnabled()) {
+                    return;
+                }
             }
         }
     }

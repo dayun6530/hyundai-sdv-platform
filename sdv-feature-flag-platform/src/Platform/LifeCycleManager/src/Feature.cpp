@@ -60,19 +60,20 @@ Feature::~Feature() {
 int Feature::run() {
     flag_.resetRunState();
 
-    if (!flag_.isEnabled()) {
-        log(LogLevel::warn, "Flag is OFF. Feature will not start.");
-        return 0;
-    }
-
     componentId_ = eventBus_.registerComponent();
     if (componentId_ <= 0) {
         log(LogLevel::error, "EventBus registration failed. Terminating.");
         return 1;
     }
-    log(LogLevel::info, "started (ID:" + std::to_string(componentId_) +
-        ", PID:" + std::to_string(getpid()) +
-        ", Flag:ON)");
+    if (flag_.isEnabled()) {
+        log(LogLevel::info, "started (ID:" + std::to_string(componentId_) +
+            ", PID:" + std::to_string(getpid()) +
+            ", Flag:ON)");
+    } else {
+        log(LogLevel::info, "registered (ID:" + std::to_string(componentId_) +
+            ", PID:" + std::to_string(getpid()) +
+            ") — FLAG_ON 대기 중");
+    }
 
     if (isShadowMode_) {
         log(LogLevel::info, std::string("Shadow observer — mirroring Primary: ") + primaryName_);
@@ -268,6 +269,11 @@ bool Feature::sendDomainEvent(EventId id, const std::string& message) {
         log(LogLevel::error,
             "Shadow observer / non-Primary: domain send blocked (no vehicle control path)");
         return false;
+    }
+
+    // FeatureFlagOff means "do not emit domain output" (process stays alive and keeps consuming control events).
+    if (!flag_.isEnabled()) {
+        return true;
     }
 
     if (!eventBus_.sendEvent(Event(id, message))) {

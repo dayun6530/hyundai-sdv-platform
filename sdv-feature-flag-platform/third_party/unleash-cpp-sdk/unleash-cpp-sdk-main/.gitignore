@@ -1,0 +1,18 @@
+#Cmake/build tree should be ignored as for now: 
+build/**
+
+compile_commands.json
+
+#vsCode residuals should be ignored
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+#Conan generated files: 
+CMakeUserPresets.json
+.venv/*
+
+*~
+*.swp
+.DS_Store

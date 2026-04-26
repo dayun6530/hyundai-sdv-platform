@@ -142,12 +142,18 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
     if (type == "FLAG_ON") {
         const std::string target = trim(rest);
         if (target.empty()) return false;
-        return proxy.sendEvent(Event(EventId::FeatureFlagOn, target));
+        for (const auto& resolved : expandKillTarget(target, declaredFeatures)) {
+            if (!proxy.sendEvent(Event(EventId::FeatureFlagOn, resolved))) return false;
+        }
+        return true;
     }
     if (type == "FLAG_OFF") {
         const std::string target = trim(rest);
         if (target.empty()) return false;
-        return proxy.sendEvent(Event(EventId::FeatureFlagOff, target));
+        for (const auto& resolved : expandKillTarget(target, declaredFeatures)) {
+            if (!proxy.sendEvent(Event(EventId::FeatureFlagOff, resolved))) return false;
+        }
+        return true;
     }
     if (type == "SHADOW_ON") {
         const std::string target = trim(rest);

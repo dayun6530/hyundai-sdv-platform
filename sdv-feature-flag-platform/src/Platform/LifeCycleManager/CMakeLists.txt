@@ -13,3 +13,8 @@ target_link_libraries(LifeCycleManagerLib
     PUBLIC
         EventBus
 )
+
+if(TARGET unleash_sdk)
+    target_link_libraries(LifeCycleManagerLib PUBLIC unleash_sdk)
+    target_compile_definitions(LifeCycleManagerLib PUBLIC SDV_WITH_UNLEASH=1)
+endif()

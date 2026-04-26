@@ -15,7 +15,36 @@ AdasFeature::AdasFeature(EventBusInterface& eventBus)
     : Feature("AdasFeature", eventBus) {}
 
 void AdasFeature::execute() {
-    runAdasMainLoop();
+    log(LogLevel::info, "ADAS 대기 중 — FLAG_ON 수신 시 활성화");
+
+    while (!isStopRequested()) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        auto events = pollEvents();
+
+        if (!flag_.isEnabled()) {
+            continue;
+        }
+
+        for (const auto& event : events) {
+            switch (event.getEventId()) {
+            case EventId::VehicleLocationUpdate:
+                processVehicleLocation(event.getMessage());
+                break;
+
+            case EventId::RoadInfoUpdate:
+                processRoadInfo(event.getMessage());
+                break;
+
+            case EventId::QuitTheSystem:
+                log(LogLevel::info, "종료 신호 수신");
+                return;
+
+            default:
+                break;
+            }
+        }
+    }
 }
 
 void AdasFeature::runAdasMainLoop() {

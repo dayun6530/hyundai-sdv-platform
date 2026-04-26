@@ -13,6 +13,12 @@
 #include <unordered_set>
 #include <vector>
 
+#ifdef SDV_WITH_UNLEASH
+#include "unleash/Client/unleashClient.hpp"
+#include "unleash/Configuration/clientConfig.hpp"
+#include "unleash/Domain/context.hpp"
+#endif
+
 namespace sdv::platform::lifecyclemgr {
 
 namespace {
@@ -304,6 +310,50 @@ void FeatureEvaluator::execute() {
 
     emitAutoShadowModeForAllPrimaries();
 
+#ifdef SDV_WITH_UNLEASH
+    const char* unleashUrlEnv = std::getenv("UNLEASH_URL");
+    const char* unleashKeyEnv = std::getenv("UNLEASH_API_KEY");
+    const char* unleashAppEnv = std::getenv("UNLEASH_APP_NAME");
+    const std::string unleashUrl =
+        (unleashUrlEnv && *unleashUrlEnv) ? std::string(unleashUrlEnv) : std::string();
+    const std::string unleashKey =
+        (unleashKeyEnv && *unleashKeyEnv) ? std::string(unleashKeyEnv) : std::string();
+    const std::string unleashApp =
+        (unleashAppEnv && *unleashAppEnv) ? std::string(unleashAppEnv) : std::string("sdv-platform");
+
+    std::unique_ptr<unleash::UnleashClient> unleashClient;
+    if (!unleashUrl.empty() && !unleashKey.empty()) {
+        try {
+            using namespace std::chrono;
+            unleash::ClientConfig config(unleashUrl, unleashKey, unleashApp);
+            config.setTimeOutQueryMS(milliseconds(3000))
+                  .setRefreshInterval(seconds(3))
+                  .setMetricsInterval(seconds(15))
+                  .setMetricsIntervalInitial(seconds(5));
+            unleash::Context ctx;
+            unleashClient = std::make_unique<unleash::UnleashClient>(config, ctx);
+            unleashClient->onError([this](const unleash::EventHandler::ClientError& e) {
+                log(LogLevel::warn, std::string("Unleash error: ") + e.message + " | " + e.details);
+            }).onReady([this]() {
+                log(LogLevel::info, "Unleash client ready");
+            }).onUpdate([this]() {
+                log(LogLevel::info, "Unleash toggles updated");
+            });
+            unleashClient->start();
+            log(LogLevel::info, "Unleash enabled: " + unleashUrl + " (app=" + unleashApp + ")");
+        } catch (const std::exception& e) {
+            log(LogLevel::warn, std::string("Unleash init failed: ") + e.what());
+            unleashClient.reset();
+        }
+    } else {
+        log(LogLevel::info, "Unleash disabled (set UNLEASH_URL and UNLEASH_API_KEY to enable)");
+    }
+
+    auto lastNav = std::optional<bool>();
+    auto lastAdas = std::optional<bool>();
+    auto lastEnergy = std::optional<bool>();
+#endif
+
     while (!isStopRequested()) {
         processSignals();
         auto appEvents = pollEvents();
@@ -313,8 +363,41 @@ void FeatureEvaluator::execute() {
                 break;
             }
         }
+
+#ifdef SDV_WITH_UNLEASH
+        if (unleashClient) {
+            // Map Unleash flags to SDV logical feature names (base names; SignalReceiver expands to A/B as needed).
+            const bool nav = unleashClient->isEnabled("NavigationFeature");
+            const bool adas = unleashClient->isEnabled("AdasFeature");
+            const bool energy = unleashClient->isEnabled("EvEnergyFeature");
+
+            auto syncOne = [this](const char* name, bool enabled, std::optional<bool>& last) {
+                if (last.has_value() && *last == enabled) return;
+                last = enabled;
+                if (enabled) {
+                    sendFlagOn(name);
+                } else {
+                    sendFlagOff(name);
+                }
+            };
+
+            syncOne("NavigationFeature", nav, lastNav);
+            syncOne("AdasFeature", adas, lastAdas);
+            syncOne("EvEnergyFeature", energy, lastEnergy);
+        }
+#endif
+
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
+
+#ifdef SDV_WITH_UNLEASH
+    if (unleashClient) {
+        try {
+            unleashClient->stop();
+        } catch (...) {
+        }
+    }
+#endif
 }
 
 void FeatureEvaluator::processSignals() {
