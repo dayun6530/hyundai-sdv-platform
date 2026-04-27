@@ -37,6 +37,18 @@ void emitFeatureBlock(std::ostream& out, const ConfigUpdater::Selection& s) {
     out << "feature FeatureEvaluator\n";
 }
 
+bool validateActiveSlot(const std::string& slot, const char* domainLabel, std::string& error) {
+    if (slot.empty()) {
+        error = std::string("invalid ") + domainLabel + R"( slot: "")";
+        return false;
+    }
+    if (slot != "A" && slot != "B") {
+        error = std::string("invalid ") + domainLabel + " slot: " + slot;
+        return false;
+    }
+    return true;
+}
+
 }  // namespace
 
 bool ConfigUpdater::isManagedFeatureToken(const std::string& featureName) {
@@ -73,9 +85,13 @@ bool ConfigUpdater::saveSelection(const std::string& selectionPath, const Select
     return true;
 }
 
-bool ConfigUpdater::applyToConfig(const std::string& configPath, const Selection& s) {
+bool ConfigUpdater::rewriteManagedFeatureBlock(const std::string& configPath, const Selection& s,
+    bool backupOriginal,
+    std::string& error) {
+    error.clear();
     std::ifstream in(configPath);
     if (!in.is_open()) {
+        error = "failed to open " + configPath;
         return false;
     }
 
@@ -111,12 +127,56 @@ bool ConfigUpdater::applyToConfig(const std::string& configPath, const Selection
     {
         std::ofstream out(tmp, std::ios::trunc);
         if (!out.is_open()) {
+            error = "failed to open temp file " + tmp;
             return false;
         }
         out << rebuilt.str();
     }
+
+    if (backupOriginal) {
+        std::error_code bec;
+        if (std::filesystem::exists(configPath, bec)) {
+            const std::string bak = configPath + ".bak";
+            std::filesystem::copy_file(configPath, bak, std::filesystem::copy_options::overwrite_existing, bec);
+            if (bec) {
+                std::filesystem::remove(tmp, ec);
+                error = "failed to backup config to " + bak + ": " + bec.message();
+                return false;
+            }
+        }
+    }
+
     std::filesystem::rename(tmp, configPath, ec);
-    return !ec;
+    if (ec) {
+        error = "failed to replace config " + configPath + " from temp: " + ec.message();
+        return false;
+    }
+    return true;
+}
+
+bool ConfigUpdater::applyToConfig(const std::string& configPath, const Selection& s) {
+    std::string err;
+    return rewriteManagedFeatureBlock(configPath, s, false, err);
+}
+
+bool ConfigUpdater::applyStateToCarConfig(const std::string& configPath, const StateManager::VehicleState& state,
+    std::string& error) {
+    error.clear();
+    if (!validateActiveSlot(state.adas.active_slot, "ADAS", error)) {
+        return false;
+    }
+    if (!validateActiveSlot(state.navigation.active_slot, "Navigation", error)) {
+        return false;
+    }
+    if (!validateActiveSlot(state.energy.active_slot, "Energy", error)) {
+        return false;
+    }
+
+    Selection s;
+    s.adas = state.adas.active_slot;
+    s.nav = state.navigation.active_slot;
+    s.energy = state.energy.active_slot;
+    return rewriteManagedFeatureBlock(configPath, s, true, error);
 }
 
 }  // namespace sdv::platform::deployment

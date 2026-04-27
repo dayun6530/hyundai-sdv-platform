@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/82107/Desktop/Hope_2/sdv-feature-flag-platform/src/Platform/DeploymentManager/include
+CXX_INCLUDES = -I/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/include
 
-CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic
 
