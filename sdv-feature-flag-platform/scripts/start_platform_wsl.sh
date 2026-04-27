@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 PROJECT_DIR="${1:?PROJECT_DIR required}"

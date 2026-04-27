@@ -5,6 +5,35 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 $TeamRoot = (Resolve-Path (Join-Path $ProjectRoot "..")).Path
 
+function Resolve-WslDistro {
+    # Allow explicit override (team-friendly, avoids hardcoding Ubuntu name).
+    if ($env:SDV_WSL_DISTRO -and $env:SDV_WSL_DISTRO.Trim().Length -gt 0) {
+        return $env:SDV_WSL_DISTRO.Trim()
+    }
+
+    # Prefer the historical default used by this repo if it exists.
+    try {
+        $distros = & wsl.exe -l -q 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $distros) { throw "wsl list failed" }
+        $distros = $distros | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        if ($distros -contains "Ubuntu") { return "Ubuntu" }
+        # Fallback: pick the first Ubuntu* distro if present, else first distro.
+        $ubuntuLike = $distros | Where-Object { $_ -like "Ubuntu*" } | Select-Object -First 1
+        if ($ubuntuLike) { return $ubuntuLike }
+        return ($distros | Select-Object -First 1)
+    } catch {
+        # Final fallback: let wsl.exe decide default distro (no -d flag).
+        return ""
+    }
+}
+
+$WslDistro = Resolve-WslDistro
+if ($WslDistro) {
+    Write-Host "Using WSL distro: $WslDistro (override with `$env:SDV_WSL_DISTRO)"
+} else {
+    Write-Host "Using WSL default distro (override with `$env:SDV_WSL_DISTRO)"
+}
+
 function ConvertTo-WslPath {
     param([Parameter(Mandatory)][string]$WindowsPath)
     $resolved = (Resolve-Path -LiteralPath $WindowsPath).Path
@@ -29,21 +58,28 @@ $buildUnleashMarker = Join-Path $buildUnleashMarker "SdvPlatform"
 $buildWsl = if (Test-Path -LiteralPath $buildUnleashMarker) { "$projWsl/build_unleash" } else { "$projWsl/build" }
 
 Write-Host "Cleaning up previous processes..."
-$null = & wsl.exe -d Ubuntu -u root -- bash -c "pkill -f SdvPlatform; pkill -f 'car_[0-9]'; pkill -f EventBusHost; pkill -f WatchDog; pkill -f FeatureEvaluator; pkill -f DataCollector; pkill -f SignalReceiver; pkill -f SignalSender" 2>$null
+$wslArgsBase = @()
+if ($WslDistro) { $wslArgsBase += @("-d", $WslDistro) }
+$wslArgsRoot = $wslArgsBase + @("-u", "root", "--")
+
+$null = & wsl.exe @wslArgsRoot bash -c "pkill -f SdvPlatform; pkill -f 'car_[0-9]'; pkill -f EventBusHost; pkill -f WatchDog; pkill -f FeatureEvaluator; pkill -f DataCollector; pkill -f SignalReceiver; pkill -f SignalSender" 2>$null
 Start-Sleep -Seconds 2
+# Wait until old processes are fully gone; prevents LifeCycleMgr from seeing "stale PIDs" mid-shutdown.
+& wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
+& wsl.exe @wslArgsRoot bash "$projWsl/scripts/wait_shutdown_wsl.sh" "30" "0.3"
 
 Write-Host "Ensuring no manual mosquitto is running in WSL (Docker broker mode)..."
-$null = & wsl.exe -d Ubuntu -u root -- bash -c "pkill -x mosquitto || true" 2>$null
+$null = & wsl.exe @wslArgsRoot bash -c "pkill -x mosquitto || true" 2>$null
 Start-Sleep -Milliseconds 600
 
 Write-Host "Starting docker stack (teamproject/docker-compose.yml)..."
-& wsl.exe -d Ubuntu -- bash "$projWsl/scripts/docker_up_team_wsl.sh" "$teamWsl"
+& wsl.exe @wslArgsBase -- bash "$projWsl/scripts/docker_up_team_wsl.sh" "$teamWsl"
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "docker compose exited with code $LASTEXITCODE (continuing)"
 }
 
 Write-Host "Waiting for Unleash (http://localhost:4242)..."
-& wsl.exe -d Ubuntu -- bash "$projWsl/scripts/wait_unleash_http.sh"
+& wsl.exe @wslArgsBase -- bash "$projWsl/scripts/wait_unleash_http.sh"
 
 $append = @()
 if ($env:UNLEASH_URL) { $append += "UNLEASH_URL" }
@@ -60,14 +96,30 @@ if ($append.Count -gt 0) {
 
 Write-Host "Starting SDV platform (WSL)..."
 $carConfs = 1..10 | ForEach-Object { "config/car/car_$_.conf" }
-foreach ($conf in $carConfs) {
-    Write-Host "Starting SDV platform (WSL) with $conf..."
-    Start-Process -FilePath "wsl.exe" -ArgumentList @(
-        "-d", "Ubuntu",
-        "-u", "root",
-        "--", "bash", "$projWsl/scripts/start_platform_wsl.sh", $projWsl, $buildWsl, $conf
-    ) -WindowStyle Minimized
-    Start-Sleep -Milliseconds 150
+$logRel = "logs/run_sdv"
+$logWsl = "$projWsl/$logRel"
+$logWin = Join-Path $ProjectRoot $logRel
+$null = New-Item -ItemType Directory -Force -Path $logWin 2>$null
+& wsl.exe @wslArgsRoot bash -lc "mkdir -p `"$logWsl`""
+
+Write-Host "Logs will be written under: $logWin"
+# Windows checkouts can introduce CRLF into bash scripts which breaks `set -o pipefail`.
+# Normalize a small set of WSL scripts on each run (portable: uses sed, not dos2unix).
+& wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/run_cars_wsl.sh`" `"$projWsl/scripts/start_platform_wsl.sh`" 2>/dev/null || true"
+& wsl.exe @wslArgsRoot bash "$projWsl/scripts/run_cars_wsl.sh" "$projWsl" "$buildWsl" "$logWsl" "1" "10"
+
+# Make it "visibly running": open log-follow consoles (one per car).
+# This avoids spawning 10 WSL shells running the binaries directly (less fragile), while still giving
+# developers an immediate live view like the old single-car console flow.
+Write-Host "Opening car log consoles (car_1..car_10)..."
+foreach ($i in 1..10) {
+    $carName = "car_$i"
+    $logFileWsl = "$logWsl/$carName.log"
+    # Do not pass `-d` here: distro names differ across machines (Ubuntu vs Ubuntu-22.04, etc).
+    # Use the user's default WSL distro to avoid WSL_E_DISTRO_NOT_FOUND.
+    $cmd = "wsl.exe -u root -- bash -lc `"tail -n +1 -f '$logFileWsl'`""
+    Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
+    Start-Sleep -Milliseconds 120
 }
 
 function Stop-ListenPorts {
