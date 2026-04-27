@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "domain": "Navigation",
+      "feature": "NavigationFeature",
+      "version": "1.2",
+      "slot_role": "candidate",
+      "docker_image": "sdv/navigation-feature:v1.2",
+      "checksum_file": "checksum.sha256",
+      "binary_name": "NavigationFeature",
+      "package_path": "deploy/packages/Navigation/v1.2"
+    }
+  ]
+}
