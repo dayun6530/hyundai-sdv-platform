@@ -80,10 +80,12 @@ pkill -9 -f MqttVehicleAgentHost 2>/dev/null
 pkill -9 -f NavigationFeature 2>/dev/null
 pkill -9 -f AdasFeature 2>/dev/null
 pkill -9 -f EvEnergyFeature 2>/dev/null
+pkill -9 -f DeploymentMgr 2>/dev/null
 exit 0
 '@
 $null = & wsl.exe @wslArgsRoot bash -c $cleanupBash 2>$null
 Start-Sleep -Seconds 3
+
 # Wait until old processes are fully gone; avoids two car_N parents interleaving in the same log tail.
 & wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
 & wsl.exe @wslArgsRoot bash "$projWsl/scripts/wait_shutdown_wsl.sh" "60" "0.3"
@@ -153,6 +155,10 @@ foreach ($i in 1..10) {
     Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
     Start-Sleep -Milliseconds 120
 }
+
+# Small verification in the same terminal (helps confirm "10대 다 켜짐").
+Start-Sleep -Seconds 1
+& wsl.exe @wslArgsBase -- bash -lc "cd $projWsl; echo '---- running cars ----'; ps aux | grep -E 'build_unleash/car_[0-9]+|build/car_[0-9]+' | grep -v grep || true; echo '---- EventBusHost ports ----'; ss -lntp | grep -E ':5005[0-9]' || true"
 
 function Stop-ListenPorts {
     param([int[]]$Ports)

@@ -2,6 +2,9 @@ add_executable(DeploymentMgr
     src/DeploymentHistory.cpp
     src/ConfigUpdater.cpp
     src/DeploymentManager.cpp
+    src/VehicleRegistry.cpp
+    src/VersionManager.cpp
+    src/StateManager.cpp
     src/DeploymentManagerMain.cpp
 )
 

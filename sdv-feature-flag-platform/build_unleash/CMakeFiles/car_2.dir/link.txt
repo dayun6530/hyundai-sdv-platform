@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/car_2.dir/src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp.o -o car_2 
