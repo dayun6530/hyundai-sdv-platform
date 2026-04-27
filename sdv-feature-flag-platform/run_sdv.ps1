@@ -29,7 +29,7 @@ $buildUnleashMarker = Join-Path $buildUnleashMarker "SdvPlatform"
 $buildWsl = if (Test-Path -LiteralPath $buildUnleashMarker) { "$projWsl/build_unleash" } else { "$projWsl/build" }
 
 Write-Host "Cleaning up previous processes..."
-$null = & wsl.exe -d Ubuntu -u root -- bash -c "pkill -f SdvPlatform; pkill -f 'car_[0-9]'; pkill -f EventBusHost; pkill -f WatchDog; pkill -f FeatureEvaluator; pkill -f DataCollector; pkill -f SignalReceiver; pkill -f SignalSender" 2>$null
+$null = & wsl.exe -d Ubuntu -u root -- bash -c "pkill -f SdvPlatform; pkill -f 'build_unleash/car_[0-9][0-9]*'; pkill -f 'build/car_[0-9][0-9]*'; pkill -f 'config/car/car_[0-9][0-9]*\.conf'; pkill -f EventBusHost; pkill -f WatchDog; pkill -f FeatureEvaluator; pkill -f DataCollector; pkill -f SignalReceiver; pkill -f SignalSender" 2>$null
 Start-Sleep -Seconds 2
 
 Write-Host "Ensuring no manual mosquitto is running in WSL (Docker broker mode)..."
@@ -65,10 +65,14 @@ foreach ($conf in $carConfs) {
     Start-Process -FilePath "wsl.exe" -ArgumentList @(
         "-d", "Ubuntu",
         "-u", "root",
-        "--", "bash", "$projWsl/scripts/start_platform_wsl.sh", $projWsl, $buildWsl, $conf
-    ) -WindowStyle Minimized
-    Start-Sleep -Milliseconds 150
+        "--", "bash", "$projWsl/scripts/start_platform_wsl.sh", $projWsl, $buildWsl, $conf, "--foreground"
+    ) -WindowStyle Normal
+    Start-Sleep -Milliseconds 120
 }
+
+# Small verification in the same terminal (helps confirm "10대 다 켜짐").
+Start-Sleep -Seconds 1
+& wsl.exe -d Ubuntu -- bash -lc "cd $projWsl; echo '---- running cars ----'; ps aux | grep -E 'build_unleash/car_[0-9]+|build/car_[0-9]+' | grep -v grep || true; echo '---- EventBusHost ports ----'; ss -lntp | grep -E ':5005[0-9]' || true"
 
 function Stop-ListenPorts {
     param([int[]]$Ports)

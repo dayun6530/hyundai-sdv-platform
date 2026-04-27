@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash
 
 # Include any dependencies generated for this target.
 include src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/depend.make
@@ -70,66 +70,111 @@ include src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/progress.mak
 include src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
-src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o -c /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentHistory.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
-src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o -c /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp > CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp > CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/ConfigUpdater.cpp -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
-src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o -c /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VehicleRegistry.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VehicleRegistry.cpp
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VehicleRegistry.cpp > CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VehicleRegistry.cpp -o CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VersionManager.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VersionManager.cpp
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VersionManager.cpp > CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/VersionManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/StateManager.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/StateManager.cpp
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/StateManager.cpp > CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i
+
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/StateManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/flags.make
-src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp
+src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o -c /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager/src/DeploymentManagerMain.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s
 
 # Object files for target DeploymentMgr
 DeploymentMgr_OBJECTS = \
 "CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o" \
 "CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o" \
 "CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o" \
 "CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o"
 
 # External object files for target DeploymentMgr
@@ -138,21 +183,24 @@ DeploymentMgr_EXTERNAL_OBJECTS =
 DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o
 DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o
 DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o
+DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o
+DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o
+DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o
 DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o
 DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/build.make
 DeploymentMgr: src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable ../../../DeploymentMgr"
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/DeploymentMgr.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable ../../../DeploymentMgr"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/DeploymentMgr.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/build: DeploymentMgr
 .PHONY : src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/build
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/clean:
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && $(CMAKE_COMMAND) -P CMakeFiles/DeploymentMgr.dir/cmake_clean.cmake
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager && $(CMAKE_COMMAND) -P CMakeFiles/DeploymentMgr.dir/cmake_clean.cmake
 .PHONY : src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/clean
 
 src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/depend:
-	cd /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/src/Platform/DeploymentManager /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager /mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/DeploymentManager /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : src/Platform/DeploymentManager/CMakeFiles/DeploymentMgr.dir/depend
 

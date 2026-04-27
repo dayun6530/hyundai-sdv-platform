@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/mnt/c/Users/82107/Desktop/Hyundai/팀프로젝트/sdv-feature-flag-platform/tests/unit/Platform/lifecyclemgr/LogDataTest.cpp" "tests/unit/CMakeFiles/unit_log_data.dir/Platform/lifecyclemgr/LogDataTest.cpp.o" "gcc" "tests/unit/CMakeFiles/unit_log_data.dir/Platform/lifecyclemgr/LogDataTest.cpp.o.d"
+  "/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/Platform/lifecyclemgr/LogDataTest.cpp" "tests/unit/CMakeFiles/unit_log_data.dir/Platform/lifecyclemgr/LogDataTest.cpp.o" "gcc" "tests/unit/CMakeFiles/unit_log_data.dir/Platform/lifecyclemgr/LogDataTest.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

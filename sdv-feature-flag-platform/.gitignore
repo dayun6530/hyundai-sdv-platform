@@ -17,6 +17,7 @@ logs/
 *.lib
 *.exp
 *.tmp
+config/car/*.bak
 *.log
 tests/unit/tmp_*.conf
 tests/mockup/generated/*.conf
@@ -25,3 +26,6 @@ tests/mockup/generated/*.cmd
 Thumbs.db
 node_modules/
 sdv-feature-flag-platform/dashboard/node_modules/
+
+# Local backup from version-map slot assignment (status-server)
+deploy/version_map.json.bak

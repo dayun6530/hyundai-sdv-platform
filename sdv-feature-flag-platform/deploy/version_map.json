@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "features": {
+    "ADAS": {
+      "A": { "version": "v0.1", "role": "stable",    "binary": "AdasFeature_A" },
+      "B": { "version": "v0.2", "role": "candidate", "binary": "AdasFeature_B" }
+    },
+    "Navigation": {
+      "A": { "version": "v1.0", "role": "stable",    "binary": "NavigationFeature_A" },
+      "B": { "version": "v1.1", "role": "candidate", "binary": "NavigationFeature_B" }
+    },
+    "Energy": {
+      "A": { "version": "v0.5", "role": "stable",    "binary": "EvEnergyFeature_A" },
+      "B": { "version": "v0.6", "role": "candidate", "binary": "EvEnergyFeature_B" }
+    }
+  }
+}
