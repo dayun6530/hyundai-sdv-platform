@@ -59,11 +59,16 @@ if ($append.Count -gt 0) {
 }
 
 Write-Host "Starting SDV platform (WSL)..."
-Start-Process -FilePath "wsl.exe" -ArgumentList @(
-    "-d", "Ubuntu",
-    "-u", "root",
-    "--", "bash", "$projWsl/scripts/start_platform_wsl.sh", $projWsl, $buildWsl, "config/car/car_1.conf"
-) -WindowStyle Normal
+$carConfs = 1..10 | ForEach-Object { "config/car/car_$_.conf" }
+foreach ($conf in $carConfs) {
+    Write-Host "Starting SDV platform (WSL) with $conf..."
+    Start-Process -FilePath "wsl.exe" -ArgumentList @(
+        "-d", "Ubuntu",
+        "-u", "root",
+        "--", "bash", "$projWsl/scripts/start_platform_wsl.sh", $projWsl, $buildWsl, $conf
+    ) -WindowStyle Minimized
+    Start-Sleep -Milliseconds 150
+}
 
 function Stop-ListenPorts {
     param([int[]]$Ports)

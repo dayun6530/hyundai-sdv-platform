@@ -6,11 +6,17 @@ CONFIG_REL="${3:?CONFIG_REL required}"
 
 cd "${PROJECT_DIR}"
 
-if [[ -x "${BUILD_DIR}/car_1" ]]; then
-  PLATFORM="${BUILD_DIR}/car_1"
+PLATFORM=""
+if [[ "${CONFIG_REL}" =~ ^config/car/(car_[0-9]+)\.conf$ ]]; then
+  car_bin="${BASH_REMATCH[1]}"
+  if [[ -x "${BUILD_DIR}/${car_bin}" ]]; then
+    PLATFORM="${BUILD_DIR}/${car_bin}"
+  else
+    echo "[start_platform_wsl] ERROR: '${BUILD_DIR}/${car_bin}' not found/executable (CONFIG_REL=${CONFIG_REL})" >&2
+    exit 127
+  fi
 else
   PLATFORM="${BUILD_DIR}/SdvPlatform"
-  # car_1.conf only applies to car_1 binary; full platform uses root config.
   CONFIG_REL="config/SdvPlatform.conf"
 fi
 
