@@ -4,14 +4,16 @@ namespace sdv::platform::lifecyclemgr {
 
 Flag::Flag(const std::string& featureName)
     : featureName_(featureName)
-    // Demo contract: features start OFF by default and wait for FLAG_ON.
-    , enabled_(false)
+    // Demo: main feature ON at start so run_sdv alone keeps Nav/ADAS/EV demo running.
+    , enabled_(true)
     , killed_(false)
     , shadowMirrorEnabled_(false)
     , abVariant_() {}
 
 void Flag::enable() {
     enabled_ = true;
+    std::lock_guard<std::mutex> lock(subMutex_);
+    subFeatures_.clear();
 }
 
 void Flag::disable() {
@@ -71,6 +73,30 @@ bool Flag::isAbModeB() const {
 // ----- [LifeCycle] -----
 void Flag::resetRunState() {
     killed_.store(false);
+}
+
+bool Flag::isSubFeatureEnabled(const std::string& subKey) const {
+    if (subKey.empty()) {
+        return true;
+    }
+    std::lock_guard<std::mutex> lock(subMutex_);
+    const auto it = subFeatures_.find(subKey);
+    if (it == subFeatures_.end()) {
+        return true;
+    }
+    return it->second;
+}
+
+void Flag::setSubFeatureEnabled(const std::string& subKey, bool enabled) {
+    if (subKey.empty()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(subMutex_);
+    if (enabled) {
+        subFeatures_.erase(subKey);
+    } else {
+        subFeatures_[subKey] = false;
+    }
 }
 
 }  // namespace sdv::platform::lifecyclemgr

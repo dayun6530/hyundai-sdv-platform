@@ -1,8 +1,10 @@
 #pragma once
 
 #include <atomic>
+#include <mutex>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -51,6 +53,11 @@ public:
     /// Reset kill state for a new run() (enabled/disabled unchanged).
     void resetRunState();
 
+    /// Sub-feature toggles (FLAG_ON/OFF:\<Logical\>.\<KEY\> expanded to this process name).
+    /// Missing key means enabled (default ON for demo).
+    bool isSubFeatureEnabled(const std::string& subKey) const;
+    void setSubFeatureEnabled(const std::string& subKey, bool enabled);
+
 private:
     std::string featureName_;
 
@@ -59,6 +66,10 @@ private:
     std::atomic<bool> shadowMirrorEnabled_;
     
     std::optional<char> abVariant_;
+
+    mutable std::mutex subMutex_;
+    /// Only stores keys explicitly turned OFF (false). Absent key => enabled.
+    std::unordered_map<std::string, bool> subFeatures_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr

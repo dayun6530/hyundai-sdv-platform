@@ -169,16 +169,25 @@ int main(int argc, char** argv) {
         while (queue.getSize() > 0) {
             const auto e = queue.getEvent();
             const std::string payload = toJson(e);
-            try {
-                client.publish(publishTopic, payload, 1, false)->wait();
-                appendLogLine("SignalSender.log", std::string("TX ") + payload);
-                if (e.getEventId() == sdv::platform::communications::eventbus::EventId::KillSwitchAck) {
-                    const std::string feat = killAckFeatureFromMessage(e.getMessage());
-                    std::cout << "[SignalSender] Sent Message:KILL_ACK:" << feat << std::endl;
+            bool sent = false;
+            for (int attempt = 0; attempt < 2 && !sent; ++attempt) {
+                try {
+                    if (!client.is_connected()) {
+                        client.connect(conn)->wait();
+                    }
+                    client.publish(publishTopic, payload, 1, false)->wait();
+                    sent = true;
+                    appendLogLine("SignalSender.log", std::string("TX ") + payload);
+                    if (e.getEventId() == sdv::platform::communications::eventbus::EventId::KillSwitchAck) {
+                        const std::string feat = killAckFeatureFromMessage(e.getMessage());
+                        std::cout << "[SignalSender] Sent Message:KILL_ACK:" << feat << std::endl;
+                    }
+                } catch (const std::exception& ex) {
+                    if (attempt == 1) {
+                        std::cerr << "[SignalSender] publish failed: " << ex.what() << std::endl;
+                        appendLogLine("SignalSender.log", std::string("TX_FAIL ") + ex.what());
+                    }
                 }
-            } catch (const std::exception& ex) {
-                std::cerr << "[SignalSender] publish failed: " << ex.what() << std::endl;
-                appendLogLine("SignalSender.log", std::string("TX_FAIL ") + ex.what());
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(250));

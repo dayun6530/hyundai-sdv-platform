@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 TEAM_DIR="${1:?TEAM_DIR required}"

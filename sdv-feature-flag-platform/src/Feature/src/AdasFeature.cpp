@@ -15,7 +15,7 @@ AdasFeature::AdasFeature(EventBusInterface& eventBus)
     : Feature("AdasFeature", eventBus) {}
 
 void AdasFeature::execute() {
-    log(LogLevel::info, "ADAS 대기 중 — FLAG_ON 수신 시 활성화");
+    log(LogLevel::info, "ADAS 실행 — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -54,7 +54,15 @@ void AdasFeature::runAdasMainLoop() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
         auto events = pollEvents();
+        // Match execute(): drain control events in pollEvents, then skip domain work while main FLAG OFF.
+        if (!flag_.isEnabled()) {
+            continue;
+        }
         for (const auto& event : events) {
+            if (event.getEventId() == EventId::QuitTheSystem) {
+                log(LogLevel::info, "종료 신호 수신");
+                return;
+            }
             switch (event.getEventId()) {
             case EventId::VehicleLocationUpdate:
                 processVehicleLocation(event.getMessage());
@@ -63,10 +71,6 @@ void AdasFeature::runAdasMainLoop() {
             case EventId::RoadInfoUpdate:
                 processRoadInfo(event.getMessage());
                 break;
-
-            case EventId::QuitTheSystem:
-                log(LogLevel::info, "종료 신호 수신");
-                return;
 
             default:
                 break;
@@ -77,6 +81,21 @@ void AdasFeature::runAdasMainLoop() {
 
 void AdasFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신: " + message);
+    if (flag_.isSubFeatureEnabled("FCA")) {
+        log(LogLevel::info, "FCA: 전방 객체 감지 및 충돌 위험 평가");
+    } else {
+        log(LogLevel::info, "FCA: OFF (전방충돌방지 비활성)");
+    }
+    if (flag_.isSubFeatureEnabled("LKA")) {
+        log(LogLevel::info, "LKA: 차선 유지 보조 활성");
+    } else {
+        log(LogLevel::info, "LKA: OFF (차선유지 비활성)");
+    }
+    if (flag_.isSubFeatureEnabled("SCC")) {
+        log(LogLevel::info, "SCC: 스마트 크루즈 제어 추종");
+    } else {
+        log(LogLevel::info, "SCC: OFF (어댑티브 크루즈 비활성)");
+    }
     log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
     sendDomainEvent(EventId::AdasDecisionUpdate,
         std::string("ADAS_DECISION source=location status=tracking|") + message);
@@ -85,6 +104,21 @@ void AdasFeature::processVehicleLocation(const std::string& message) {
 void AdasFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
     log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
+    if (flag_.isSubFeatureEnabled("FCA")) {
+        log(LogLevel::info, "FCA: 위험 상황 예측 및 감속 권고 평가");
+    } else {
+        log(LogLevel::info, "FCA: OFF — 전방 위험 평가 생략");
+    }
+    if (flag_.isSubFeatureEnabled("LKA")) {
+        log(LogLevel::info, "LKA: 차선 유지 (도로 기준 궤적 보정)");
+    } else {
+        log(LogLevel::info, "LKA: OFF — 차선 궤적 보정 생략");
+    }
+    if (flag_.isSubFeatureEnabled("SCC")) {
+        log(LogLevel::info, "SCC: 도로 속도 한도 반영 추종");
+    } else {
+        log(LogLevel::info, "SCC: OFF — 속도 추종 생략");
+    }
     log(LogLevel::info, "자율주행 중...");
     sendDomainEvent(EventId::AdasDecisionUpdate,
         std::string("ADAS_DECISION source=road status=planning|") + message);

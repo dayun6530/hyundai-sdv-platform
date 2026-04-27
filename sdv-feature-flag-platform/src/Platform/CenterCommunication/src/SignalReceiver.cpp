@@ -7,7 +7,9 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <mqtt/async_client.h>
 #include <nlohmann/json.hpp>
@@ -80,11 +82,201 @@ static std::vector<std::string> expandKillTarget(const std::string& target,
     return {target};
 }
 
+/// e.g. `AdasFeature.FCA` -> `AdasFeature_A.FCA`, `AdasFeature_B.FCA` when lifecycle lists those.
+static std::vector<std::string> expandFlagOrSubTarget(const std::string& rest,
+                                                    const std::unordered_set<std::string>& declaredFeatures) {
+    const std::string t = trim(rest);
+    const auto dot = t.find('.');
+    if (dot == std::string::npos) {
+        return expandKillTarget(t, declaredFeatures);
+    }
+    const std::string base = trim(t.substr(0, dot));
+    const std::string sub = trim(t.substr(dot + 1));
+    if (base.empty() || sub.empty()) {
+        return {};
+    }
+    const std::vector<std::string> bases = expandKillTarget(base, declaredFeatures);
+    std::vector<std::string> out;
+    out.reserve(bases.size());
+    for (const auto& b : bases) {
+        out.push_back(b + "." + sub);
+    }
+    return out;
+}
+
+/// Mirrors logical UI feature names (NavigationFeature / AdasFeature / EvEnergyFeature), not *_A/_B.
+struct LogicalFlagSnapshot {
+    std::unordered_map<std::string, bool> mainOn;
+    std::unordered_map<std::string, std::unordered_map<std::string, bool>> subVal;
+    /// Logical names (e.g. AdasFeature) for which KILL was applied this SignalReceiver lifetime.
+    /// FLAG_ON must not revive them in MQTT state until the whole stack restarts (new receiver process).
+    std::unordered_set<std::string> killedLogical;
+
+    bool main(const std::string& logical) const {
+        const auto it = mainOn.find(logical);
+        if (it == mainOn.end()) {
+            return true;
+        }
+        return it->second;
+    }
+    bool sub(const std::string& logical, const std::string& key) const {
+        const auto it = subVal.find(logical);
+        if (it == subVal.end()) {
+            return true;
+        }
+        const auto j = it->second.find(key);
+        if (j == it->second.end()) {
+            return true;
+        }
+        return j->second;
+    }
+    void setMain(const std::string& logical, bool on) {
+        if (on) {
+            mainOn[logical] = true;
+            subVal.erase(logical);
+        } else {
+            mainOn[logical] = false;
+        }
+    }
+    void setSub(const std::string& logical, const std::string& key, bool on) {
+        if (on) {
+            subVal[logical].erase(key);
+            if (subVal[logical].empty()) {
+                subVal.erase(logical);
+            }
+        } else {
+            subVal[logical][key] = false;
+        }
+    }
+    void applyFlagOnRest(const std::string& rest) {
+        const std::string t = trim(rest);
+        const auto dot = t.find('.');
+        if (dot == std::string::npos) {
+            setMain(t, true);
+            return;
+        }
+        const std::string base = trim(t.substr(0, dot));
+        const std::string key = trim(t.substr(dot + 1));
+        if (!base.empty() && !key.empty()) {
+            setSub(base, key, true);
+        }
+    }
+    void applyFlagOffRest(const std::string& rest) {
+        const std::string t = trim(rest);
+        const auto dot = t.find('.');
+        if (dot == std::string::npos) {
+            setMain(t, false);
+            return;
+        }
+        const std::string base = trim(t.substr(0, dot));
+        const std::string key = trim(t.substr(dot + 1));
+        if (!base.empty() && !key.empty()) {
+            setSub(base, key, false);
+        }
+    }
+    void applyKillLogical(const std::string& logical) {
+        const std::string log = trim(logical);
+        if (log.empty()) {
+            return;
+        }
+        setMain(log, false);
+        killedLogical.insert(log);
+    }
+
+    bool isLogicalKilled(const std::string& logical) const {
+        const std::string log = trim(logical);
+        return !log.empty() && killedLogical.find(log) != killedLogical.end();
+    }
+
+    /// `AdasFeature`, `AdasFeature.FCA`, `NavigationFeature.LOCATION`, ...
+    static std::string logicalBaseFromFlagRest(const std::string& rest) {
+        const std::string t = trim(rest);
+        const auto dot = t.find('.');
+        if (dot == std::string::npos) {
+            return t;
+        }
+        return trim(t.substr(0, dot));
+    }
+};
+
+static std::string toLogicalFeatureName(std::string name) {
+    name = trim(name);
+    if (name.size() >= 2) {
+        const std::string suf = name.substr(name.size() - 2);
+        if (suf == "_A" || suf == "_B") {
+            return name.substr(0, name.size() - 2);
+        }
+    }
+    return name;
+}
+
+struct RxPublishContext {
+    LogicalFlagSnapshot* mirror = nullptr;
+    mqtt::async_client* mqtt = nullptr;
+    std::string carId;
+    std::string stateTopic;
+};
+
+static nlohmann::json buildStateJson(const std::string& carId, const LogicalFlagSnapshot& s) {
+    using nlohmann::json;
+    json j;
+    j["protocol_version"] = "1.0";
+    j["car_id"] = carId;
+    j["source"] = "SignalReceiver";
+    j["features"] = json::object();
+
+    const std::vector<std::pair<std::string, std::vector<std::string>>> schema = {
+        {"NavigationFeature", {"LOCATION", "ROAD", "GUIDANCE"}},
+        {"AdasFeature", {"FCA", "LKA", "SCC"}},
+        {"EvEnergyFeature", {"REGEN", "RANGE", "ECO"}},
+    };
+    for (const auto& entry : schema) {
+        const std::string& log = entry.first;
+        json f;
+        const bool mainOn = s.main(log);
+        f["main"] = mainOn;
+        json subs = json::object();
+        // When main is OFF or KILL latched to false, sub-toggles are inactive — expose all subs as
+        // false so the UI does not keep prior ON styling for LOCATION/FCA/etc.
+        for (const auto& k : entry.second) {
+            subs[k] = mainOn ? s.sub(log, k) : false;
+        }
+        f["sub"] = subs;
+        j["features"][log] = f;
+    }
+    return j;
+}
+
+static void publishFlagState(mqtt::async_client& client,
+                             const std::string& topic,
+                             const std::string& carId,
+                             const LogicalFlagSnapshot& snap) {
+    if (topic.empty()) {
+        return;
+    }
+    try {
+        const nlohmann::json j = buildStateJson(carId, snap);
+        mqtt::message_ptr msg = mqtt::make_message(topic, j.dump());
+        msg->set_qos(1);
+        msg->set_retained(true);
+        client.publish(msg)->wait_for(std::chrono::seconds(2));
+    } catch (const std::exception& e) {
+        std::cerr << "[SignalReceiver] flags/state publish failed: " << e.what() << std::endl;
+    }
+}
+
 static bool forwardControlToEventBus(sdv::platform::communications::eventbus::EventBusProxy& proxy,
                                     const std::string& line,
-                                    const std::unordered_set<std::string>& declaredFeatures) {
+                                    const std::unordered_set<std::string>& declaredFeatures,
+                                    RxPublishContext* rx = nullptr) {
     using sdv::platform::communications::eventbus::Event;
     using sdv::platform::communications::eventbus::EventId;
+
+    const auto publishIf = [&]() {
+        if (rx && rx->mirror && rx->mqtt && !rx->stateTopic.empty()) {
+            publishFlagState(*rx->mqtt, rx->stateTopic, rx->carId, *rx->mirror);
+        }
+    };
 
     const std::string t = trim(line);
     if (t.empty() || t[0] == '#') return true;
@@ -113,6 +305,10 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
                     std::cout << "[SignalReceiver] Received Message:KILL:" << resolved << std::endl;
                     if (!proxy.sendEvent(Event(EventId::KillSwitch, resolved))) return false;
                 }
+                if (rx && rx->mirror) {
+                    rx->mirror->applyKillLogical(toLogicalFeatureName(feature));
+                }
+                publishIf();
                 return true;
             }
 
@@ -136,23 +332,48 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
             std::cout << "[SignalReceiver] Received Message:KILL:" << resolved << std::endl;
             if (!proxy.sendEvent(Event(EventId::KillSwitch, resolved))) return false;
         }
+        if (rx && rx->mirror) {
+            for (const auto& resolved : expandKillTarget(target, declaredFeatures)) {
+                rx->mirror->applyKillLogical(toLogicalFeatureName(resolved));
+            }
+        }
+        publishIf();
         return true;
     }
 
     if (type == "FLAG_ON") {
         const std::string target = trim(rest);
         if (target.empty()) return false;
-        for (const auto& resolved : expandKillTarget(target, declaredFeatures)) {
+        const std::string logicalBase = LogicalFlagSnapshot::logicalBaseFromFlagRest(target);
+        const std::string logical = toLogicalFeatureName(logicalBase);
+        if (rx && rx->mirror && rx->mirror->isLogicalKilled(logical)) {
+            std::cout << "[SignalReceiver] FLAG_ON ignored (KILL latched for " << logical << "): " << target
+                      << std::endl;
+            return true;
+        }
+        const auto resolvedList = expandFlagOrSubTarget(target, declaredFeatures);
+        if (resolvedList.empty()) return false;
+        for (const auto& resolved : resolvedList) {
             if (!proxy.sendEvent(Event(EventId::FeatureFlagOn, resolved))) return false;
         }
+        if (rx && rx->mirror) {
+            rx->mirror->applyFlagOnRest(target);
+        }
+        publishIf();
         return true;
     }
     if (type == "FLAG_OFF") {
         const std::string target = trim(rest);
         if (target.empty()) return false;
-        for (const auto& resolved : expandKillTarget(target, declaredFeatures)) {
+        const auto resolvedList = expandFlagOrSubTarget(target, declaredFeatures);
+        if (resolvedList.empty()) return false;
+        for (const auto& resolved : resolvedList) {
             if (!proxy.sendEvent(Event(EventId::FeatureFlagOff, resolved))) return false;
         }
+        if (rx && rx->mirror) {
+            rx->mirror->applyFlagOffRest(target);
+        }
+        publishIf();
         return true;
     }
     if (type == "SHADOW_ON") {
@@ -240,6 +461,8 @@ int main(int argc, char** argv) {
     const std::string subscribeTopic = getenvOr(
         "SDV_MQTT_SIGNAL_RX_TOPIC",
         "/sdv/vehicle/" + carId + "/signals/inbound");
+    const std::string stateTopic =
+        getenvOr("SDV_MQTT_FLAGS_STATE_TOPIC", "/sdv/vehicle/" + carId + "/flags/state");
 
     auto declaredFeatures = loadDeclaredFeaturesFromLifecycleConfig();
 
@@ -252,6 +475,13 @@ int main(int argc, char** argv) {
 
     const std::string clientId = "sdv-" + carId + "-signal-rx";
     mqtt::async_client client(brokerUri, clientId);
+    LogicalFlagSnapshot mirror;
+    RxPublishContext rxCtx;
+    rxCtx.mirror = &mirror;
+    rxCtx.mqtt = &client;
+    rxCtx.carId = carId;
+    rxCtx.stateTopic = stateTopic;
+
     mqtt::connect_options conn;
     conn.set_clean_session(true);
     conn.set_keep_alive_interval(30);
@@ -260,8 +490,10 @@ int main(int argc, char** argv) {
         client.connect(conn)->wait();
         client.start_consuming();
         client.subscribe(subscribeTopic, 1)->wait();
+        publishFlagState(client, stateTopic, carId, mirror);
         std::cout << "[SignalReceiver] Connected. broker=" << brokerUri
                   << " topic=" << subscribeTopic
+                  << " stateTopic=" << stateTopic
                   << " eventBus=" << eventBusAddress << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[SignalReceiver] MQTT connect/subscribe failed: " << e.what() << std::endl;
@@ -274,7 +506,7 @@ int main(int argc, char** argv) {
         if (!msg) continue;
 
         const std::string payload = msg->to_string();
-        const bool ok = forwardControlToEventBus(proxy, payload, declaredFeatures);
+        const bool ok = forwardControlToEventBus(proxy, payload, declaredFeatures, &rxCtx);
         if (!ok) {
             std::cerr << "[SignalReceiver] Failed to forward inbound signal: " << payload << std::endl;
         }

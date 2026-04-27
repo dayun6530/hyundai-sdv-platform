@@ -6,7 +6,7 @@
 
 `run_sdv.bat` 1번 실행으로 아래를 같이 띄우고, test UI 또는 Unleash 설정 변경으로 `Navigation/ADAS/EvEnergy` Feature들을 제어합니다.
 
-> **Note:** `run_sdv.bat` / `run_sdv.ps1` 는 데모 기본값으로 **`car_1` 실행파일이 있으면 `car_1` + `config/car/car_1.conf` 로 플랫폼을 기동**합니다. `car_1`이 없으면 **`SdvPlatform` + `config/SdvPlatform.conf`** 로 폴백합니다.
+> **Note:** 최신 `run_sdv.ps1`는 **`car_1`~`car_10`** 을 순차 기동합니다(`scripts/run_cars_wsl.sh`). 각 차 로그는 `logs/run_sdv/car_N.log`, 차 내부 프로세스 로그는 `logs/car_N/*.log` 입니다. (구버전처럼 `car_1`만 단독 기동하는 동작은 아닙니다.)
 
 ## 수동 실행 워크플로 (팀에서 쓰는 순서 예시)
 
@@ -129,4 +129,16 @@ npm run dev
   - `FLAG_ON`: Feature 켜기
   - `FLAG_OFF`: Feature 끄기(프로세스는 유지, 출력만 중단)
   - `KILL`: 해당 Feature 프로세스 stop 요청
+
+## 6) car_1~car_10 + 서브 기능 토글 (요약)
+
+- **기동**: PowerShell에서 프로젝트 루트로 이동 후 `.\run_sdv.ps1` 한 번. (이전 잔류 프로세스는 스크립트가 정리합니다.) WSL 배포판 이름이 다르면 `$env:SDV_WSL_DISTRO="Ubuntu-22.04"` 처럼 지정 가능합니다.
+- **데모**: Feature는 기본 **메인 플래그 ON**으로 시작하며, 내비는 **라운드 종료 후에도 자동으로 다음 라운드**를 이어 갑니다(수동 `FLAG_ON` 없이도 위치/도로 이벤트가 계속 나갑니다).
+- **서브 기능 MQTT 포맷**: `FLAG_ON:<Feature>.<SUB>` / `FLAG_OFF:<Feature>.<SUB>`  
+  - ADAS: `FCA`, `LKA`, `SCC` (예: `FLAG_OFF:AdasFeature.FCA`)  
+  - Navigation: `LOCATION`, `ROAD`, `GUIDANCE`  
+  - EV Energy: `REGEN`, `RANGE`, `ECO`  
+  SignalReceiver가 `AdasFeature.FCA` 를 **`AdasFeature_A.FCA` / `AdasFeature_B.FCA`** 로 확장해 EventBus에 넣습니다.
+- **확인 로그**: `logs/car_1/AdasFeature_A.log` 등에서 `SubFlag RX`, `SubFeature ... -> OFF/ON`, 그리고 `FCA: OFF ...` 같은 **도메인 로그**가 이어지는지 확인합니다.
+- **test-ui**: `SignalReceiver`가 **`/sdv/vehicle/<car_id>/flags/state`**(JSON, retain)로 논리 플래그 스냅샷을 발행하고, test-ui는 이 토픽을 **구독해서 버튼(active)을 실제 반영 상태와 동기화**합니다. 토픽을 바꾸려면 SignalReceiver 환경변수 `SDV_MQTT_FLAGS_STATE_TOPIC` 을 사용합니다. (Unleash/FeatureEvaluator만으로 바꾼 값은 아직 이 스냅샷에 안 잡히므로, 그 경우는 추후 동일 포맷으로 발행하면 됩니다.)
 

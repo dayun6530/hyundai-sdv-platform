@@ -19,7 +19,8 @@ void NavigationFeature_A::execute() {
         std::string("Car platform — NavigationFeature_A (A-line / Flag A|B=") + line + ")");
     log(LogLevel::info, "[NAV-A] current location updated");
     log(LogLevel::info, "[NAV-A] route guidance started");
-    runNavigationMainLoop();
+    // Use base loop: FLAG_OFF pauses broadcast; FLAG_ON resumes; process stays alive for ADAS/EV feeds.
+    NavigationFeature::execute();
 }
 
 std::string NavigationFeature_A::navGuidanceForIteration(int iteration1Based) {

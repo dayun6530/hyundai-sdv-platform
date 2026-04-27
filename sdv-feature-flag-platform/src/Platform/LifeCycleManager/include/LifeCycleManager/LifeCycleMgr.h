@@ -29,8 +29,12 @@ private:
     };
 
     void cleanLogDirectory();
+    /// SIGKILL any other process whose argv0 basename equals \c carInstanceId_ (e.g. another \c car_5
+    /// LifeCycle parent). Prevents two managers interleaving stdout into the same log and reviving stale PIDs.
+    void killDuplicatePlatformManagers();
     void killExistingProcesses();
-    void spawnProcess(const std::string& execName);
+    /// Binds the forked PID to this exact config row (avoids name-collision / mismatch bugs).
+    void spawnProcess(ProcessInfo& slot);
     void terminateWithTimeout(std::vector<ProcessInfo>& list, const std::string& label);
     std::string resolveExecPath(const std::string& execName);
 

@@ -11,7 +11,7 @@ mkdir -p "${LOG_DIR}"
 cd "${PROJECT_DIR}"
 
 missing=0
-for i in $(seq "${FROM}" "${TO}"); do
+for ((i = FROM; i <= TO; i++)); do
   bin="${BUILD_DIR}/car_${i}"
   if [[ ! -x "${bin}" ]]; then
     echo "[run_cars_wsl] MISSING/NOT-EXECUTABLE: ${bin}" >&2
@@ -22,7 +22,7 @@ if [[ "${missing}" -ne 0 ]]; then
   exit 127
 fi
 
-for i in $(seq "${FROM}" "${TO}"); do
+for ((i = FROM; i <= TO; i++)); do
   car="car_${i}"
   conf="config/car/${car}.conf"
   log="${LOG_DIR}/${car}.log"

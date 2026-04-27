@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import mqtt from "mqtt";
 
 const DEFAULT_FEATURES = [
@@ -6,6 +6,24 @@ const DEFAULT_FEATURES = [
   { label: "ADAS", name: "AdasFeature" },
   { label: "EV Energy", name: "EvEnergyFeature" },
 ];
+
+const SUB_FEATURES = {
+  NavigationFeature: [
+    { key: "LOCATION", label: "위치" },
+    { key: "ROAD", label: "도로" },
+    { key: "GUIDANCE", label: "안내" },
+  ],
+  AdasFeature: [
+    { key: "FCA", label: "FCA" },
+    { key: "LKA", label: "LKA" },
+    { key: "SCC", label: "SCC" },
+  ],
+  EvEnergyFeature: [
+    { key: "REGEN", label: "회생" },
+    { key: "RANGE", label: "주행거리" },
+    { key: "ECO", label: "ECO" },
+  ],
+};
 
 function nowIso() {
   return new Date().toISOString().slice(11, 19);
@@ -17,13 +35,63 @@ function normalizeCarId(value) {
   return v.startsWith("car_") ? v : `car_${v}`;
 }
 
+function defaultUiSlice() {
+  const sub = {};
+  for (const f of DEFAULT_FEATURES) {
+    sub[f.name] = { mainOn: true };
+    for (const s of SUB_FEATURES[f.name] || []) {
+      sub[f.name][s.key] = true;
+    }
+  }
+  return sub;
+}
+
+function decodeMqttPayload(msg) {
+  if (typeof msg === "string") return msg;
+  if (msg instanceof Uint8Array) return new TextDecoder().decode(msg);
+  if (msg?.toString) return msg.toString();
+  return "";
+}
+
+function mergeFlagsState(prev, payload) {
+  const id = normalizeCarId(payload?.car_id || "");
+  if (!id) return prev;
+  const feats = payload?.features;
+  if (!feats || typeof feats !== "object") return prev;
+  const slice = { ...(prev[id] || defaultUiSlice()) };
+  for (const f of DEFAULT_FEATURES) {
+    const name = f.name;
+    const p = feats[name];
+    if (!p || typeof p !== "object") continue;
+    slice[name] = { ...(slice[name] || {}) };
+    if (typeof p.main === "boolean") slice[name].mainOn = p.main;
+    const subs = p.sub || {};
+    for (const s of SUB_FEATURES[name] || []) {
+      if (typeof subs[s.key] === "boolean") slice[name][s.key] = subs[s.key];
+    }
+  }
+  return { ...prev, [id]: slice };
+}
+
 export default function App() {
   const [brokerWsUrl, setBrokerWsUrl] = useState("ws://127.0.0.1:9001");
   const [carId, setCarId] = useState("car_1");
   const [connected, setConnected] = useState(false);
   const [logLines, setLogLines] = useState([]);
+  const [uiByCar, setUiByCar] = useState({});
 
   const topic = useMemo(() => `/sdv/vehicle/${normalizeCarId(carId)}/signals/inbound`, [carId]);
+  const stateTopic = useMemo(() => `/sdv/vehicle/${normalizeCarId(carId)}/flags/state`, [carId]);
+  const cid = normalizeCarId(carId);
+
+  useEffect(() => {
+    setUiByCar((prev) => {
+      if (prev[cid]) return prev;
+      return { ...prev, [cid]: defaultUiSlice() };
+    });
+  }, [cid]);
+
+  const ui = uiByCar[cid] ?? defaultUiSlice();
 
   useEffect(() => {
     const client = mqtt.connect(brokerWsUrl, {
@@ -44,11 +112,29 @@ export default function App() {
     client.on("connect", () => {
       setConnected(true);
       pushLog(`MQTT connected: ${brokerWsUrl}`);
-      pushLog(`TX topic: ${topic}`);
+      pushLog(`TX ${topic} | STATE ${stateTopic}`);
+      client.subscribe(topic, { qos: 1 }, (err) => {
+        if (err) pushLog(`subscribe inbound error: ${err?.message || String(err)}`);
+      });
+      client.subscribe(stateTopic, { qos: 1 }, (err) => {
+        if (err) pushLog(`subscribe state error: ${err?.message || String(err)}`);
+      });
     });
     client.on("reconnect", () => pushLog("MQTT reconnecting..."));
     client.on("close", () => setConnected(false));
     client.on("error", (err) => pushLog(`MQTT error: ${err?.message || String(err)}`));
+    client.on("message", (t, msg) => {
+      const topicStr = t.toString();
+      if (!topicStr.endsWith("/flags/state")) return;
+      try {
+        const text = decodeMqttPayload(msg);
+        const j = JSON.parse(text);
+        setUiByCar((prev) => mergeFlagsState(prev, j));
+        pushLog(`RX state ← ${topicStr}`);
+      } catch (e) {
+        pushLog(`RX state parse error: ${e?.message || String(e)}`);
+      }
+    });
 
     return () => {
       try {
@@ -56,54 +142,65 @@ export default function App() {
       } catch {
       }
     };
-    // Recreate client when URL changes.
-  }, [brokerWsUrl, topic]);
+  }, [brokerWsUrl, topic, stateTopic]);
 
-  const publish = async (payload) => {
-    const client = mqtt.connect(brokerWsUrl, {
-      clientId: `sdv-test-ui-tx-${Math.random().toString(16).slice(2)}`,
-      clean: true,
-      keepalive: 10,
-      connectTimeout: 4000,
-      reconnectPeriod: 0,
-    });
-
-    const pushLog = (line) => {
-      setLogLines((prev) => {
-        const next = [`[${nowIso()}] ${line}`, ...prev];
-        return next.slice(0, 200);
-      });
-    };
-
-    return new Promise((resolve) => {
-      client.on("connect", () => {
-        client.publish(topic, payload, { qos: 1 }, () => {
-          pushLog(`TX ${topic} ← ${payload}`);
-          client.end(true);
-          resolve(true);
+  const publish = useCallback(
+    (payload) =>
+      new Promise((resolve) => {
+        const client = mqtt.connect(brokerWsUrl, {
+          clientId: `sdv-test-ui-tx-${Math.random().toString(16).slice(2)}`,
+          clean: true,
+          keepalive: 10,
+          connectTimeout: 4000,
+          reconnectPeriod: 0,
         });
-      });
-      client.on("error", (err) => {
-        pushLog(`TX error: ${err?.message || String(err)}`);
-        try {
-          client.end(true);
-        } catch {
-        }
-        resolve(false);
-      });
-    });
+
+        const pushLog = (line) => {
+          setLogLines((prev) => {
+            const next = [`[${nowIso()}] ${line}`, ...prev];
+            return next.slice(0, 200);
+          });
+        };
+
+        client.on("connect", () => {
+          client.publish(topic, payload, { qos: 1 }, () => {
+            pushLog(`TX ${topic} ← ${payload}`);
+            client.end(true);
+            resolve(true);
+          });
+        });
+        client.on("error", (err) => {
+          pushLog(`TX error: ${err?.message || String(err)}`);
+          try {
+            client.end(true);
+          } catch {
+          }
+          resolve(false);
+        });
+      }),
+    [brokerWsUrl, topic],
+  );
+
+  const sendMain = async (feature, on) => {
+    const payload = on ? `FLAG_ON:${feature}` : `FLAG_OFF:${feature}`;
+    await publish(payload);
   };
 
-  const onFlagOn = (feature) => publish(`FLAG_ON:${feature}`);
-  const onFlagOff = (feature) => publish(`FLAG_OFF:${feature}`);
-  const onKill = (feature) => publish(`KILL:${feature}`);
+  const sendSub = async (feature, subKey, on) => {
+    const payload = on ? `FLAG_ON:${feature}.${subKey}` : `FLAG_OFF:${feature}.${subKey}`;
+    await publish(payload);
+  };
+
+  const onKill = async (feature) => {
+    await publish(`KILL:${feature}`);
+  };
 
   return (
     <main className="shell">
       <header className="header">
         <div>
           <h1>SDV Test UI</h1>
-          <p>MQTT → SignalReceiver → EventBus control demo (FLAG_ON/OFF, KILL).</p>
+          <p>MQTT 제어 + <code className="mono">flags/state</code> 로 버튼이 실제 반영 상태와 동기화됩니다.</p>
         </div>
         <div className={`pill ${connected ? "ok" : "bad"}`}>
           {connected ? "connected" : "disconnected"}
@@ -114,29 +211,80 @@ export default function App() {
         <div className="field">
           <label>MQTT WebSocket URL</label>
           <input value={brokerWsUrl} onChange={(e) => setBrokerWsUrl(e.target.value)} placeholder="ws://127.0.0.1:9001" />
-          <div className="hint">Mosquitto WebSocket port (see docker-compose: 9001).</div>
+          <div className="hint">Mosquitto WebSocket (docker-compose: 9001).</div>
         </div>
         <div className="field">
           <label>Car ID</label>
           <input value={carId} onChange={(e) => setCarId(e.target.value)} placeholder="car_1" />
-          <div className="hint">Publishes to <span className="mono">{topic}</span></div>
+          <div className="hint">
+            제어: <span className="mono">{topic}</span>
+            <br />
+            상태 구독: <span className="mono">{stateTopic}</span> (SignalReceiver가 retain 발행)
+          </div>
         </div>
       </section>
 
       <section className="card">
-        <h2>Controls</h2>
+        <h2>메인 Feature</h2>
         <div className="controls">
           {DEFAULT_FEATURES.map((f) => (
             <div key={f.name} className="row">
               <div className="feature">
                 <div className="feature-label">{f.label}</div>
                 <div className="mono feature-name">{f.name}</div>
-                <div className="hint">팀프로젝트는 {f.name} → {f.name}_A/_B 로 자동 확장될 수 있어요.</div>
               </div>
               <div className="buttons">
-                <button className="btn on" onClick={() => onFlagOn(f.name)}>FLAG_ON</button>
-                <button className="btn off" onClick={() => onFlagOff(f.name)}>FLAG_OFF</button>
-                <button className="btn kill" onClick={() => onKill(f.name)}>KILL</button>
+                <button
+                  type="button"
+                  className={`btn on${ui[f.name]?.mainOn ? " active" : ""}`}
+                  onClick={() => sendMain(f.name, true)}
+                >
+                  FLAG_ON
+                </button>
+                <button
+                  type="button"
+                  className={`btn off${!ui[f.name]?.mainOn ? " active" : ""}`}
+                  onClick={() => sendMain(f.name, false)}
+                >
+                  FLAG_OFF
+                </button>
+                <button type="button" className="btn kill" onClick={() => onKill(f.name)}>
+                  KILL
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>서브 기능 (FLAG_ON/OFF:&lt;Feature&gt;.&lt;KEY&gt;)</h2>
+        <div className="controls">
+          {DEFAULT_FEATURES.map((f) => (
+            <div key={`sub-${f.name}`} className="sub-block">
+              <div className="sub-title">{f.label}</div>
+              <div className="sub-grid">
+                {(SUB_FEATURES[f.name] || []).map((s) => (
+                  <div key={s.key} className="sub-row">
+                    <span className="mono sub-key">{s.key}</span>
+                    <div className="buttons compact">
+                      <button
+                        type="button"
+                        className={`btn on sm${ui[f.name]?.[s.key] ? " active" : ""}`}
+                        onClick={() => sendSub(f.name, s.key, true)}
+                      >
+                        ON
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn off sm${!ui[f.name]?.[s.key] ? " active" : ""}`}
+                        onClick={() => sendSub(f.name, s.key, false)}
+                      >
+                        OFF
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -152,4 +300,3 @@ export default function App() {
     </main>
   );
 }
-

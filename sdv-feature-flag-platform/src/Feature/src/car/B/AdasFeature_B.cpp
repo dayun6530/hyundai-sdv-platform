@@ -27,6 +27,21 @@ void AdasFeature_B::execute() {
 
 void AdasFeature_B::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신 (Genesis): " + message);
+    if (flag_.isSubFeatureEnabled("FCA")) {
+        log(LogLevel::info, "FCA: 프리미엄 전방 융합 — 충돌 위험 평가");
+    } else {
+        log(LogLevel::info, "FCA: OFF (전방충돌방지 비활성)");
+    }
+    if (flag_.isSubFeatureEnabled("LKA")) {
+        log(LogLevel::info, "LKA: HDA 차선 유지 보조");
+    } else {
+        log(LogLevel::info, "LKA: OFF");
+    }
+    if (flag_.isSubFeatureEnabled("SCC")) {
+        log(LogLevel::info, "SCC: 스마트 크루즈 (Genesis 프로파일)");
+    } else {
+        log(LogLevel::info, "SCC: OFF");
+    }
     log(LogLevel::info, "주변 차량/장애물 감지 — 프리미엄 센서 융합");
     sendDomainEvent(EventId::AdasDecisionUpdate,
         std::string("ADAS_DECISION line=B source=location status=tracking|") + message);
@@ -35,6 +50,21 @@ void AdasFeature_B::processVehicleLocation(const std::string& message) {
 void AdasFeature_B::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신 (Genesis): " + message);
     log(LogLevel::info, "HDA 경로·속도 계획 반영 (Genesis)");
+    if (flag_.isSubFeatureEnabled("FCA")) {
+        log(LogLevel::info, "FCA: 위험 구간 HDA 감속 연계");
+    } else {
+        log(LogLevel::info, "FCA: OFF — 전방 위험 평가 생략");
+    }
+    if (flag_.isSubFeatureEnabled("LKA")) {
+        log(LogLevel::info, "LKA: HDA 차선 궤적 (도로 기준)");
+    } else {
+        log(LogLevel::info, "LKA: OFF");
+    }
+    if (flag_.isSubFeatureEnabled("SCC")) {
+        log(LogLevel::info, "SCC: 도로 속도 프로파일 추종");
+    } else {
+        log(LogLevel::info, "SCC: OFF");
+    }
     log(LogLevel::info, "프리미엄 자율주행 추종 중...");
     sendDomainEvent(EventId::AdasDecisionUpdate,
         std::string("ADAS_DECISION line=B source=road status=planning|") + message);

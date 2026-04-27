@@ -58,6 +58,14 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
 
         auto events = pollEvents();
         for (const auto& event : events) {
+            if (event.getEventId() == EventId::QuitTheSystem) {
+                log(LogLevel::info, "종료 신호 수신");
+                log(LogLevel::info, "최종 배터리 잔량: " + std::to_string(battery_) + "%");
+                return;
+            }
+            if (!flag_.isEnabled()) {
+                continue;
+            }
             switch (event.getEventId()) {
             case EventId::VehicleLocationUpdate:
                 processVehicleLocation(event.getMessage());
@@ -66,11 +74,6 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
             case EventId::RoadInfoUpdate:
                 processRoadInfo(event.getMessage());
                 break;
-
-            case EventId::QuitTheSystem:
-                log(LogLevel::info, "종료 신호 수신");
-                log(LogLevel::info, "최종 배터리 잔량: " + std::to_string(battery_) + "%");
-                return;
 
             default:
                 break;
@@ -82,8 +85,22 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
 void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "차량 위치 수신: " + message);
     battery_ -= 3;
-    log(LogLevel::info, "배터리 잔량: " + std::to_string(battery_) +
-        "% | 예상 주행 가능 거리: " + std::to_string(battery_ * 4) + "km");
+    if (flag_.isSubFeatureEnabled("RANGE")) {
+        log(LogLevel::info, "RANGE: 예상 주행거리 산출 — 배터리 " + std::to_string(battery_) +
+            "% | " + std::to_string(battery_ * 4) + "km");
+    } else {
+        log(LogLevel::info, "RANGE: OFF — 주행거리 추정 생략");
+    }
+    if (flag_.isSubFeatureEnabled("ECO")) {
+        log(LogLevel::info, "ECO: 효율 주행 힌트 적용");
+    } else {
+        log(LogLevel::info, "ECO: OFF — 에코 힌트 생략");
+    }
+    if (flag_.isSubFeatureEnabled("REGEN")) {
+        log(LogLevel::info, "REGEN: 위치 기반 회생 힌트 활성");
+    } else {
+        log(LogLevel::info, "REGEN: OFF — 회생 힌트 생략");
+    }
     sendDomainEvent(EventId::EnergyStateUpdate,
         std::string("ENERGY_STATE battery=") + std::to_string(battery_) +
         " rangeKm=" + std::to_string(battery_ * 4) + "|SHADOW_LOC|" + message);
@@ -92,11 +109,19 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
 void EvEnergyFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
     if (message.find("오르막") != std::string::npos) {
-        log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
+        if (flag_.isSubFeatureEnabled("ECO")) {
+            log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
+        } else {
+            log(LogLevel::info, "오르막 감지 (ECO OFF — 일반 경고만)");
+        }
     } else if (message.find("내리막") != std::string::npos) {
-        log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
-        battery_ += 1;
-        log(LogLevel::info, "회생제동으로 배터리 회수: " + std::to_string(battery_) + "%");
+        if (flag_.isSubFeatureEnabled("REGEN")) {
+            log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
+            battery_ += 1;
+            log(LogLevel::info, "회생제동으로 배터리 회수: " + std::to_string(battery_) + "%");
+        } else {
+            log(LogLevel::info, "REGEN: OFF — 회생제동 보정 생략");
+        }
     } else {
         log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
     }

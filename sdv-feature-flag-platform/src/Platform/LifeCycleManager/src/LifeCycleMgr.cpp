@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <cerrno>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <linux/limits.h>
 #include <regex>
@@ -18,6 +19,16 @@
 namespace sdv::platform::lifecyclemgr {
 
 namespace {
+
+std::string trimExecToken(std::string s) {
+    while (!s.empty() && (s.back() == '\r' || s.back() == '\n' || s.back() == ' ' || s.back() == '\t')) {
+        s.pop_back();
+    }
+    while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) {
+        s.erase(s.begin());
+    }
+    return s;
+}
 
 /// Car-line binaries use `Feature_A` / `Feature_B` in the exec name; others use \p configAb only.
 std::string resolveAbArgvForExec(const std::string& execName,
@@ -45,6 +56,32 @@ std::string cmdlineArgv0BaseName(const std::string& cmdlineFirstArg) {
         s.resize(s.size() - 4);
     }
     return s;
+}
+
+/// Read `/proc/<pid>/cmdline` without iostreams. Processes can vanish mid-scan (ESRCH/EIO); ifstream can
+/// throw `std::ios_base::failure` ("No such process") on glibc in that window.
+bool readProcCmdlineRaw(pid_t pid, std::string* out) {
+    if (out == nullptr) {
+        return false;
+    }
+    out->clear();
+    char path[64];
+    const int pn = snprintf(path, sizeof(path), "/proc/%d/cmdline", static_cast<int>(pid));
+    if (pn <= 0 || static_cast<std::size_t>(pn) >= sizeof(path)) {
+        return false;
+    }
+    const int fd = open(path, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+        return false;
+    }
+    char buf[32768];
+    const ssize_t nr = read(fd, buf, sizeof(buf));
+    close(fd);
+    if (nr <= 0) {
+        return false;
+    }
+    out->assign(buf, static_cast<std::size_t>(nr));
+    return true;
 }
 
 }  // namespace
@@ -84,6 +121,9 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
         return false;
     }
 
+    communications_.clear();
+    features_.clear();
+
     lifecycleConfigPath_ = configPath;
     if (carInstanceId_.empty()) {
         // Derive instance id from config file name if caller didn't set it.
@@ -111,6 +151,7 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
             std::cerr << "[LifeCycleMgr] Invalid config line: " << line << std::endl;
             continue;
         }
+        value = trimExecToken(value);
 
         if (key == "address") {
             address_ = value;
@@ -154,9 +195,10 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
     return true;
 }
 
-void LifeCycleMgr::spawnProcess(const std::string& execName) {
-    std::string execPath = resolveExecPath(execName);
-    const std::string abArgv = resolveAbArgvForExec(execName, launchAbVariant_);
+void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
+    const std::string want = trimExecToken(slot.execName);
+    std::string execPath = resolveExecPath(want);
+    const std::string abArgv = resolveAbArgvForExec(want, launchAbVariant_);
     // Config uses a listen-friendly address (often 0.0.0.0:PORT). Feature clients must use a
     // connect-friendly address; 0.0.0.0 is not a valid gRPC client target.
     // EventBusHost is the server: keep the config address (0.0.0.0:PORT) so it binds all interfaces.
@@ -167,7 +209,7 @@ void LifeCycleMgr::spawnProcess(const std::string& execName) {
         clientAddress.replace(0, sizeof(kAnyAddrPrefix) - 1, "127.0.0.1:");
     }
     const char* argv1Addr =
-        (execName == "EventBusHost") ? address_.c_str() : clientAddress.c_str();
+        (want == "EventBusHost") ? address_.c_str() : clientAddress.c_str();
 
     pid_t pid = fork();
     if (pid == 0) {
@@ -175,37 +217,69 @@ void LifeCycleMgr::spawnProcess(const std::string& execName) {
         // killing other concurrently running car instances.
         if (!carInstanceId_.empty()) {
             if (!abArgv.empty()) {
-                execl(execPath.c_str(), execName.c_str(), argv1Addr, abArgv.c_str(), carInstanceId_.c_str(), nullptr);
+                execl(execPath.c_str(), want.c_str(), argv1Addr, abArgv.c_str(), carInstanceId_.c_str(), nullptr);
             } else {
-                execl(execPath.c_str(), execName.c_str(), argv1Addr, carInstanceId_.c_str(), nullptr);
+                execl(execPath.c_str(), want.c_str(), argv1Addr, carInstanceId_.c_str(), nullptr);
             }
         } else {
             if (!abArgv.empty()) {
-                execl(execPath.c_str(), execName.c_str(), argv1Addr, abArgv.c_str(), nullptr);
+                execl(execPath.c_str(), want.c_str(), argv1Addr, abArgv.c_str(), nullptr);
             } else {
-                execl(execPath.c_str(), execName.c_str(), argv1Addr, nullptr);
+                execl(execPath.c_str(), want.c_str(), argv1Addr, nullptr);
             }
         }
         std::cerr << "Failed to exec " << execPath << std::endl;
         _exit(1);
     } else if (pid > 0) {
-        auto updatePid = [&](std::vector<ProcessInfo>& list) {
-            for (auto& p : list) {
-                if (p.execName == execName && p.pid == -1) {
-                    p.pid = pid;
-                    p.alive = true;
-                    return true;
-                }
-            }
-            return false;
-        };
-        if (!updatePid(communications_)) updatePid(features_);
-
-        std::cout << "[LifeCycleMgr] Spawned " << execName
-                  << " (PID:" << pid << ")" << std::endl;
+        slot.pid = pid;
+        slot.alive = true;
+        std::cout << "[LifeCycleMgr] Spawned " << want << " (PID:" << pid << ")" << std::endl;
     } else {
-        std::cerr << "[LifeCycleMgr] fork() failed for " << execName << std::endl;
+        std::cerr << "[LifeCycleMgr] fork() failed for " << want << std::endl;
     }
+}
+
+void LifeCycleMgr::killDuplicatePlatformManagers() {
+    const std::string& id = carInstanceId_;
+    if (id.empty()) {
+        return;
+    }
+
+    pid_t myPid = getpid();
+    DIR* procDir = opendir("/proc");
+    if (!procDir) {
+        return;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(procDir)) != nullptr) {
+        char* end = nullptr;
+        const long pidVal = strtol(entry->d_name, &end, 10);
+        if (*end != '\0' || pidVal <= 0) {
+            continue;
+        }
+        const pid_t pid = static_cast<pid_t>(pidVal);
+        if (pid == myPid) {
+            continue;
+        }
+
+        std::string all;
+        if (!readProcCmdlineRaw(pid, &all)) {
+            continue;
+        }
+
+        const std::size_t nul = all.find('\0');
+        const std::string argv0 = (nul == std::string::npos) ? all : all.substr(0, nul);
+        if (cmdlineArgv0BaseName(argv0) != id) {
+            continue;
+        }
+
+        std::cout << "[LifeCycleMgr] Killing duplicate platform parent: " << id << " (PID:" << pid << ")"
+                  << std::endl;
+        kill(pid, SIGKILL);
+        (void)waitpid(pid, nullptr, WNOHANG);
+    }
+    closedir(procDir);
 }
 
 void LifeCycleMgr::killExistingProcesses() {
@@ -228,14 +302,10 @@ void LifeCycleMgr::killExistingProcesses() {
             if (*end != '\0' || pidVal <= 0) continue;
             if (static_cast<pid_t>(pidVal) == myPid) continue;
 
-            std::string cmdlinePath = "/proc/" + std::string(entry->d_name) + "/cmdline";
-            std::ifstream cmdline(cmdlinePath);
-            if (!cmdline.is_open()) continue;
-
-            // /proc/<pid>/cmdline is NUL-separated argv.
-            std::string all((std::istreambuf_iterator<char>(cmdline)),
-                            std::istreambuf_iterator<char>());
-            if (all.empty()) continue;
+            std::string all;
+            if (!readProcCmdlineRaw(static_cast<pid_t>(pidVal), &all)) {
+                continue;
+            }
 
             // argv0: first segment
             const std::size_t nul = all.find('\0');
@@ -311,22 +381,39 @@ void LifeCycleMgr::start() {
     if (logRootDir_ != "logs") {
         mkdir(logRootDir_.c_str(), 0755);
     }
-    cleanLogDirectory();
+    // Kill stale comm/feature children first while /proc entries are still stable. Killing the duplicate
+    // car_N parent first can tear down the whole tree mid-scan and make ifstream-based cmdline reads throw.
     killExistingProcesses();
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    // Other car_N platform parent(s) (duplicate LifeCycle) — after children so we do not race /proc.
+    killDuplicatePlatformManagers();
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    cleanLogDirectory();
+    // Stale cleanup SIGKILLs processes that are not children of this manager; our ProcessInfo rows
+    // must never keep pre-kill PIDs. Reset so monitor() only tracks PIDs from this start() run.
+    for (auto& c : communications_) {
+        c.pid = -1;
+        c.alive = false;
+    }
+    for (auto& f : features_) {
+        f.pid = -1;
+        f.alive = false;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
     std::cout << "==========================================" << std::endl;
     std::cout << " SDV Feature Flag Platform" << std::endl;
     std::cout << "==========================================" << std::endl;
 
     for (auto& c : communications_) {
-        spawnProcess(c.execName);
+        spawnProcess(c);
         // EventBusHost must accept gRPC before features register; slow /mnt/c/ exec can need >1s.
-        const int pauseSec = (c.execName == "EventBusHost") ? 2 : 1;
+        const int pauseSec = (trimExecToken(c.execName) == "EventBusHost") ? 2 : 1;
         std::this_thread::sleep_for(std::chrono::seconds(pauseSec));
     }
 
     for (auto& f : features_) {
-        spawnProcess(f.execName);
+        spawnProcess(f);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
     std::cout << std::endl;
@@ -335,6 +422,10 @@ void LifeCycleMgr::start() {
 void LifeCycleMgr::monitor() {
     auto checkProcess = [](ProcessInfo& p) -> bool {
         if (!p.alive) return false;
+        if (p.pid <= 0) {
+            p.alive = false;
+            return false;
+        }
         int status;
         pid_t result = waitpid(p.pid, &status, WNOHANG);
         if (result == 0) {
@@ -370,7 +461,7 @@ void LifeCycleMgr::monitor() {
                           << " (PID:" << c.pid << ") died. Restarting..."
                           << std::endl;
                 c.pid = -1;
-                spawnProcess(c.execName);
+                spawnProcess(c);
             } else {
                 std::cout << "[LifeCycleMgr]   [comm] " << c.execName
                           << " (PID:" << c.pid << ") : "
@@ -380,7 +471,9 @@ void LifeCycleMgr::monitor() {
 
         int featureRunning = 0;
         for (auto& f : features_) {
-            if (checkProcess(f)) featureRunning++;
+            if (checkProcess(f)) {
+                featureRunning++;
+            }
             std::cout << "[LifeCycleMgr]   [feat] " << f.execName
                       << " (PID:" << f.pid << ") : "
                       << (f.alive ? "running" : "stopped") << std::endl;

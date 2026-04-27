@@ -14,9 +14,60 @@
 #include <cctype>
 #include <climits>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace sdv::platform::lifecyclemgr {
+
+namespace {
+
+/// `AdasFeature_A` / `NavigationFeature_B` -> `AdasFeature` / `NavigationFeature` (MQTT UI uses logical names).
+std::optional<std::string> carLineLogicalBaseName(const std::string& processName) {
+    if (processName.size() < 3) {
+        return std::nullopt;
+    }
+    if (processName[processName.size() - 2] != '_') {
+        return std::nullopt;
+    }
+    const char c = processName.back();
+    if (c != 'A' && c != 'B') {
+        return std::nullopt;
+    }
+    return processName.substr(0, processName.size() - 2);
+}
+
+bool matchesMainFlagMessage(const std::string& msg,
+    const std::string& processName,
+    bool shadowObserver,
+    bool primaryProcess) {
+    if (msg == processName) {
+        return true;
+    }
+    if (shadowObserver || !primaryProcess) {
+        return false;
+    }
+    const auto base = carLineLogicalBaseName(processName);
+    return base.has_value() && msg == *base;
+}
+
+std::optional<std::string> extractSubFeatureKeyFromMessage(const std::string& msg,
+    const std::string& processName) {
+    const std::string concrete = processName + ".";
+    if (msg.rfind(concrete, 0) == 0 && msg.size() > concrete.size()) {
+        return msg.substr(concrete.size());
+    }
+    const auto base = carLineLogicalBaseName(processName);
+    if (!base.has_value()) {
+        return std::nullopt;
+    }
+    const std::string logical = *base + ".";
+    if (msg.rfind(logical, 0) == 0 && msg.size() > logical.size()) {
+        return msg.substr(logical.size());
+    }
+    return std::nullopt;
+}
+
+}  // namespace
 
 std::atomic<bool> Feature::stopRequested_(false);
 
@@ -149,17 +200,33 @@ void Feature::setShadowModeActive(bool active) {
 }
 
 bool Feature::tryConsumeAsPlatformControl(const Event& event) {
-    if (event.getEventId() == EventId::FeatureFlagOff &&
-        event.getMessage() == name_) {
-        flag_.disable();
-        log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
-        return true;
+    const std::string& msg = event.getMessage();
+
+    if (event.getEventId() == EventId::FeatureFlagOff) {
+        if (const auto subKey = extractSubFeatureKeyFromMessage(msg, name_)) {
+            flag_.setSubFeatureEnabled(*subKey, false);
+            log(LogLevel::info, "SubFlag RX: " + msg);
+            log(LogLevel::info, "SubFeature " + *subKey + " -> OFF");
+            return true;
+        }
+        if (matchesMainFlagMessage(msg, name_, isShadowMode_, isPrimaryProcess())) {
+            log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
+            flag_.disable();
+            return true;
+        }
     }
-    if (event.getEventId() == EventId::FeatureFlagOn &&
-        event.getMessage() == name_) {
-        flag_.enable();
-        log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
-        return true;
+    if (event.getEventId() == EventId::FeatureFlagOn) {
+        if (const auto subKey = extractSubFeatureKeyFromMessage(msg, name_)) {
+            flag_.setSubFeatureEnabled(*subKey, true);
+            log(LogLevel::info, "SubFlag RX: " + msg);
+            log(LogLevel::info, "SubFeature " + *subKey + " -> ON");
+            return true;
+        }
+        if (matchesMainFlagMessage(msg, name_, isShadowMode_, isPrimaryProcess())) {
+            flag_.enable();
+            log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
+            return true;
+        }
     }
     if (event.getEventId() == EventId::KillSwitch) {
         const std::string& msg = event.getMessage();

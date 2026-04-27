@@ -16,6 +16,12 @@ int main() {
     flag.enable();
     sqa::test::check(tc, flag.isEnabled(), "enable turns flag on");
 
+    sqa::test::check(tc, flag.isSubFeatureEnabled("FCA"), "subfeature defaults on");
+    flag.setSubFeatureEnabled("FCA", false);
+    sqa::test::check(tc, !flag.isSubFeatureEnabled("FCA"), "subfeature can be turned off");
+    flag.setSubFeatureEnabled("FCA", true);
+    sqa::test::check(tc, flag.isSubFeatureEnabled("FCA"), "subfeature can be turned back on");
+
     sqa::test::check(tc, !flag.isShadowMirroringEnabled(), "shadow mirroring defaults off");
     flag.enableShadowMirroring();
     sqa::test::check(tc, flag.isShadowMirroringEnabled(), "shadow mirroring can be enabled");

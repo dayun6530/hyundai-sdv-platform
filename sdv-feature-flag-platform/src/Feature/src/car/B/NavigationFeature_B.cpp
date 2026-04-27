@@ -43,7 +43,7 @@ void NavigationFeature_B::execute() {
     log(LogLevel::info, "[NAV-B] current location updated");
     log(LogLevel::info, "[NAV-B] route guidance started");
     log(LogLevel::info, "[NAV-B] real-time traffic rerouting enabled");
-    runNavigationMainLoop();
+    NavigationFeature::execute();
 }
 
 int NavigationFeature_B::navDemoPointCount() {

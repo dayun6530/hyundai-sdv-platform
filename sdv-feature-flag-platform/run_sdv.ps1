@@ -56,21 +56,44 @@ $teamWsl = ConvertTo-WslPath $TeamRoot
 $buildUnleashMarker = Join-Path $ProjectRoot "build_unleash"
 $buildUnleashMarker = Join-Path $buildUnleashMarker "SdvPlatform"
 $buildWsl = if (Test-Path -LiteralPath $buildUnleashMarker) { "$projWsl/build_unleash" } else { "$projWsl/build" }
+$buildRel = if (Test-Path -LiteralPath $buildUnleashMarker) { "build_unleash" } else { "build" }
 
-Write-Host "Cleaning up previous processes..."
+Write-Host "Cleaning up previous SDV / car processes in WSL (full restart)..."
 $wslArgsBase = @()
 if ($WslDistro) { $wslArgsBase += @("-d", $WslDistro) }
 $wslArgsRoot = $wslArgsBase + @("-u", "root", "--")
 
-$null = & wsl.exe @wslArgsRoot bash -c "pkill -f SdvPlatform; pkill -f 'car_[0-9]'; pkill -f EventBusHost; pkill -f WatchDog; pkill -f FeatureEvaluator; pkill -f DataCollector; pkill -f SignalReceiver; pkill -f SignalSender" 2>$null
-Start-Sleep -Seconds 2
-# Wait until old processes are fully gone; prevents LifeCycleMgr from seeing "stale PIDs" mid-shutdown.
+# Root pkill: any leftover car_1..car_10 or platform children from an earlier run_sdv / manual start.
+# Kill car_10..car_1 in that order so "build/car_1" does not match a still-running ".../build/car_10" cmdline.
+$cleanupBash = @'
+set +e
+pkill -9 -f SdvPlatform 2>/dev/null
+for i in $(seq 10 -1 1); do pkill -9 -f "/build/car_${i}" 2>/dev/null; done
+pkill -9 -f 'sdv-feature-flag-platform/build/car_' 2>/dev/null
+pkill -9 -f EventBusHost 2>/dev/null
+pkill -9 -f WatchDog 2>/dev/null
+pkill -9 -f FeatureEvaluator 2>/dev/null
+pkill -9 -f DataCollector 2>/dev/null
+pkill -9 -f SignalReceiver 2>/dev/null
+pkill -9 -f SignalSender 2>/dev/null
+pkill -9 -f MqttVehicleAgentHost 2>/dev/null
+pkill -9 -f NavigationFeature 2>/dev/null
+pkill -9 -f AdasFeature 2>/dev/null
+pkill -9 -f EvEnergyFeature 2>/dev/null
+exit 0
+'@
+$null = & wsl.exe @wslArgsRoot bash -c $cleanupBash 2>$null
+Start-Sleep -Seconds 3
+# Wait until old processes are fully gone; avoids two car_N parents interleaving in the same log tail.
 & wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
-& wsl.exe @wslArgsRoot bash "$projWsl/scripts/wait_shutdown_wsl.sh" "30" "0.3"
+& wsl.exe @wslArgsRoot bash "$projWsl/scripts/wait_shutdown_wsl.sh" "60" "0.3"
 
 Write-Host "Ensuring no manual mosquitto is running in WSL (Docker broker mode)..."
 $null = & wsl.exe @wslArgsRoot bash -c "pkill -x mosquitto || true" 2>$null
 Start-Sleep -Milliseconds 600
+
+# Strip CRLF before any bash scripts run (fixes `set: pipefail: invalid option name` on Windows checkouts).
+& wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/docker_up_team_wsl.sh`" `"$projWsl/scripts/wait_unleash_http.sh`" `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
 
 Write-Host "Starting docker stack (teamproject/docker-compose.yml)..."
 & wsl.exe @wslArgsBase -- bash "$projWsl/scripts/docker_up_team_wsl.sh" "$teamWsl"
@@ -103,9 +126,18 @@ $null = New-Item -ItemType Directory -Force -Path $logWin 2>$null
 & wsl.exe @wslArgsRoot bash -lc "mkdir -p `"$logWsl`""
 
 Write-Host "Logs will be written under: $logWin"
-# Windows checkouts can introduce CRLF into bash scripts which breaks `set -o pipefail`.
-# Normalize a small set of WSL scripts on each run (portable: uses sed, not dos2unix).
+# Normalize remaining WSL scripts (run_cars / start_platform).
 & wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/run_cars_wsl.sh`" `"$projWsl/scripts/start_platform_wsl.sh`" 2>/dev/null || true"
+
+# Optional incremental build (off by default). After C++ changes, run once with SDV_CMAKE_BUILD=1 (rebuilds all car_* + libs).
+if ($env:SDV_CMAKE_BUILD -eq "1") {
+    Write-Host "Incremental cmake ($buildRel): all targets (SDV_CMAKE_BUILD=1)..."
+    & wsl.exe @wslArgsBase bash -lc "cd `"$projWsl`" && cmake --build `"$buildRel`" -j 4"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "cmake --build failed (exit $LASTEXITCODE); continuing with existing binaries."
+    }
+}
+
 & wsl.exe @wslArgsRoot bash "$projWsl/scripts/run_cars_wsl.sh" "$projWsl" "$buildWsl" "$logWsl" "1" "10"
 
 # Make it "visibly running": open log-follow consoles (one per car).

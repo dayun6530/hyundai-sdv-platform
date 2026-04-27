@@ -23,8 +23,8 @@ protected:
     virtual void navLogRunComplete();
 
 private:
-    // Demo pacing: longer run so platform control events can be observed during tests.
-    static const int broadcastCount_ = 20;
+    // Demo pacing: iterations per "라운드" inside runNavigationMainLoop (outer execute() repeats forever for car_*).
+    static const int broadcastCount_ = 50;
 };
 
 }  // namespace sdv::feature
