@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/src/Platform/DeploymentManager
+# Install script for directory: /mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/src/Platform/DeploymentManager
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

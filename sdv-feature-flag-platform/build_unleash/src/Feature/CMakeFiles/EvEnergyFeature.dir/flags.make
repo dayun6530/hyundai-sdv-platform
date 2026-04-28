@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/src/Feature/include -I/mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include -I/mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
+CXX_INCLUDES = -I/mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/src/Feature/include -I/mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include -I/mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
 
 CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic -pthread
 

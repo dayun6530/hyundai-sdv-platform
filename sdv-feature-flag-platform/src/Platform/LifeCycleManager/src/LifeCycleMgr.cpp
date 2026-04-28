@@ -1,5 +1,8 @@
 #include "LifeCycleManager/LifeCycleMgr.h"
 
+#include "FeatureCommunication/EventBus/EventBusProxy.h"
+#include "FeatureCommunication/EventBus/EventId.h"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -15,6 +18,7 @@
 #include <dirent.h>
 #include <linux/limits.h>
 #include <regex>
+#include <unordered_map>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -82,6 +86,32 @@ bool readProcCmdlineRaw(pid_t pid, std::string* out) {
     }
     out->assign(buf, static_cast<std::size_t>(nr));
     return true;
+}
+
+// Normalize feature exec name to its logical base:
+// - NavigationFeature_A / NavigationFeature_B -> NavigationFeature
+// - NavigationFeature_A_Shadow -> NavigationFeature
+// - AdasFeature_B_Shadow -> AdasFeature
+std::string featureLogicalBaseFromExecName(const std::string& execName) {
+    std::string s = trimExecToken(execName);
+    static constexpr const char* kShadow = "_Shadow";
+    if (s.size() > 7 && s.compare(s.size() - 7, 7, kShadow) == 0) {
+        s.resize(s.size() - 7);
+    }
+    if (s.size() > 2 && s[s.size() - 2] == '_' &&
+        (s.back() == 'A' || s.back() == 'B')) {
+        s.resize(s.size() - 2);
+    }
+    return s;
+}
+
+// Convert server bind address (0.0.0.0:PORT) to connect target (127.0.0.1:PORT).
+std::string connectFriendlyAddress(std::string addr) {
+    static constexpr const char kAnyAddrPrefix[] = "0.0.0.0:";
+    if (addr.rfind(kAnyAddrPrefix, 0) == 0) {
+        addr.replace(0, sizeof(kAnyAddrPrefix) - 1, "127.0.0.1:");
+    }
+    return addr;
 }
 
 }  // namespace
@@ -448,9 +478,67 @@ void LifeCycleMgr::monitor() {
         return p.alive;
     };
 
+    // Desired feature process state by execName.
+    // Default is "enabled": consistent with demo default Flag=ON and historical behavior.
+    std::unordered_map<std::string, bool> wantFeatureAlive;
+    for (const auto& f : features_) {
+        wantFeatureAlive[trimExecToken(f.execName)] = true;
+    }
+
+    // Subscribe to platform control events (FLAG_ON/OFF, KILL) so we can stop/start processes,
+    // matching the UX expectation: LifeCycleMgr shows stopped and feature logs end on OFF.
+    const std::string clientAddress = connectFriendlyAddress(address_);
+    sdv::platform::communications::eventbus::EventBusProxy proxy(clientAddress);
+    int64_t mgrComponentId = proxy.registerComponent();
+    if (mgrComponentId <= 0) {
+        std::cerr << "[LifeCycleMgr] EventBus registration failed. Feature flag start/stop disabled."
+                  << std::endl;
+    } else {
+        std::cout << "[LifeCycleMgr] EventBus connected for flag control (ID:" << mgrComponentId
+                  << ", addr=" << clientAddress << ")" << std::endl;
+    }
+
+    auto applyMainFlagToFeatures = [&](const std::string& logicalBase, bool enabled) {
+        for (const auto& f : features_) {
+            const std::string exec = trimExecToken(f.execName);
+            if (featureLogicalBaseFromExecName(exec) == logicalBase) {
+                wantFeatureAlive[exec] = enabled;
+            }
+        }
+    };
+
+    auto handleControlEvent = [&](const sdv::platform::communications::eventbus::Event& e) {
+        using sdv::platform::communications::eventbus::EventId;
+        const auto eid = e.getEventId();
+        const std::string msg = e.getMessage();
+        // Only main feature toggles affect process lifetime. Sub-feature toggles contain ".".
+        const bool isSubToggle = (msg.find('.') != std::string::npos);
+        if (isSubToggle) {
+            return;
+        }
+
+        if (eid == EventId::FeatureFlagOff) {
+            applyMainFlagToFeatures(msg, false);
+        } else if (eid == EventId::FeatureFlagOn) {
+            applyMainFlagToFeatures(msg, true);
+        } else if (eid == EventId::KillSwitch) {
+            // KillSwitch is safety-critical: latch OFF so we don't auto-restart until a FlagOn arrives.
+            applyMainFlagToFeatures(msg, false);
+        }
+    };
+
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::cout << "[LifeCycleMgr] --- Process Status ---" << std::endl;
+
+        // Drain control events and apply desired process states.
+        if (mgrComponentId > 0) {
+            auto q = proxy.getEventQueue(mgrComponentId);
+            while (q.getSize() > 0) {
+                auto e = q.getEvent();
+                handleControlEvent(e);
+            }
+        }
 
         for (auto& c : communications_) {
             bool wasAlive = c.alive;
@@ -471,7 +559,27 @@ void LifeCycleMgr::monitor() {
 
         int featureRunning = 0;
         for (auto& f : features_) {
-            if (checkProcess(f)) {
+            checkProcess(f);
+
+            const std::string exec = trimExecToken(f.execName);
+            const bool wantAlive = (wantFeatureAlive.find(exec) == wantFeatureAlive.end())
+                ? true
+                : wantFeatureAlive[exec];
+
+            // Enforce desired state.
+            if (!wantAlive && f.alive) {
+                std::cout << "[LifeCycleMgr]   [feat] " << exec
+                          << " (PID:" << f.pid << ") : stopping (FLAG_OFF)" << std::endl;
+                kill(f.pid, SIGTERM);
+                // Do not block here; status will flip on next iteration.
+            } else if (wantAlive && !f.alive) {
+                std::cout << "[LifeCycleMgr]   [feat] " << exec
+                          << " : starting (FLAG_ON)" << std::endl;
+                f.pid = -1;
+                spawnProcess(f);
+            }
+
+            if (f.alive) {
                 featureRunning++;
             }
             std::cout << "[LifeCycleMgr]   [feat] " << f.execName

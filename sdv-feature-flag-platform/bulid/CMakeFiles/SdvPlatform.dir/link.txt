@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/SdvPlatform.dir/src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp.o -o SdvPlatform 

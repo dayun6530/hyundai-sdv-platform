@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o -o unit_data_collector  ../../src/Platform/CenterCommunication/libCenterCommunicationLib.a 

@@ -207,6 +207,7 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
             flag_.setSubFeatureEnabled(*subKey, false);
             log(LogLevel::info, "SubFlag RX: " + msg);
             log(LogLevel::info, "SubFeature " + *subKey + " -> OFF");
+            logSubFeatureSnapshotAfterToggle();
             return true;
         }
         if (matchesMainFlagMessage(msg, name_, isShadowMode_, isPrimaryProcess())) {
@@ -220,6 +221,7 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
             flag_.setSubFeatureEnabled(*subKey, true);
             log(LogLevel::info, "SubFlag RX: " + msg);
             log(LogLevel::info, "SubFeature " + *subKey + " -> ON");
+            logSubFeatureSnapshotAfterToggle();
             return true;
         }
         if (matchesMainFlagMessage(msg, name_, isShadowMode_, isPrimaryProcess())) {
@@ -303,6 +305,29 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
         return false;
     }
     return false;
+}
+
+void Feature::logSubFeatureSnapshotAfterToggle() {
+    auto st = [this](const char* key) {
+        return flag_.isSubFeatureEnabled(key) ? "ON" : "OFF";
+    };
+    if (name_.find("EvEnergy") != std::string::npos) {
+        log(LogLevel::info,
+            std::string("EvEnergy sub-feature state (remaining): RANGE=") + st("RANGE") +
+            " ECO=" + st("ECO") + " REGEN=" + st("REGEN"));
+        return;
+    }
+    if (name_.find("Adas") != std::string::npos) {
+        log(LogLevel::info,
+            std::string("Adas sub-feature state (remaining): FCA=") + st("FCA") +
+            " LKA=" + st("LKA") + " SCC=" + st("SCC"));
+        return;
+    }
+    if (name_.find("Navigation") != std::string::npos) {
+        log(LogLevel::info,
+            std::string("Navigation sub-feature state (remaining): LOCATION=") + st("LOCATION") +
+            " ROAD=" + st("ROAD") + " GUIDANCE=" + st("GUIDANCE"));
+    }
 }
 
 std::vector<Event> Feature::pollEvents() {

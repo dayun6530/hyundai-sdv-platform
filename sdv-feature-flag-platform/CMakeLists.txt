@@ -43,11 +43,13 @@ add_subdirectory(tests)
 
 add_executable(SdvPlatform src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp)
 target_include_directories(SdvPlatform PRIVATE src/Platform/LifeCycleManager/include)
+target_link_libraries(SdvPlatform PRIVATE LifeCycleManagerLib)
 
 # Generalized experiment groups: car_1 .. car_10 (choose config by argv[0]).
 foreach(i RANGE 1 10)
     add_executable(car_${i} src/Platform/LifeCycleManager/src/LifeCycleMgr.cpp)
     target_include_directories(car_${i} PRIVATE src/Platform/LifeCycleManager/include)
+    target_link_libraries(car_${i} PRIVATE LifeCycleManagerLib)
 endforeach()
 
 add_executable(EventBusHost src/Platform/FeatureCommunication/EventBus/src/EventBusHost.cpp)

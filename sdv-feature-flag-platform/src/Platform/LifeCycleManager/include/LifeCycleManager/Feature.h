@@ -99,6 +99,7 @@ private:
     void logMirroredPayloadForShadow(EventId id, const std::string& payload);
     void flushNavigationShadowTriplet(const std::string& guidancePayload);
     void logEvEnergyShadowEnergyState(const std::string& payload);
+    void logSubFeatureSnapshotAfterToggle();
 
     std::ofstream logFile_;
     std::string logFilePath_;

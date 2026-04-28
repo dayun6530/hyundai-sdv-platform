@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/src/Platform/CenterCommunication
+# Install script for directory: /mnt/c/Users/82107/Desktop/team/sdv-feature-flag-platform/src/Platform/CenterCommunication
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
