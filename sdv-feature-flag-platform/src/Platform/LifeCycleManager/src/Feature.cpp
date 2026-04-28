@@ -99,7 +99,22 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
     }
 
     logFilePath_ = logDir + "/" + normalizeFileName(name) + ".log";
-    logFile_.open(logFilePath_, std::ios::out | std::ios::trunc);
+    bool appendAfterExisting = false;
+    struct stat st {};
+    if (stat(logFilePath_.c_str(), &st) == 0 && st.st_size > 0) {
+        appendAfterExisting = true;
+    }
+    logFile_.open(logFilePath_, std::ios::out | std::ios::app);
+    if (appendAfterExisting && logFile_.is_open()) {
+        const auto now = std::chrono::system_clock::now();
+        const std::time_t t = std::chrono::system_clock::to_time_t(now);
+        const std::tm* tm = std::localtime(&t);
+        if (tm != nullptr) {
+            logFile_ << "\n[" << std::put_time(tm, "%Y-%m-%d %H:%M:%S")
+                     << "] [INFO ] [LOG] --- process restarted; prior lines above ---\n";
+            logFile_.flush();
+        }
+    }
 }
 
 Feature::~Feature() {

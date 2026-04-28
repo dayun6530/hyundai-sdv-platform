@@ -105,6 +105,36 @@ std::string featureLogicalBaseFromExecName(const std::string& execName) {
     return s;
 }
 
+std::string stripShadowSuffix(const std::string& name) {
+    std::string s = trimExecToken(name);
+    static constexpr const char* kShadow = "_Shadow";
+    if (s.size() > 7 && s.compare(s.size() - 7, 7, kShadow) == 0) {
+        s.resize(s.size() - 7);
+    }
+    return s;
+}
+
+bool hasCarLineSuffix(const std::string& primaryName) {
+    return primaryName.size() >= 2 && primaryName[primaryName.size() - 2] == '_' &&
+        (primaryName.back() == 'A' || primaryName.back() == 'B');
+}
+
+/// Match EventBus main-flag message to a spawned feature executable name.
+/// Applies to Navigation / Adas / EvEnergy (any `*Feature_A|B` + optional `_Shadow`).
+/// - `AdasFeature` (logical) matches `AdasFeature_A`, `AdasFeature_B`, and their `*_Shadow` rows in config.
+/// - `AdasFeature_B` matches `AdasFeature_B` and `AdasFeature_B_Shadow` only.
+bool featureExecMatchesMainFlagMessage(const std::string& execName, const std::string& msg) {
+    const std::string e = trimExecToken(execName);
+    const std::string mPrimary = stripShadowSuffix(msg);
+    if (e == trimExecToken(msg)) {
+        return true;
+    }
+    if (hasCarLineSuffix(mPrimary)) {
+        return stripShadowSuffix(e) == mPrimary;
+    }
+    return featureLogicalBaseFromExecName(e) == mPrimary;
+}
+
 // Convert server bind address (0.0.0.0:PORT) to connect target (127.0.0.1:PORT).
 std::string connectFriendlyAddress(std::string addr) {
     static constexpr const char kAnyAddrPrefix[] = "0.0.0.0:";
@@ -498,10 +528,10 @@ void LifeCycleMgr::monitor() {
                   << ", addr=" << clientAddress << ")" << std::endl;
     }
 
-    auto applyMainFlagToFeatures = [&](const std::string& logicalBase, bool enabled) {
+    auto applyMainFlagToFeatures = [&](const std::string& flagMessage, bool enabled) {
         for (const auto& f : features_) {
             const std::string exec = trimExecToken(f.execName);
-            if (featureLogicalBaseFromExecName(exec) == logicalBase) {
+            if (featureExecMatchesMainFlagMessage(exec, flagMessage)) {
                 wantFeatureAlive[exec] = enabled;
             }
         }
