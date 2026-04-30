@@ -3,7 +3,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 --domain <DOMAIN> --feature <FeatureName> --version <x.y>" >&2
-  echo "  Creates deploy/packages/<DOMAIN>/v<version>/ with src/<Feature>.cpp template (no compile yet)." >&2
+  echo "  Creates deploy/packages/<DOMAIN>/v<version>/ with Dockerfile and manifest.json." >&2
+  echo "  Run build_package_image.sh to CMake-build the platform and copy the binary." >&2
   exit 1
 }
 
@@ -30,27 +31,38 @@ OTA_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOMAIN_LOWER="$(echo "$DOMAIN" | tr '[:upper:]' '[:lower:]')"
 V_TAG="v${VERSION}"
 PKG_DIR="$OTA_ROOT/deploy/packages/$DOMAIN/$V_TAG"
-SRC_DIR="$PKG_DIR/src"
-SRC_FILE="$SRC_DIR/${FEATURE}.cpp"
 
-mkdir -p "$SRC_DIR"
-
-cat > "$SRC_FILE" <<EOF
-#include <iostream>
-
-int main() {
-    std::cout << "domain: ${DOMAIN}\n";
-    std::cout << "feature: ${FEATURE}\n";
-    std::cout << "version: ${VERSION}\n";
-    return 0;
-}
-EOF
+mkdir -p "$PKG_DIR"
 
 DOCKER_IMAGE="sdv/${DOMAIN_LOWER}-feature:${V_TAG}"
 
-cat > "$PKG_DIR/Dockerfile" <<EOF
-FROM ubuntu:22.04
+cat > "$PKG_DIR/Dockerfile" <<'DOCKERHEAD'
+# Ubuntu 22.04 (jammy) 기본 저장소에는 libgrpc++.so.1.51 이 없어서,
+# WSL/최신 툴체인에서 링크된 gRPC C++ 바이너리는 noble + libgrpc++1.51t64 가 맞는 경우가 많습니다.
+# (반드시 jammy 이미지가 필요하면: 멀티스테이지로 빌드 호스트의 .so 를 복사하거나, 호스트와 동일 OS로 맞추세요.)
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libc6 \
+        libstdc++6 \
+        libgcc-s1 \
+        libatomic1 \
+        zlib1g \
+        libssl3t64 \
+        libcurl4t64 \
+        libcares2 \
+        libre2-10 \
+        libgrpc++1.51t64 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+DOCKERHEAD
+# COPY / 바이너리 이름은 패키지마다 다름 (heredoc에서 변수 확장)
+cat >> "$PKG_DIR/Dockerfile" <<EOF
 COPY $FEATURE /app/$FEATURE
 RUN chmod +x /app/$FEATURE
 EOF
@@ -79,13 +91,13 @@ cat > "$PKG_DIR/README.md" <<EOF
 # ${DOMAIN} / ${FEATURE} ${V_TAG}
 
 - **도메인:** ${DOMAIN}
-- **소스:** \`src/${FEATURE}.cpp\` (템플릿)
-- **바이너리:** \`${FEATURE}\` (\`build_package_image.sh\`에서 로컬 g++ 빌드 후 이미지에 포함)
+- **바이너리:** \`${FEATURE}\` (\`../sdv-feature-flag-platform\` CMake 빌드 산출물을 \`build_package_image.sh\`가 복사)
 - **버전:** ${VERSION}
 - **Docker 이미지:** \`${DOCKER_IMAGE}\`
 
-\`scripts/build_package_image.sh\` 로 로컬 컴파일 → 체크섬 → Docker 빌드 → \`deploy/version_map.json\` 갱신을 수행합니다.
+\`scripts/build_package_image.sh\`로 플랫폼 전체를 \`cmake -B build_unleash -DSDV_ENABLE_UNLEASH=ON\` 후 복사 → 체크섬 → Docker 빌드 → \`deploy/version_map.json\` 갱신을 수행합니다.
+
+- **컨테이너 런타임:** Dockerfile 은 gRPC/protobuf 등 동적 링크를 위해 \`ubuntu:24.04\` + \`apt-get install libgrpc++1.51t64\` 등을 사용합니다.
 EOF
 
-echo "패키지(소스 템플릿) 생성 완료: $PKG_DIR"
-echo "  소스: $SRC_FILE"
+echo "패키지(Dockerfile, manifest) 생성 완료: $PKG_DIR"

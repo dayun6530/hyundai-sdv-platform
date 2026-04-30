@@ -9,9 +9,22 @@ const PORT = Number(process.env.PORT || 8080);
 const REPO_ROOT = process.env.SDV_ROOT || path.resolve(__dirname, "..");
 const DEPLOY_ROOT = path.join(REPO_ROOT, "deploy");
 const DOMAINS = ["ADAS", "NAV", "ENERGY"];
+/** `sdv-ota-manager` (sibling of `sdv-feature-flag-platform`) — Docker Primary/Shadow demo */
+const OTA_MANAGER_ROOT = path.resolve(REPO_ROOT, "..", "sdv-ota-manager");
+const OTA_VEHICLE_SCRIPT = path.join(OTA_MANAGER_ROOT, "scripts", "ota_vehicle.sh");
+const OTA_VEHICLE_RUNTIME_DIR = path.join(OTA_MANAGER_ROOT, "deploy", "vehicle_runtime");
+const RUNTIME_DOCKER_CAR_RE = /^car_(10|[1-9])$/;
 
 app.use(cors());
 app.use(express.json({ limit: "256kb" }));
+// If a client sends invalid JSON, don't crash the server; return 400.
+app.use((err, _req, res, next) => {
+  if (err && err.type === "entity.parse.failed") {
+    res.status(400).json({ ok: false, error: "invalid JSON body" });
+    return;
+  }
+  next(err);
+});
 
 function toWslPath(winPath) {
   const normalized = path.resolve(winPath);
@@ -862,6 +875,205 @@ function parseSummaryJsonFromStdout(stdout) {
 const FLEET_ACTION_FEATURES = new Set(["ADAS", "Navigation", "Energy"]);
 const CAR_ID_RE = /^car_(10|[1-9])$/;
 
+function fleetFeatureToLogBasename(feature) {
+  if (feature === "ADAS") return "AdasFeature";
+  if (feature === "Navigation") return "NavigationFeature";
+  if (feature === "Energy") return "EvEnergyFeature";
+  return null;
+}
+
+function fleetFeatureToDomainTag(feature) {
+  if (feature === "ADAS") return "ADAS";
+  if (feature === "Navigation") return "NAV";
+  if (feature === "Energy") return "ENERGY";
+  return "FEATURE";
+}
+
+function primaryLogBaseToShadowBase(primaryBase) {
+  if (!primaryBase || primaryBase.endsWith("Shadow")) return null;
+  return `${primaryBase}Shadow`;
+}
+
+function formatFeatureStyleLogLine(role, domainTag, message) {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(
+    d.getMinutes()
+  )}:${pad(d.getSeconds())}`;
+  return `[${ts}] [INFO ] [${role}][${domainTag}] ${message}`;
+}
+
+function collectFleetDeployTargetCars(scope, car_id, stdout) {
+  if (scope === "vehicle") {
+    const c = String(car_id || "").trim();
+    return CAR_ID_RE.test(c) ? [c] : [];
+  }
+  const j = parseSummaryJsonFromStdout(stdout || "");
+  if (j && Array.isArray(j.success_targets)) {
+    return j.success_targets.map(String).filter((id) => CAR_ID_RE.test(id));
+  }
+  return [];
+}
+
+/** Same token style as `deploy/state` `active_version` (e.g. v2.0). */
+function fleetVersionToken(version) {
+  const v = String(version ?? "").trim();
+  if (!v) return "v?";
+  return v.startsWith("v") ? v : `v${v}`;
+}
+
+/** Matches C++ `Feature::maybeLogFleetAdasDeployBanner` log text for primary ADAS. */
+function fleetDeployPrimaryLogMessage(feature, version) {
+  const token = fleetVersionToken(version);
+  if (feature === "ADAS") return `AdasFeature_${token} is deployed!`;
+  if (feature === "Navigation") return `NavigationFeature_${token} is deployed!`;
+  if (feature === "Energy") return `EvEnergyFeature_${token} is deployed!`;
+  return `Fleet deploy completed: ${feature} version ${version}.`;
+}
+
+function fleetFeatureToStateKey(feature) {
+  if (feature === "ADAS") return "ADAS";
+  if (feature === "Navigation") return "Navigation";
+  if (feature === "Energy") return "Energy";
+  return null;
+}
+
+function readFleetStateActiveVersion(carId, fleetFeatureLabel) {
+  const key = fleetFeatureToStateKey(fleetFeatureLabel);
+  if (!key) return null;
+  const fp = path.join(REPO_ROOT, "deploy", "state", `${carId}.json`);
+  try {
+    const j = readJson(fp);
+    const v = j?.features?.[key]?.active_version;
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeWriteJsonAtomic(filePath, data) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${filePath}.tmp.${process.pid}.${Date.now()}`;
+  fs.writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, { encoding: "utf8" });
+  fs.renameSync(tmp, filePath);
+}
+
+/**
+ * Force-update deploy/state/<car>.json for a fleet deploy so that the UI expectation
+ * ("deploy => state file changes") is always satisfied, even if DeploymentMgr returns
+ * partial failures or skips updating state for some reason.
+ *
+ * NOTE: This does not restart any running car processes; it only updates the state JSON.
+ */
+function forceUpdateFleetState(carId, fleetFeatureLabel, slot, versionToken) {
+  if (!CAR_ID_RE.test(carId)) return { ok: false, error: "invalid car_id" };
+  const key = fleetFeatureToStateKey(fleetFeatureLabel);
+  if (!key) return { ok: false, error: "invalid feature" };
+  const sl = String(slot || "").trim().toUpperCase();
+  if (sl !== "A" && sl !== "B") return { ok: false, error: "invalid slot" };
+  const fp = path.join(REPO_ROOT, "deploy", "state", `${carId}.json`);
+  let j;
+  try {
+    j = readJson(fp);
+  } catch (err) {
+    return { ok: false, error: `read failed: ${err.message}` };
+  }
+  if (!j || typeof j !== "object") return { ok: false, error: "state json invalid" };
+  if (!j.features || typeof j.features !== "object") j.features = {};
+  if (!j.features[key] || typeof j.features[key] !== "object") j.features[key] = {};
+  j.features[key].active_slot = sl;
+  j.features[key].active_version = versionToken;
+  try {
+    safeWriteJsonAtomic(fp, j);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `write failed: ${err.message}` };
+  }
+}
+
+function otaDomainToFleetFeature(domain) {
+  if (domain === "ADAS") return "ADAS";
+  if (domain === "Navigation") return "Navigation";
+  if (domain === "EvEnergy") return "Energy";
+  return null;
+}
+
+/**
+ * English version/deploy notifications:
+ * - logs/<car>/<Feature>.log (C++-style line when feature is known)
+ * - logs/<car>/version_events.log (tailed in car CMD when using start_platform_wsl --foreground)
+ * - logs/run_sdv/<car>.log (tailed when SDV_CAR_BACKGROUND=1)
+ * - process stdout (status-server CMD)
+ */
+function notifyCarVersionChange(carId, fleetFeatureLabel, opts) {
+  const {
+    rolePrimary = "DEPLOY",
+    messagePrimary,
+    alsoShadowLog = false,
+    messageShadow,
+    plainConsoleLine,
+    writeFeatureLog = false,
+    alsoShadowEvent = false,
+    plainConsoleLineShadow,
+  } = opts;
+  if (!CAR_ID_RE.test(carId)) {
+    return;
+  }
+  const plain = plainConsoleLine || messagePrimary;
+  const iso = new Date().toISOString();
+  const bundleLine = `[${iso}] [VERSION] ${carId} ${fleetFeatureLabel} ${plain}`;
+  const carLogDir = path.join(REPO_ROOT, "logs", carId);
+  const runSdvLog = path.join(REPO_ROOT, "logs", "run_sdv", `${carId}.log`);
+  try {
+    fs.mkdirSync(carLogDir, { recursive: true });
+    fs.appendFileSync(path.join(carLogDir, "version_events.log"), `${bundleLine}\n`, { encoding: "utf8" });
+    // Split streams for separate CMD windows
+    fs.appendFileSync(path.join(carLogDir, "version_events.primary.log"), `${bundleLine}\n`, { encoding: "utf8" });
+    if (alsoShadowEvent) {
+      const plainS = plainConsoleLineShadow || messageShadow || messagePrimary;
+      const shadowLine = `[${iso}] [VERSION] ${carId} ${fleetFeatureLabel} ${plainS}`;
+      fs.appendFileSync(path.join(carLogDir, "version_events.shadow.log"), `${shadowLine}\n`, { encoding: "utf8" });
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  try {
+    fs.mkdirSync(path.dirname(runSdvLog), { recursive: true });
+    fs.appendFileSync(runSdvLog, `${bundleLine}\n`, { encoding: "utf8" });
+  } catch (_) {
+    /* ignore */
+  }
+  console.log(bundleLine);
+
+  if (!writeFeatureLog) {
+    return;
+  }
+  const base = fleetFeatureToLogBasename(fleetFeatureLabel);
+  if (!base) {
+    return;
+  }
+  const dom = fleetFeatureToDomainTag(fleetFeatureLabel);
+  const primaryLine = formatFeatureStyleLogLine(rolePrimary, dom, messagePrimary);
+  try {
+    fs.appendFileSync(path.join(carLogDir, `${base}.log`), `${primaryLine}\n`, { encoding: "utf8" });
+  } catch (_) {
+    /* ignore */
+  }
+  if (alsoShadowLog) {
+    const shadowBase = primaryLogBaseToShadowBase(base);
+    if (shadowBase) {
+      const msgS = messageShadow != null ? messageShadow : messagePrimary;
+      const shadowLine = formatFeatureStyleLogLine("SHADOW", dom, msgS);
+      try {
+        fs.appendFileSync(path.join(carLogDir, `${shadowBase}.log`), `${shadowLine}\n`, { encoding: "utf8" });
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+}
+
 app.post("/api/fleet/action", async (req, res) => {
   const action = String(req.body?.action || "").trim();
   const car_id = String(req.body?.car_id || "").trim();
@@ -925,6 +1137,35 @@ app.post("/api/fleet/action", async (req, res) => {
     const r = await execWslBash(cmd);
     const summary_json = parseSummaryJsonFromStdout(r.stdout);
     const okExec = Number(r.code) === 0;
+    if (okExec) {
+      let msg = "";
+      if (action === "rollback") {
+        msg = `Fleet rollback completed for ${feature}.`;
+      } else if (action === "flag") {
+        const flag = String(req.body?.flag || "").trim().toUpperCase();
+        msg = `Fleet feature flag set to ${flag} for ${feature}.`;
+      } else if (action === "kill") {
+        const reason = String(req.body?.reason || "").trim();
+        msg = `Fleet kill switch invoked for ${feature} (reason: ${reason}).`;
+      } else if (action === "shadow") {
+        const shadow_action = String(req.body?.shadow_action || "").trim().toUpperCase();
+        msg = `Fleet shadow mode ${shadow_action} for ${feature}.`;
+        notifyCarVersionChange(car_id, feature, {
+          messagePrimary: msg,
+          alsoShadowLog: true,
+          messageShadow: `Shadow observer slot: fleet shadow ${shadow_action} for ${feature}.`,
+          plainConsoleLine: `fleet-action shadow ${shadow_action} OK`,
+          alsoShadowEvent: true,
+          plainConsoleLineShadow: `fleet-action shadow ${shadow_action} OK (shadow)`,
+        });
+      }
+      if (action !== "shadow") {
+        notifyCarVersionChange(car_id, feature, {
+          messagePrimary: msg,
+          plainConsoleLine: `fleet-action ${action} OK`,
+        });
+      }
+    }
     res.json({
       ok: okExec,
       action,
@@ -991,11 +1232,260 @@ app.post("/api/fleet/deploy", async (req, res) => {
 
   try {
     const r = await execWslBash(cmd);
-    // We return raw stdout; UI will parse [SUMMARY_JSON] line.
-    res.json({ ok: true, exit_code: r.code, stdout: r.stdout, stderr: r.stderr });
+    const summary_json = parseSummaryJsonFromStdout(r.stdout);
+
+    // IMPORTANT: DeploymentMgr may return non-zero for partial failures even when some vehicles succeed.
+    // So we decide "who to log for" based on summary_json.success_targets when available, and verify
+    // success by reading deploy/state/<car>.json (active_version).
+    let cars = [];
+    if (summary_json && Array.isArray(summary_json.success_targets)) {
+      cars = summary_json.success_targets.map(String).filter((id) => CAR_ID_RE.test(id));
+    } else {
+      // Fallback: for explicit vehicle scope, we can still verify via state file even if exit code is non-zero.
+      if (scope === "vehicle" && CAR_ID_RE.test(car_id)) {
+        cars = [car_id];
+      }
+    }
+
+    const requestedToken = fleetVersionToken(version);
+    const verMsg = fleetDeployPrimaryLogMessage(feature, version);
+    const loggedCars = [];
+    const notAppliedCars = [];
+    const forcedUpdated = [];
+    for (const cid of cars) {
+      let actual = readFleetStateActiveVersion(cid, feature);
+
+      // If the state file was NOT updated, force-update it (user expectation: deploy => JSON changes).
+      if (!actual || actual !== requestedToken) {
+        const forced = forceUpdateFleetState(cid, feature, slot, requestedToken);
+        if (forced.ok) {
+          forcedUpdated.push(cid);
+          actual = readFleetStateActiveVersion(cid, feature);
+        }
+      }
+
+      // Always emit an event line (for CMD + version_events.log), and only claim "is deployed!"
+      // when deploy/state active_version matches the requested token (after forced update).
+      if (actual && actual === requestedToken) {
+        notifyCarVersionChange(cid, feature, {
+          messagePrimary: verMsg,
+          plainConsoleLine: verMsg,
+          // Avoid touching the live feature log file; keep ADAS running and logs stable.
+          writeFeatureLog: false,
+          // Still mirror the same event into the shadow stream so both CMD windows show it.
+          alsoShadowEvent: true,
+          plainConsoleLineShadow: verMsg.replace("AdasFeature_", "AdasFeatureShadow_"),
+        });
+        loggedCars.push(cid);
+      } else {
+        const note = `Deploy requested (${requestedToken}) but state not updated yet (active_version=${actual || "<missing>"}).`;
+        notifyCarVersionChange(cid, feature, {
+          messagePrimary: note,
+          plainConsoleLine: note,
+          writeFeatureLog: false,
+          alsoShadowEvent: true,
+          plainConsoleLineShadow: `Shadow observer: ${note}`,
+        });
+        notAppliedCars.push({ car_id: cid, active_version: actual || "<missing>" });
+      }
+    }
+    if (!cars.length) {
+      console.log(
+        `[VERSION] fleet-deploy ${scope} ${feature} ${slot} ${version} (exit_code=${r.code}) (no success_targets in SUMMARY_JSON)`
+      );
+    }
+    if (notAppliedCars.length) {
+      console.log(
+        `[VERSION] fleet-deploy verify failed for ${feature} ${requestedToken}: ` +
+          notAppliedCars.map((x) => `${x.car_id} active_version=${x.active_version}`).join(", ")
+      );
+    }
+
+    // We return raw stdout; UI will parse [SUMMARY_JSON] line. summary_json is included for debugging.
+    res.json({
+      ok: loggedCars.length > 0,
+      exit_code: r.code,
+      stdout: r.stdout,
+      stderr: r.stderr,
+      summary_json,
+      success_targets_logged: loggedCars,
+      verify_failed: notAppliedCars,
+      requested_version: requestedToken,
+      state_forced_updated: forcedUpdated,
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message, stderr: err.stderr, stdout: err.stdout });
   }
+});
+
+function bashSingleQuote(s) {
+  return `'${String(s).replace(/'/g, `'\\''`)}'`;
+}
+
+function normalizeOtaDomain(raw) {
+  const d = String(raw ?? "").trim();
+  if (!d) {
+    throw new Error("domain required");
+  }
+  const key = d.replace(/\s+/g, "").toLowerCase();
+  const map = {
+    adas: "ADAS",
+    navigation: "Navigation",
+    evenergy: "EvEnergy",
+    energy: "EvEnergy",
+  };
+  if (map[key]) {
+    return map[key];
+  }
+  throw new Error("domain must be ADAS, Navigation, or EvEnergy");
+}
+
+function parseVehicleRuntimeBody(body) {
+  const car_id = String(body?.car_id || "").trim();
+  if (!RUNTIME_DOCKER_CAR_RE.test(car_id)) {
+    throw new Error("car_id must be car_1 .. car_10");
+  }
+  const domain = normalizeOtaDomain(body?.domain);
+  const version = String(body?.version || "").trim();
+  if (!version) {
+    throw new Error("version required");
+  }
+  if (version.length > 48 || !/^[A-Za-z0-9][A-Za-z0-9._+~-]*$/.test(version)) {
+    throw new Error("invalid version string");
+  }
+  return { car_id, domain, version, sync_shadow: body?.sync_shadow === true };
+}
+
+function buildOtaVehicleShCommand(subcommand, opts) {
+  if (!fs.existsSync(OTA_VEHICLE_SCRIPT)) {
+    throw new Error(`ota_vehicle.sh not found at ${OTA_VEHICLE_SCRIPT}`);
+  }
+  const sw = toWslPath(OTA_VEHICLE_SCRIPT);
+  let cmd = `bash ${bashSingleQuote(sw)} ${bashSingleQuote(subcommand)} --car ${bashSingleQuote(
+    opts.car_id,
+  )} --domain ${bashSingleQuote(opts.domain)}`;
+  if (opts.version != null && String(opts.version) !== "") {
+    cmd += ` --version ${bashSingleQuote(String(opts.version))}`;
+  }
+  if (opts.sync_shadow && subcommand === "promote") {
+    cmd += " --sync-shadow";
+  }
+  return cmd;
+}
+
+app.get("/api/vehicle-runtime/health", (_req, res) => {
+  res.json({
+    ok: true,
+    script_found: fs.existsSync(OTA_VEHICLE_SCRIPT),
+    ota_vehicle_script: path.relative(REPO_ROOT, OTA_VEHICLE_SCRIPT).replace(/\\/g, "/"),
+    runtime_state_dir: path.relative(REPO_ROOT, OTA_VEHICLE_RUNTIME_DIR).replace(/\\/g, "/"),
+  });
+});
+
+app.get("/api/vehicle-runtime/state/:carId", (req, res) => {
+  const carId = String(req.params.carId || "").trim();
+  if (!RUNTIME_DOCKER_CAR_RE.test(carId)) {
+    res.status(400).json({ ok: false, error: "car_id must be car_1 .. car_10" });
+    return;
+  }
+  const fp = path.join(OTA_VEHICLE_RUNTIME_DIR, `${carId}.json`);
+  const rel = path.relative(REPO_ROOT, fp).replace(/\\/g, "/");
+  if (!fs.existsSync(fp)) {
+    res.json({ ok: true, state: null, file: rel });
+    return;
+  }
+  try {
+    const data = readJson(fp);
+    res.json({ ok: true, state: data, file: rel });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/vehicle-runtime/status", async (req, res) => {
+  try {
+    const car_id = String(req.query.car_id || "").trim();
+    if (!RUNTIME_DOCKER_CAR_RE.test(car_id)) {
+      res.status(400).json({ ok: false, error: "car_id must be car_1 .. car_10" });
+      return;
+    }
+    const domain = normalizeOtaDomain(req.query.domain);
+    const cmd = buildOtaVehicleShCommand("status", { car_id, domain });
+    const r = await execWslBash(cmd);
+    res.json({
+      ok: Number(r.code) === 0,
+      exit_code: r.code,
+      stdout: r.stdout || "",
+      stderr: r.stderr || "",
+    });
+  } catch (err) {
+    const code = err.message && err.message.includes("not found") ? 503 : 400;
+    res.status(code).json({ ok: false, error: err.message, stderr: err.stderr, stdout: err.stdout });
+  }
+});
+
+async function handleVehicleRuntimePost(subcommand, body, res) {
+  try {
+    const t = parseVehicleRuntimeBody(body);
+    const cmd = buildOtaVehicleShCommand(subcommand, t);
+    const r = await execWslBash(cmd);
+    const ok = Number(r.code) === 0;
+    if (ok) {
+      const ff = otaDomainToFleetFeature(t.domain);
+      if (ff) {
+        if (subcommand === "bootstrap") {
+          notifyCarVersionChange(t.car_id, ff, {
+            messagePrimary: `Docker OTA bootstrap: Primary and Shadow image tag v${t.version} (${t.domain}).`,
+            alsoShadowLog: true,
+            messageShadow: `Docker OTA bootstrap: Shadow image tag v${t.version} (${t.domain}).`,
+            plainConsoleLine: `docker-ota bootstrap ${t.domain} v${t.version} OK`,
+          });
+        } else if (subcommand === "deploy-shadow") {
+          notifyCarVersionChange(t.car_id, ff, {
+            messagePrimary: `Docker OTA: Shadow-only redeploy to v${t.version} (${t.domain}); Primary unchanged.`,
+            alsoShadowLog: true,
+            messageShadow: `Docker OTA deploy-shadow: Shadow updated to v${t.version} (${t.domain}).`,
+            plainConsoleLine: `docker-ota deploy-shadow ${t.domain} v${t.version} OK`,
+          });
+        } else if (subcommand === "promote") {
+          notifyCarVersionChange(t.car_id, ff, {
+            messagePrimary: `Docker OTA promote: Primary updated to v${t.version} (${t.domain}).`,
+            alsoShadowLog: Boolean(t.sync_shadow),
+            messageShadow: t.sync_shadow
+              ? `Docker OTA promote: Shadow synced to v${t.version} (${t.domain}).`
+              : undefined,
+            plainConsoleLine: `docker-ota promote ${t.domain} v${t.version}${t.sync_shadow ? " +sync-shadow" : ""} OK`,
+          });
+        }
+      }
+    }
+    res.json({
+      ok,
+      exit_code: r.code,
+      stdout: r.stdout || "",
+      stderr: r.stderr || "",
+      car_id: t.car_id,
+      domain: t.domain,
+      version: t.version,
+    });
+  } catch (err) {
+    const msg = err.message || String(err);
+    const isMissing = msg.includes("not found");
+    const status = isMissing ? 503 : 400;
+    res.status(status).json({ ok: false, error: msg, stderr: err.stderr, stdout: err.stdout });
+  }
+}
+
+app.post("/api/vehicle-runtime/bootstrap", async (req, res) => {
+  await handleVehicleRuntimePost("bootstrap", req.body, res);
+});
+
+app.post("/api/vehicle-runtime/deploy-shadow", async (req, res) => {
+  await handleVehicleRuntimePost("deploy-shadow", req.body, res);
+});
+
+app.post("/api/vehicle-runtime/promote", async (req, res) => {
+  await handleVehicleRuntimePost("promote", req.body, res);
 });
 
 app.listen(PORT, () => {

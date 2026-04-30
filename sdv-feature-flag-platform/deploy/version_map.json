@@ -2,16 +2,16 @@
   "schema_version": 1,
   "features": {
     "ADAS": {
-      "A": { "version": "v0.1", "role": "stable",    "binary": "AdasFeature_A" },
-      "B": { "version": "v0.2", "role": "candidate", "binary": "AdasFeature_B" }
+      "A": { "version": "v0.1", "role": "stable",    "binary": "AdasFeature" },
+      "B": { "version": "v0.2", "role": "candidate", "binary": "AdasFeature" }
     },
     "Navigation": {
-      "A": { "version": "v1.0", "role": "stable",    "binary": "NavigationFeature_A" },
-      "B": { "version": "v1.1", "role": "candidate", "binary": "NavigationFeature_B" }
+      "A": { "version": "v1.0", "role": "stable",    "binary": "NavigationFeature" },
+      "B": { "version": "v1.1", "role": "candidate", "binary": "NavigationFeature" }
     },
     "Energy": {
-      "A": { "version": "v0.5", "role": "stable",    "binary": "EvEnergyFeature_A" },
-      "B": { "version": "v0.6", "role": "candidate", "binary": "EvEnergyFeature_B" }
+      "A": { "version": "v0.5", "role": "stable",    "binary": "EvEnergyFeature" },
+      "B": { "version": "v0.6", "role": "candidate", "binary": "EvEnergyFeature" }
     }
   }
 }

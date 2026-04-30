@@ -1,0 +1,14 @@
+{
+  "car_id": "car_1",
+  "domains": {
+    "adas": {
+      "primary_version": "1.0",
+      "shadow_version": "1.0",
+      "binary": "AdasFeature",
+      "primary_container": "car_1_agent_adas",
+      "shadow_container": "car_1_agent_adas_shadow",
+      "last_action": "bootstrap",
+      "last_message_ko": "AdasFeature: Primary·Shadow 모두 실행 버전 v1.0으로 기동했습니다 (bootstrap)."
+    }
+  }
+}

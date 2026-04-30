@@ -106,7 +106,7 @@ static bool endsWith(const std::string& s, const std::string& suffix) {
 }
 
 // Convenience: when running a single-car platform (car_<n>),
-// allow signals like "KILL:AdasFeature" and map them to AdasFeature_A / AdasFeature_B.
+// allow signals like "KILL:AdasFeature" and map them to configured exec names (logical AdasFeature, or legacy *_A/*_B).
 static std::string normalizeCarLineTarget(const std::string& raw, std::optional<char> variantOpt) {
     if (!variantOpt.has_value()) return raw;
     const char v = *variantOpt;
@@ -184,6 +184,9 @@ static std::vector<std::string> resolveCarLineKillTargetsUsingConfig(
     for (const char* d : kDomains) {
         const std::string dom(d);
         if (raw == dom) {
+            if (deployed.count(dom)) {
+                matches.push_back(dom);
+            }
             const std::string a = dom + "_A";
             const std::string b = dom + "_B";
             if (deployed.count(a)) {
@@ -195,21 +198,10 @@ static std::vector<std::string> resolveCarLineKillTargetsUsingConfig(
             return matches;
         }
         if (raw == dom + "_Shadow") {
-            const std::string as = dom + "_A_Shadow";
-            const std::string bs = dom + "_B_Shadow";
-            if (deployed.count(as)) {
-                matches.push_back(as);
-            }
-            if (deployed.count(bs)) {
-                matches.push_back(bs);
-            }
             const std::string leg = dom + "Shadow";
             if (deployed.count(leg)) {
                 matches.push_back(leg);
             }
-            return matches;
-        }
-        if (raw == dom + "Shadow") {
             const std::string as = dom + "_A_Shadow";
             const std::string bs = dom + "_B_Shadow";
             if (deployed.count(as)) {
@@ -218,8 +210,20 @@ static std::vector<std::string> resolveCarLineKillTargetsUsingConfig(
             if (deployed.count(bs)) {
                 matches.push_back(bs);
             }
-            if (deployed.count(dom + "Shadow")) {
-                matches.push_back(dom + "Shadow");
+            return matches;
+        }
+        if (raw == dom + "Shadow") {
+            const std::string leg = dom + "Shadow";
+            if (deployed.count(leg)) {
+                matches.push_back(leg);
+            }
+            const std::string as = dom + "_A_Shadow";
+            const std::string bs = dom + "_B_Shadow";
+            if (deployed.count(as)) {
+                matches.push_back(as);
+            }
+            if (deployed.count(bs)) {
+                matches.push_back(bs);
             }
             return matches;
         }
@@ -238,13 +242,13 @@ static std::vector<std::string> expandAmbiguousCarLineKillTargets(const std::str
     for (const char* d : kDomains) {
         const std::string dom(d);
         if (raw == dom) {
-            return {dom + "_A", dom + "_B"};
+            return {dom};
         }
         if (raw == dom + "_Shadow") {
-            return {dom + "_A_Shadow", dom + "_B_Shadow"};
+            return {dom + "Shadow"};
         }
         if (raw == dom + "Shadow") {
-            return {dom + "_A_Shadow", dom + "_B_Shadow"};
+            return {dom + "Shadow"};
         }
     }
     return {};
@@ -257,12 +261,6 @@ void FeatureEvaluator::emitAutoShadowModeForAllPrimaries() {
         "NavigationFeature",
         "AdasFeature",
         "EvEnergyFeature",
-        "NavigationFeature_A",
-        "AdasFeature_A",
-        "EvEnergyFeature_A",
-        "NavigationFeature_B",
-        "AdasFeature_B",
-        "EvEnergyFeature_B",
     };
     log(LogLevel::info,
         "자동 Shadow Mode — 모든 Primary에 ShadowModeOn 발송 (수동 SHADOW_ON 생략)");

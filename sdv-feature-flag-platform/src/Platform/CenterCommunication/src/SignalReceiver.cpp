@@ -70,7 +70,7 @@ static std::vector<std::string> expandKillTarget(const std::string& target,
     if (declaredFeatures.empty()) return {target};
     if (declaredFeatures.find(target) != declaredFeatures.end()) return {target};
 
-    // Shorthand: "AdasFeature" → pick the concrete configured variant (A/B) for this car.
+    // Shorthand: "AdasFeature" → prefer exact configured name, else legacy *_A / *_B variants.
     std::vector<std::string> expanded;
     const std::string a = target + "_A";
     const std::string b = target + "_B";
@@ -82,7 +82,7 @@ static std::vector<std::string> expandKillTarget(const std::string& target,
     return {target};
 }
 
-/// e.g. `AdasFeature.FCA` -> `AdasFeature_A.FCA`, `AdasFeature_B.FCA` when lifecycle lists those.
+/// e.g. `AdasFeature.FCA` -> configured primary name(s) (e.g. `AdasFeature.FCA`, or legacy `AdasFeature_A.FCA`).
 static std::vector<std::string> expandFlagOrSubTarget(const std::string& rest,
                                                     const std::unordered_set<std::string>& declaredFeatures) {
     const std::string t = trim(rest);

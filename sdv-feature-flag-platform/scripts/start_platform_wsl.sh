@@ -60,6 +60,19 @@ fi
 
 # Foreground mode: keep this WSL console attached/open and stream logs.
 if [[ "${MODE}" == "--foreground" ]]; then
+  # Fleet / Docker version lines are appended by status-server to logs/<car>/version_events.log.
+  # Tail them here so the car CMD window shows deploy activity without restarting the binary.
+  if [[ "${LOG_TAG}" =~ ^car_ ]]; then
+    mkdir -p "logs/${LOG_TAG}"
+    EVT="logs/${LOG_TAG}/version_events.log"
+    : >>"$EVT"
+    if [[ -r /dev/tty ]]; then
+      nohup tail -n0 -F "$EVT" >/dev/tty 2>/dev/null &
+    else
+      nohup tail -n0 -F "$EVT" >&2 2>/dev/null &
+    fi
+    disown || true
+  fi
   exec "${PLATFORM}" "${CONFIG_REL}"
 fi
 

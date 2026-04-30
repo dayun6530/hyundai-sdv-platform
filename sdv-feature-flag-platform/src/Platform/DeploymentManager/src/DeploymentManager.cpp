@@ -1487,6 +1487,25 @@ bool DeploymentManager::safeBasename(const std::string& name) {
 bool DeploymentManager::inferPackage(const std::string& execBasename, PackageInfo& out) {
     out.execBasename = execBasename;
     out.mode = "primary";
+    if (execBasename == "AdasFeatureShadow") {
+        out.mode = "shadow";
+        out.featureName = "ADAS";
+        out.version = "A";
+        return true;
+    }
+    if (execBasename == "NavigationFeatureShadow") {
+        out.mode = "shadow";
+        out.featureName = "NAV";
+        out.version = "A";
+        return true;
+    }
+    if (execBasename == "EvEnergyFeatureShadow") {
+        out.mode = "shadow";
+        out.featureName = "ENERGY";
+        out.version = "A";
+        return true;
+    }
+
     std::string core = execBasename;
     const std::string shadowSuf = "_Shadow";
     if (core.size() > shadowSuf.size() &&
@@ -1499,6 +1518,22 @@ bool DeploymentManager::inferPackage(const std::string& execBasename, PackageInf
         return core.size() >= suf.size() &&
             core.compare(core.size() - suf.size(), suf.size(), suf) == 0;
     };
+
+    if (core == "AdasFeature") {
+        out.featureName = "ADAS";
+        out.version = "A";
+        return true;
+    }
+    if (core == "NavigationFeature") {
+        out.featureName = "NAV";
+        out.version = "A";
+        return true;
+    }
+    if (core == "EvEnergyFeature") {
+        out.featureName = "ENERGY";
+        out.version = "A";
+        return true;
+    }
 
     if (core.rfind("AdasFeature_", 0) == 0) {
         out.featureName = "ADAS";

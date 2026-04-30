@@ -404,12 +404,12 @@ std::string VersionManager::selfTest() const {
         return {};
     };
 
-    if (const auto e = check("ADAS", 'A', "v0.1", "stable", "AdasFeature_A"); !e.empty()) return e;
-    if (const auto e = check("ADAS", 'B', "v0.2", "candidate", "AdasFeature_B"); !e.empty()) return e;
-    if (const auto e = check("Navigation", 'A', "v1.0", "stable", "NavigationFeature_A"); !e.empty()) return e;
-    if (const auto e = check("Navigation", 'B', "v1.1", "candidate", "NavigationFeature_B"); !e.empty()) return e;
-    if (const auto e = check("Energy", 'A', "v0.5", "stable", "EvEnergyFeature_A"); !e.empty()) return e;
-    if (const auto e = check("Energy", 'B', "v0.6", "candidate", "EvEnergyFeature_B"); !e.empty()) return e;
+    if (const auto e = check("ADAS", 'A', "v0.1", "stable", "AdasFeature"); !e.empty()) return e;
+    if (const auto e = check("ADAS", 'B', "v0.2", "candidate", "AdasFeature"); !e.empty()) return e;
+    if (const auto e = check("Navigation", 'A', "v1.0", "stable", "NavigationFeature"); !e.empty()) return e;
+    if (const auto e = check("Navigation", 'B', "v1.1", "candidate", "NavigationFeature"); !e.empty()) return e;
+    if (const auto e = check("Energy", 'A', "v0.5", "stable", "EvEnergyFeature"); !e.empty()) return e;
+    if (const auto e = check("Energy", 'B', "v0.6", "candidate", "EvEnergyFeature"); !e.empty()) return e;
 
     return {};
 }

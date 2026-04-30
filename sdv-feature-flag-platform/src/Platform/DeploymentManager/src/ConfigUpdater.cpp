@@ -10,6 +10,14 @@ namespace sdv::platform::deployment {
 namespace {
 
 const std::unordered_set<std::string> kManagedFeatures = {
+    // Version-neutral car processes (demo default)
+    "NavigationFeature",
+    "NavigationFeatureShadow",
+    "AdasFeature",
+    "AdasFeatureShadow",
+    "EvEnergyFeature",
+    "EvEnergyFeatureShadow",
+    // Legacy A/B line names (still rewritten when present)
     "NavigationFeature_A",
     "NavigationFeature_A_Shadow",
     "NavigationFeature_B",
@@ -27,13 +35,16 @@ const std::unordered_set<std::string> kManagedFeatures = {
 };
 
 void emitFeatureBlock(std::ostream& out, const ConfigUpdater::Selection& s) {
+    (void)s;
+    // Always emit logical feature binaries (logs: AdasFeature.log / AdasFeatureShadow.log).
+    // deploy/state active_slot (A|B) remains for fleet / version_map rollouts only.
     out << "feature WatchDog\n";
-    out << "feature NavigationFeature_" << s.nav << "\n";
-    out << "feature NavigationFeature_" << s.nav << "_Shadow\n";
-    out << "feature AdasFeature_" << s.adas << "\n";
-    out << "feature AdasFeature_" << s.adas << "_Shadow\n";
-    out << "feature EvEnergyFeature_" << s.energy << "\n";
-    out << "feature EvEnergyFeature_" << s.energy << "_Shadow\n";
+    out << "feature NavigationFeature\n";
+    out << "feature NavigationFeatureShadow\n";
+    out << "feature AdasFeature\n";
+    out << "feature AdasFeatureShadow\n";
+    out << "feature EvEnergyFeature\n";
+    out << "feature EvEnergyFeatureShadow\n";
     out << "feature FeatureEvaluator\n";
 }
 

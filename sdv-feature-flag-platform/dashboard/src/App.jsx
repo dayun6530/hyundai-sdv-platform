@@ -22,6 +22,7 @@ import PackageRegistryTable from "./fleet/PackageRegistryTable.jsx";
 import PackageUploadPanel from "./fleet/PackageUploadPanel.jsx";
 import FleetDashboard from "./fleet/FleetDashboard.jsx";
 import FleetDeployPanel from "./fleet/FleetDeployPanel.jsx";
+import DockerVehicleRuntimePanel from "./fleet/DockerVehicleRuntimePanel.jsx";
 import VehicleDetailPanel from "./fleet/VehicleDetailPanel.jsx";
 
 function formatDate(value) {
@@ -413,8 +414,9 @@ export default function App() {
         <div className="legend-title">Fleet (car_1 ~ car_10)</div>
         <div className="legend-text">
           <span>
-            <strong>Per vehicle</strong>: pick a car below — state comes from `deploy/state/car_*.json` (slots, flags,
-            shadow, OTA).
+            <strong>Per vehicle</strong>: pick a car below — state comes from `deploy/state/car_*.json` (A/B{" "}
+            <em>slots</em> for DeploymentMgr rollouts, flags, shadow flags, OTA). All demo cars use the same stable slot
+            baseline unless you change JSON or run <code className="mono">fleet-deploy</code>.
           </span>
           <span>
             <strong>Fleet-wide</strong>: `deploy/version_map.json` A/B and package registry drive rollout targets; history
@@ -423,6 +425,10 @@ export default function App() {
           <span>
             <strong>API</strong>: `GET /api/fleet/*` via Vite proxy to status-server. Deploy runs `DeploymentMgr
             fleet-deploy …` (summary below).
+          </span>
+          <span>
+            <strong>Docker OTA</strong>: `POST /api/vehicle-runtime/*` runs `sdv-ota-manager/scripts/ota_vehicle.sh`
+            in WSL (Primary/Shadow containers + `deploy/vehicle_runtime/*.json`).
           </span>
         </div>
       </section>
@@ -461,6 +467,8 @@ export default function App() {
       </section>
 
       <FleetHistoryJsonlPanel records={fleetHistoryRecords} meta={fleetHistoryMeta} />
+
+      <DockerVehicleRuntimePanel vehicles={fleetVehicles} />
 
       <FleetDataDebugDetails
         vehicles={fleetVehicles}

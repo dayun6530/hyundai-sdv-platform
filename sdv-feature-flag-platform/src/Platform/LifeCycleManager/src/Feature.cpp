@@ -14,8 +14,12 @@
 #include <cctype>
 #include <climits>
 #include <cstdint>
+#include <cstdlib>
 #include <optional>
 #include <string>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -65,6 +69,42 @@ std::optional<std::string> extractSubFeatureKeyFromMessage(const std::string& ms
         return msg.substr(logical.size());
     }
     return std::nullopt;
+}
+
+/// Reads `deploy/state/<car>.json` — only the `"ADAS"` feature block (best-effort, demo-friendly).
+static std::optional<std::string> readQuotedFieldInAdasBlock(const std::string& json, const char* field) {
+    const std::size_t adas = json.find("\"ADAS\"");
+    if (adas == std::string::npos) {
+        return std::nullopt;
+    }
+    const std::size_t nav = json.find("\"Navigation\"", adas + 1);
+    const std::string block =
+        nav == std::string::npos ? json.substr(adas) : json.substr(adas, nav - adas);
+    const std::string key = std::string("\"") + field + "\"";
+    const std::size_t k = block.find(key);
+    if (k == std::string::npos) {
+        return std::nullopt;
+    }
+    const std::size_t colon = block.find(':', k);
+    if (colon == std::string::npos) {
+        return std::nullopt;
+    }
+    std::size_t i = colon + 1;
+    while (i < block.size() && (block[i] == ' ' || block[i] == '\t')) {
+        ++i;
+    }
+    if (i >= block.size() || block[i] != '"') {
+        return std::nullopt;
+    }
+    ++i;
+    const std::size_t start = i;
+    while (i < block.size() && block[i] != '"') {
+        ++i;
+    }
+    if (i <= start) {
+        return std::nullopt;
+    }
+    return block.substr(start, i - start);
 }
 
 }  // namespace
@@ -123,6 +163,47 @@ Feature::~Feature() {
     }
 }
 
+void Feature::maybeLogFleetAdasDeployBanner() {
+    const bool shadowObserver = isShadowMode();
+    if (shadowObserver) {
+        if (name_ != "AdasFeatureShadow") {
+            return;
+        }
+    } else {
+        if (name_ != "AdasFeature") {
+            return;
+        }
+    }
+    const char* car = std::getenv("SDV_CAR_INSTANCE");
+    if (car == nullptr || car[0] == '\0') {
+        return;
+    }
+
+    std::ifstream in(std::string("deploy/state/") + car + ".json");
+    if (!in) {
+        return;
+    }
+    std::ostringstream buf;
+    buf << in.rdbuf();
+    const std::string json = buf.str();
+
+    const char* field = shadowObserver ? "shadow_version" : "active_version";
+    const auto ver = readQuotedFieldInAdasBlock(json, field);
+    if (!ver || ver->empty()) {
+        return;
+    }
+
+    if (shadowObserver) {
+        const std::string msg = std::string("AdasFeatureShadow_") + *ver + " is deployed!";
+        log(LogLevel::info, msg);
+        std::cerr << "[VERSION] " << msg << std::endl;
+    } else {
+        const std::string msg = std::string("AdasFeature_") + *ver + " is deployed!";
+        log(LogLevel::info, msg);
+        std::cerr << "[VERSION] " << msg << std::endl;
+    }
+}
+
 int Feature::run() {
     flag_.resetRunState();
 
@@ -140,6 +221,8 @@ int Feature::run() {
             ", PID:" + std::to_string(getpid()) +
             ") — FLAG_ON 대기 중");
     }
+
+    maybeLogFleetAdasDeployBanner();
 
     if (isShadowMode_) {
         log(LogLevel::info, std::string("Shadow observer — mirroring Primary: ") + primaryName_);
