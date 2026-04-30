@@ -2,8 +2,11 @@
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 
-#include <thread>
 #include <chrono>
+#include <cstring>
+#include <iostream>
+#include <thread>
+
 #include <signal.h>
 
 using namespace sdv::platform::communications::eventbus;
@@ -127,7 +130,38 @@ void AdasFeature::processRoadInfo(const std::string& message) {
 }  // namespace sdv::feature
 
 #ifndef SDV_FEATURE_NO_MAIN
+
+namespace {
+
+// OTA/도커 데모용: gRPC 없이 표준 출력으로 배포·주기 로그만 남김 (docker logs 검증용)
+void runOtaDemoLoop(const char* versionLabel) {
+    std::cout << "[SYSTEM] AdasFeature_v" << versionLabel << " is deployed!" << std::endl;
+    std::cout.flush();
+    while (true) {
+        std::cout << "[SYSTEM] AdasFeature is running (Version: " << versionLabel << ")..." << std::endl;
+        std::cout.flush();
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
+}
+
+}  // namespace
+
 int main(int argc, char* argv[]) {
+    // 사용법: AdasFeature --ota-demo [버전]
+    //   버전 생략 시 아래 기본값 (v2.0 데모 시 소스에서 한 줄만 바꿔 재빌드하면 됨)
+    static constexpr const char* kDefaultOtaDemoVersion = "2.0";
+
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--ota-demo") == 0) {
+            const char* ver = kDefaultOtaDemoVersion;
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                ver = argv[++i];
+            }
+            runOtaDemoLoop(ver);
+            return 0;
+        }
+    }
+
     std::string address = "localhost:50051";
     if (argc > 1) address = argv[1];
 

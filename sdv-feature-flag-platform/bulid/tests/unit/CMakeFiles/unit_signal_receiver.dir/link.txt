@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o -o unit_signal_receiver  ../../src/Platform/CenterCommunication/libCenterCommunicationLib.a 

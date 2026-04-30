@@ -13,7 +13,7 @@ public:
         char slot{'A'};       // 'A' | 'B'
         std::string version;  // e.g. v0.1
         std::string role;     // stable | candidate
-        std::string binary;   // e.g. AdasFeature_A
+        std::string binary;   // e.g. AdasFeature (package basename)
     };
 
     // Internal representation of each slot/feature in the JSON file.

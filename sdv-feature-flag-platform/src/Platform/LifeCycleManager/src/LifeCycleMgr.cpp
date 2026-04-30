@@ -211,6 +211,11 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
     const char* argv1Addr =
         (want == "EventBusHost") ? address_.c_str() : clientAddress.c_str();
 
+    // Child processes read fleet state for deploy banners (e.g. AdasFeature_v2.0 is deployed!).
+    if (!carInstanceId_.empty()) {
+        ::setenv("SDV_CAR_INSTANCE", carInstanceId_.c_str(), 1);
+    }
+
     pid_t pid = fork();
     if (pid == 0) {
         // Always append instance id as the last argv to allow safe cleanup without

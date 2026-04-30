@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/82108/merge_only/sdv-feature-flag-platform/src/Platform/DeploymentManager/include
+CXX_INCLUDES = -I/mnt/c/Users/82108/teamproject/sdv-feature-flag-platform/src/Platform/DeploymentManager/include
 
 CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic
 

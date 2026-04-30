@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/SignalReceiver.dir/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o -o SignalReceiver  src/Platform/CenterCommunication/libCenterCommunicationLib.a 

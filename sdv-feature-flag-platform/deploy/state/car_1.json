@@ -5,9 +5,9 @@
   "group": "canary",
   "status": "online",
   "features": {
-    "ADAS":     {
-      "active_slot": "B",
-      "active_version": "v0.2",
+    "ADAS": {
+      "active_slot": "A",
+      "active_version": "v2.0",
       "flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
@@ -17,7 +17,7 @@
       "fallback_slot": "A",
       "fallback_version": "v0.1"
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "A",
       "active_version": "v1.0",
       "flag": "ON",
@@ -31,7 +31,7 @@
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     },
-    "Energy":     {
+    "Energy": {
       "active_slot": "A",
       "active_version": "v0.5",
       "flag": "ON",
@@ -46,7 +46,7 @@
       "fallback_version": "v0.5"
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "downloaded",
     "install_status": "installed",
     "vehicle_mode": "PARKED",

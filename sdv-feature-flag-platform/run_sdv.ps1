@@ -128,8 +128,8 @@ $null = New-Item -ItemType Directory -Force -Path $logWin 2>$null
 & wsl.exe @wslArgsRoot bash -lc "mkdir -p `"$logWsl`""
 
 Write-Host "Logs will be written under: $logWin"
-# Normalize remaining WSL scripts (run_cars / start_platform).
-& wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/run_cars_wsl.sh`" `"$projWsl/scripts/start_platform_wsl.sh`" 2>/dev/null || true"
+# Normalize remaining WSL scripts (run_cars / start_platform / per-car foreground).
+& wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/run_cars_wsl.sh`" `"$projWsl/scripts/start_platform_wsl.sh`" `"$projWsl/scripts/run_car_foreground_wsl.sh`" 2>/dev/null || true"
 
 # Optional incremental build (off by default). After C++ changes, run once with SDV_CMAKE_BUILD=1 (rebuilds all car_* + libs).
 if ($env:SDV_CMAKE_BUILD -eq "1") {
@@ -140,24 +140,37 @@ if ($env:SDV_CMAKE_BUILD -eq "1") {
     }
 }
 
-& wsl.exe @wslArgsRoot bash "$projWsl/scripts/run_cars_wsl.sh" "$projWsl" "$buildWsl" "$logWsl" "1" "10"
+# Default: one CMD window per car (title car_N), each running WSL foreground car_N (Linux binary under
+# build_unleash or build — same as old ".\build\car_N in a CMD" workflow visually).
+# Set SDV_CAR_BACKGROUND=1 for no popups: background start in WSL + tail -f log windows instead.
+if ($env:SDV_CAR_BACKGROUND -eq "1") {
+    Write-Host "SDV_CAR_BACKGROUND=1: starting cars in WSL background + log tail CMD windows..."
+    & wsl.exe @wslArgsRoot bash "$projWsl/scripts/run_cars_wsl.sh" "$projWsl" "$buildWsl" "$logWsl" "1" "10"
 
-# Make it "visibly running": open log-follow consoles (one per car).
-# This avoids spawning 10 WSL shells running the binaries directly (less fragile), while still giving
-# developers an immediate live view like the old single-car console flow.
-Write-Host "Opening car log consoles (car_1..car_10)..."
-foreach ($i in 1..10) {
-    $carName = "car_$i"
-    $logFileWsl = "$logWsl/$carName.log"
-    # Do not pass `-d` here: distro names differ across machines (Ubuntu vs Ubuntu-22.04, etc).
-    # Use the user's default WSL distro to avoid WSL_E_DISTRO_NOT_FOUND.
-    $cmd = "wsl.exe -u root -- bash -lc `"tail -n +1 -f '$logFileWsl'`""
-    Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
-    Start-Sleep -Milliseconds 120
+    Write-Host "Opening car log consoles (car_1..car_10)..."
+    foreach ($i in 1..10) {
+        $carName = "car_$i"
+        $logFileWsl = "$logWsl/$carName.log"
+        $cmd = "wsl.exe -u root -- bash -lc `"tail -n +1 -f '$logFileWsl'`""
+        Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
+        Start-Sleep -Milliseconds 120
+    }
+} else {
+    # via start_platform_wsl.sh so SDV_MQTT_BROKER_URI and paths match the scripted start path.
+    # Do NOT pass `-d <distro>` here: names from `wsl -l -q` often differ from what `wsl -d` accepts
+    # on some PCs (WSL_E_DISTRO_NOT_FOUND). Use the default distro, same as the old tail -f consoles.
+    Write-Host "Opening car consoles (car_1..car_10): $buildRel/car_N + config/car/car_N.conf"
+    foreach ($i in 1..10) {
+        $carConf = "config/car/car_$i.conf"
+        $bashLine = "cd '$projWsl' && bash '$projWsl/scripts/start_platform_wsl.sh' '$projWsl' '$buildWsl' '$carConf' --foreground"
+        $wslCmd = "title car_$i && wsl.exe -u root -- bash -lc `"$bashLine`""
+        Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $wslCmd) -WindowStyle Normal
+        Start-Sleep -Milliseconds 500
+    }
 }
 
-# Small verification in the same terminal (helps confirm "10대 다 켜짐").
-Start-Sleep -Seconds 1
+# Small verification in the same terminal (helps confirm "10대 다 켜짐"); allow last car to attach.
+Start-Sleep -Seconds 3
 & wsl.exe @wslArgsBase -- bash -lc "cd $projWsl; echo '---- running cars ----'; ps aux | grep -E 'build_unleash/car_[0-9]+|build/car_[0-9]+' | grep -v grep || true; echo '---- EventBusHost ports ----'; ss -lntp | grep -E ':5005[0-9]' || true"
 
 function Stop-ListenPorts {

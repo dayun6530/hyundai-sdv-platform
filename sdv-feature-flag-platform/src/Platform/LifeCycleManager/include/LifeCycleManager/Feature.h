@@ -100,6 +100,9 @@ private:
     void flushNavigationShadowTriplet(const std::string& guidancePayload);
     void logEvEnergyShadowEnergyState(const std::string& payload);
 
+    /// If `deploy/state/<SDV_CAR_INSTANCE>.json` lists ADAS versions, log a one-line deploy banner.
+    void maybeLogFleetAdasDeployBanner();
+
     std::ofstream logFile_;
     std::string logFilePath_;
     static std::atomic<bool> stopRequested_;
