@@ -1,0 +1,63 @@
+{
+  "car_id": "car_7",
+  "model": "KONA_EV",
+  "region": "EU",
+  "group": "stable",
+  "status": "online",
+  "features": {
+    "ADAS": {
+      "active_slot": "A",
+      "active_version": "v1.0",
+      "flag": "ON",
+      "shadow_enabled": false,
+      "shadow_slot": "",
+      "shadow_version": "v1.0",
+      "kill_switch": false,
+      "kill_reason": "",
+      "fallback_slot": "A",
+      "fallback_version": "v0.1"
+    },
+    "Navigation": {
+      "active_slot": "A",
+      "active_version": "v1.0",
+      "flag": "ON",
+      "realtime_route_flag": "ON",
+      "charging_recommend_flag": "ON",
+      "shadow_enabled": false,
+      "shadow_slot": "",
+      "shadow_version": "v1.0",
+      "kill_switch": false,
+      "kill_reason": "",
+      "fallback_slot": "A",
+      "fallback_version": "v1.0"
+    },
+    "Energy": {
+      "active_slot": "A",
+      "active_version": "v1.0",
+      "flag": "ON",
+      "advanced_range_flag": "ON",
+      "charging_recommend_flag": "ON",
+      "shadow_enabled": false,
+      "shadow_slot": "",
+      "shadow_version": "v1.0",
+      "kill_switch": false,
+      "kill_reason": "",
+      "fallback_slot": "A",
+      "fallback_version": "v0.5"
+    }
+  },
+  "ota": {
+    "download_status": "idle",
+    "install_status": "not_started",
+    "vehicle_mode": "PARKED",
+    "ignition": "OFF",
+    "update_mode": "READY",
+    "gear": "P",
+    "speed": 0,
+    "parking_brake": "ON",
+    "battery": 82,
+    "driver_approved": false,
+    "network": "CONNECTED",
+    "target_system_running": false
+  }
+}

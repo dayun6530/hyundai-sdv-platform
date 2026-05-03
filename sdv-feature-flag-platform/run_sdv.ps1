@@ -208,4 +208,29 @@ Start-OptionalCmdWindow "status-server" "start"
 Start-OptionalCmdWindow "dashboard"
 Start-OptionalCmdWindow "test-ui"
 
+Write-Host "Waiting for status-server to drain pending Docker OTA queue (if any)..."
+$healthOk = $false
+for ($i = 0; $i -lt 40; $i++) {
+    try {
+        $h = Invoke-WebRequest -Uri "http://127.0.0.1:8080/api/vehicle-runtime/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        if ($h.StatusCode -eq 200) {
+            $healthOk = $true
+            break
+        }
+    } catch {
+        # server not listening yet
+    }
+    Start-Sleep -Milliseconds 500
+}
+if ($healthOk) {
+    try {
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:8080/api/vehicle-runtime/apply-pending" -Method POST -UseBasicParsing -TimeoutSec 300 -ErrorAction Stop
+        Write-Host "[run_sdv] apply-pending: $($resp.Content)"
+    } catch {
+        Write-Warning "[run_sdv] apply-pending skipped or failed: $_"
+    }
+} else {
+    Write-Warning "[run_sdv] status-server not ready on :8080; skipped apply-pending (start status-server manually if needed)"
+}
+
 Write-Host "Done. test-ui: http://127.0.0.1:5174 (if test-ui package exists)"

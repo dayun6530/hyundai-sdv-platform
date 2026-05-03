@@ -9,6 +9,15 @@ MODE="${4:-}"
 
 cd "${PROJECT_DIR}"
 
+# Platform-style deploy artifacts are owned by sdv-ota-manager (sibling repo dir).
+# Keep compatibility by exporting SDV_PLATFORM_DEPLOY_ROOT when not explicitly set.
+if [[ -z "${SDV_PLATFORM_DEPLOY_ROOT:-}" ]]; then
+  OTA_PLATFORM_DEPLOY="$(cd "${PROJECT_DIR}/.." && pwd)/sdv-ota-manager/platform/deploy"
+  if [[ -d "${OTA_PLATFORM_DEPLOY}" ]]; then
+    export SDV_PLATFORM_DEPLOY_ROOT="${OTA_PLATFORM_DEPLOY}"
+  fi
+fi
+
 PLATFORM=""
 LOG_TAG="SdvPlatform"
 if [[ "${CONFIG_REL}" =~ ^config/car/(car_[0-9]+)\.conf$ ]]; then

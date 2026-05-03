@@ -1,9 +1,0 @@
-{
-  "domain": "ADAS",
-  "feature": "AdasFeature",
-  "version": "1.0",
-  "slot_role": "candidate",
-  "docker_image": "sdv/adas-feature:v1.0",
-  "checksum_file": "checksum.sha256",
-  "binary_name": "AdasFeature"
-}

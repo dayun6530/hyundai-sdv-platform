@@ -1,9 +1,0 @@
-{
-  "domain": "Navigation",
-  "feature": "EvEnergyFeature",
-  "version": "2.0",
-  "slot_role": "candidate",
-  "docker_image": "sdv/navigation-feature:v2.0",
-  "checksum_file": "checksum.sha256",
-  "binary_name": "EvEnergyFeature"
-}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { registerPackage } from "../api/fleet.js";
+import DockerVehicleRuntimePanel from "./DockerVehicleRuntimePanel.jsx";
 import { FEATURE_DEFAULTS, KNOWN_MODELS, KNOWN_REGIONS } from "./packageRegistryModel.js";
+import { carIdOptions } from "./rolloutModel.js";
 
 function buildManifestFromForm(f) {
   const now = new Date().toISOString();
@@ -45,7 +47,9 @@ function buildManifestFromForm(f) {
   };
 }
 
-export default function PackageUploadPanel({ onRegistered }) {
+export default function PackageUploadPanel({ onRegistered, vehicles }) {
+  const carOptions = useMemo(() => carIdOptions(vehicles), [vehicles]);
+  const [deployCarId, setDeployCarId] = useState("car_1");
   const [feature, setFeature] = useState("ADAS");
   const [packageId, setPackageId] = useState("");
   const [version, setVersion] = useState(FEATURE_DEFAULTS.ADAS.version);
@@ -69,6 +73,12 @@ export default function PackageUploadPanel({ onRegistered }) {
     setBinary(d.binary);
     setDescription(d.description);
   }, [feature]);
+
+  useEffect(() => {
+    if (carOptions.length && !carOptions.includes(deployCarId)) {
+      setDeployCarId(carOptions[0]);
+    }
+  }, [carOptions, deployCarId]);
 
   const models = useMemo(
     () =>
@@ -156,10 +166,15 @@ export default function PackageUploadPanel({ onRegistered }) {
         <div>
           <h2>Package Upload / Version Registry</h2>
           <p className="tiny subtle">
-            Register a new feature package for future rollout campaigns. This step uses{" "}
-            <strong>manifest registration (simulation)</strong> — JSON is validated and written under{" "}
-            <code className="mono">deploy/packages/&lt;Feature&gt;/&lt;Version&gt;/</code>.{" "}
-            <strong>ZIP upload</strong> can be added later without changing the registry schema.
+            <strong>Registry:</strong> manifest JSON is validated and written under{" "}
+            <code className="mono">sdv-ota-manager/platform/deploy/packages/&lt;Feature&gt;/&lt;Version&gt;/</code> (same
+            tree as <code className="mono">package_registry.json</code>). <strong>ZIP upload</strong> can be added later
+            without changing the schema.
+          </p>
+          <p className="tiny subtle" style={{ marginTop: "0.35rem" }}>
+            <strong>Docker rollout:</strong> use <strong>Car</strong> with the same <strong>Feature</strong> /{" "}
+            <strong>Version</strong> fields — <code className="mono">ota_vehicle.sh</code> in WSL (Primary/Shadow,
+            separate from Fleet <code className="mono">deploy/state</code> A/B).
           </p>
         </div>
       </div>
@@ -175,7 +190,17 @@ export default function PackageUploadPanel({ onRegistered }) {
         </label>
         <label className="pkg-field">
           <span>Version</span>
-          <input className="input" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="v0.3" />
+          <input className="input" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="v1.0" />
+        </label>
+        <label className="pkg-field">
+          <span>Car (Docker deploy target)</span>
+          <select className="select" value={deployCarId} onChange={(e) => setDeployCarId(e.target.value)}>
+            {carOptions.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="pkg-field">
           <span>Role</span>
@@ -187,12 +212,32 @@ export default function PackageUploadPanel({ onRegistered }) {
         </label>
         <label className="pkg-field">
           <span>Binary name</span>
-          <input className="input" value={binary} onChange={(e) => setBinary(e.target.value)} placeholder="AdasFeature_v0_3" />
+          <input className="input" value={binary} onChange={(e) => setBinary(e.target.value)} placeholder="AdasFeature_v1_0" />
         </label>
         <label className="pkg-field pkg-field-wide">
           <span>package_id (optional — auto if empty)</span>
-          <input className="input mono" value={packageId} onChange={(e) => setPackageId(e.target.value)} placeholder="ADAS_v0.3_20260428" />
+          <input className="input mono" value={packageId} onChange={(e) => setPackageId(e.target.value)} placeholder="ADAS_v1.0_20260428" />
         </label>
+      </div>
+
+      <p className="tiny subtle" style={{ marginTop: "0.35rem", marginBottom: 0 }}>
+        <strong>Docker Primary/Shadow:</strong> commands below use the same Feature / Version / Car as this form. With
+        queuing, containers are <strong>not</strong> recreated until you click <strong>Apply queued Docker now</strong> or
+        run a full <code className="mono">run_sdv.ps1</code> (status-server drains the queue after it starts).
+      </p>
+
+      <DockerVehicleRuntimePanel
+        vehicles={vehicles}
+        embed
+        integrationMode
+        integrationCompact
+        queueMutatingDockerOps
+        integrationFeature={feature}
+        integrationVersion={version}
+        integrationCarId={deployCarId}
+      />
+
+      <div className="pkg-form-grid">
         <label className="pkg-field pkg-field-wide">
           <span>Description</span>
           <textarea className="input pkg-textarea" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />

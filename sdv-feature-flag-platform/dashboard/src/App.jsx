@@ -22,7 +22,6 @@ import PackageRegistryTable from "./fleet/PackageRegistryTable.jsx";
 import PackageUploadPanel from "./fleet/PackageUploadPanel.jsx";
 import FleetDashboard from "./fleet/FleetDashboard.jsx";
 import FleetDeployPanel from "./fleet/FleetDeployPanel.jsx";
-import DockerVehicleRuntimePanel from "./fleet/DockerVehicleRuntimePanel.jsx";
 import VehicleDetailPanel from "./fleet/VehicleDetailPanel.jsx";
 
 function formatDate(value) {
@@ -428,7 +427,8 @@ export default function App() {
           </span>
           <span>
             <strong>Docker OTA</strong>: `POST /api/vehicle-runtime/*` runs `sdv-ota-manager/scripts/ota_vehicle.sh`
-            in WSL (Primary/Shadow containers + `deploy/vehicle_runtime/*.json`).
+            in WSL (Primary/Shadow + `deploy/vehicle_runtime/*.json`). Use the same <strong>Package Upload / Version
+            Registry</strong> card: Feature, Version, and Car drive both manifest registration and Docker commands.
           </span>
         </div>
       </section>
@@ -455,7 +455,7 @@ export default function App() {
         onClear={() => setSelectedCarId("")}
       />
 
-      <PackageUploadPanel onRegistered={reloadFleetData} />
+      <PackageUploadPanel onRegistered={reloadFleetData} vehicles={fleetVehicles} />
 
       <section className="two-col-grid fleet-registry-history">
         <VersionRegistryTable rows={versionMapRows} />
@@ -467,8 +467,6 @@ export default function App() {
       </section>
 
       <FleetHistoryJsonlPanel records={fleetHistoryRecords} meta={fleetHistoryMeta} />
-
-      <DockerVehicleRuntimePanel vehicles={fleetVehicles} />
 
       <FleetDataDebugDetails
         vehicles={fleetVehicles}

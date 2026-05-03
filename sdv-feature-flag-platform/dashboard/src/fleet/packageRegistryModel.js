@@ -22,18 +22,18 @@ export function slotAssignmentLabel(pkg, versionMapRaw) {
 
 export const FEATURE_DEFAULTS = {
   ADAS: {
-    version: "v0.3",
-    binary: "AdasFeature_v0_3",
+    version: "v1.0",
+    binary: "AdasFeature_v1_0",
     description: "Improved rainy lane detection and night front-object detection",
   },
   Navigation: {
-    version: "v1.2",
-    binary: "NavigationFeature_v1_2",
+    version: "v1.0",
+    binary: "NavigationFeature_v1_0",
     description: "Improved realtime route and charging station recommendation",
   },
   Energy: {
-    version: "v0.7",
-    binary: "EvEnergyFeature_v0_7",
+    version: "v1.0",
+    binary: "EvEnergyFeature_v1_0",
     description: "Improved range prediction with weather and driving pattern factors",
   },
 };

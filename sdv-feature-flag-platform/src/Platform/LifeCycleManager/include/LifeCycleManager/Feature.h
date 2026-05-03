@@ -60,6 +60,8 @@ public:
 
 protected:
     virtual void execute() = 0;
+    /// Optional distribution line for startup logs (e.g. `"1.0"`). Empty = omit the extra suffix.
+    virtual std::string distributionVersionLabelForLog() const { return ""; }
     bool isStopRequested() const;
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
@@ -101,8 +103,8 @@ private:
     void logEvEnergyShadowEnergyState(const std::string& payload);
     void logSubFeatureSnapshotAfterToggle();
 
-    /// If `deploy/state/<SDV_CAR_INSTANCE>.json` lists ADAS versions, log a one-line deploy banner.
-    void maybeLogFleetAdasDeployBanner();
+    /// If `deploy/state/<SDV_CAR_INSTANCE>.json` lists fleet slot versions, log a one-line deploy banner per domain.
+    void maybeLogFleetFeatureDeployBanner();
 
     std::ofstream logFile_;
     std::string logFilePath_;

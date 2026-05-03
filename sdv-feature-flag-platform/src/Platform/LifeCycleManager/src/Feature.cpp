@@ -15,6 +15,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <optional>
 #include <string>
 #include <fstream>
@@ -71,15 +72,27 @@ std::optional<std::string> extractSubFeatureKeyFromMessage(const std::string& ms
     return std::nullopt;
 }
 
-/// Reads `deploy/state/<car>.json` — only the `"ADAS"` feature block (best-effort, demo-friendly).
-static std::optional<std::string> readQuotedFieldInAdasBlock(const std::string& json, const char* field) {
-    const std::size_t adas = json.find("\"ADAS\"");
-    if (adas == std::string::npos) {
+/// Reads one string field inside `features.<FEATURE_KEY>` in `deploy/state/<car>.json` (best-effort).
+static std::optional<std::string> readQuotedFieldInFeatureBlock(const std::string& json,
+    const char* featureKey,
+    const char* field) {
+    const std::string marker = std::string("\"") + featureKey + "\"";
+    const std::size_t start = json.find(marker);
+    if (start == std::string::npos) {
         return std::nullopt;
     }
-    const std::size_t nav = json.find("\"Navigation\"", adas + 1);
-    const std::string block =
-        nav == std::string::npos ? json.substr(adas) : json.substr(adas, nav - adas);
+    std::size_t end = std::string::npos;
+    if (std::strcmp(featureKey, "ADAS") == 0) {
+        end = json.find("\"Navigation\"", start + 1);
+    } else if (std::strcmp(featureKey, "Navigation") == 0) {
+        end = json.find("\"Energy\"", start + 1);
+    } else if (std::strcmp(featureKey, "Energy") == 0) {
+        end = json.find("\"ota\"", start + 1);
+    }
+    if (end == std::string::npos) {
+        end = json.size();
+    }
+    const std::string block = json.substr(start, end - start);
     const std::string key = std::string("\"") + field + "\"";
     const std::size_t k = block.find(key);
     if (k == std::string::npos) {
@@ -97,14 +110,14 @@ static std::optional<std::string> readQuotedFieldInAdasBlock(const std::string& 
         return std::nullopt;
     }
     ++i;
-    const std::size_t start = i;
+    const std::size_t valStart = i;
     while (i < block.size() && block[i] != '"') {
         ++i;
     }
-    if (i <= start) {
+    if (i <= valStart) {
         return std::nullopt;
     }
-    return block.substr(start, i - start);
+    return block.substr(valStart, i - valStart);
 }
 
 }  // namespace
@@ -163,23 +176,47 @@ Feature::~Feature() {
     }
 }
 
-void Feature::maybeLogFleetAdasDeployBanner() {
-    const bool shadowObserver = isShadowMode();
-    if (shadowObserver) {
-        if (name_ != "AdasFeatureShadow") {
-            return;
-        }
-    } else {
-        if (name_ != "AdasFeature") {
-            return;
+void Feature::maybeLogFleetFeatureDeployBanner() {
+    struct BannerRow {
+        const char* processName;
+        const char* jsonFeatureKey;
+        const char* jsonField;
+        const char* logPrefix;
+    };
+    static const BannerRow kRows[] = {
+        {"AdasFeature", "ADAS", "active_version", "AdasFeature_"},
+        {"AdasFeatureShadow", "ADAS", "shadow_version", "AdasFeature_Shadow_"},
+        {"NavigationFeature", "Navigation", "active_version", "NavigationFeature_"},
+        {"NavigationFeatureShadow", "Navigation", "shadow_version", "NavigationFeature_Shadow_"},
+        {"EvEnergyFeature", "Energy", "active_version", "EvEnergyFeature_"},
+        {"EvEnergyFeatureShadow", "Energy", "shadow_version", "EvEnergyFeature_Shadow_"},
+    };
+    const BannerRow* row = nullptr;
+    for (const auto& r : kRows) {
+        if (name_ == r.processName) {
+            row = &r;
+            break;
         }
     }
+    if (row == nullptr) {
+        return;
+    }
+
     const char* car = std::getenv("SDV_CAR_INSTANCE");
     if (car == nullptr || car[0] == '\0') {
         return;
     }
 
-    std::ifstream in(std::string("deploy/state/") + car + ".json");
+    std::string statePath;
+    if (const char* envRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
+        if (envRoot[0] != '\0') {
+            statePath = std::string(envRoot) + "/state/" + car + ".json";
+        }
+    }
+    if (statePath.empty()) {
+        statePath = std::string("deploy/state/") + car + ".json";
+    }
+    std::ifstream in(statePath);
     if (!in) {
         return;
     }
@@ -187,21 +224,14 @@ void Feature::maybeLogFleetAdasDeployBanner() {
     buf << in.rdbuf();
     const std::string json = buf.str();
 
-    const char* field = shadowObserver ? "shadow_version" : "active_version";
-    const auto ver = readQuotedFieldInAdasBlock(json, field);
+    const auto ver = readQuotedFieldInFeatureBlock(json, row->jsonFeatureKey, row->jsonField);
     if (!ver || ver->empty()) {
         return;
     }
 
-    if (shadowObserver) {
-        const std::string msg = std::string("AdasFeatureShadow_") + *ver + " is deployed!";
-        log(LogLevel::info, msg);
-        std::cerr << "[VERSION] " << msg << std::endl;
-    } else {
-        const std::string msg = std::string("AdasFeature_") + *ver + " is deployed!";
-        log(LogLevel::info, msg);
-        std::cerr << "[VERSION] " << msg << std::endl;
-    }
+    const std::string msg = std::string(row->logPrefix) + *ver + " is deployed!";
+    log(LogLevel::info, msg);
+    std::cerr << "[VERSION] " << msg << std::endl;
 }
 
 int Feature::run() {
@@ -212,17 +242,21 @@ int Feature::run() {
         log(LogLevel::error, "EventBus registration failed. Terminating.");
         return 1;
     }
+    const std::string distVer = distributionVersionLabelForLog();
+    const std::string verSuffix =
+        distVer.empty() ? std::string() : (std::string(" — ") + name_ + " v" + distVer + " is running");
+
     if (flag_.isEnabled()) {
         log(LogLevel::info, "started (ID:" + std::to_string(componentId_) +
             ", PID:" + std::to_string(getpid()) +
-            ", Flag:ON)");
+            ", Flag:ON)" + verSuffix);
     } else {
         log(LogLevel::info, "registered (ID:" + std::to_string(componentId_) +
             ", PID:" + std::to_string(getpid()) +
-            ") — FLAG_ON 대기 중");
+            ") — FLAG_ON 대기 중" + verSuffix);
     }
 
-    maybeLogFleetAdasDeployBanner();
+    maybeLogFleetFeatureDeployBanner();
 
     if (isShadowMode_) {
         log(LogLevel::info, std::string("Shadow observer — mirroring Primary: ") + primaryName_);

@@ -1,3 +1,4 @@
+// Canonical Navigation feature (platform build). Docker/OTA demo: sdv-ota-manager/demo_src + build_standalone_demo.sh
 #include "Feature/NavigationFeature.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -9,6 +10,12 @@
 
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
+
+namespace {
+
+constexpr const char* kDistributionVersion = "1.0";
+
+}  // namespace
 
 namespace sdv::feature {
 
@@ -34,8 +41,12 @@ static constexpr int kRoutePointCount =
 NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
     : Feature("NavigationFeature", eventBus) {}
 
+std::string NavigationFeature::distributionVersionLabelForLog() const {
+    return kDistributionVersion;
+}
+
 void NavigationFeature::execute() {
-    log(LogLevel::info, "내비게이션 시작 — 연속 데모 브로드캐스트 (FLAG_OFF 시 일시 중단)");
+    log(LogLevel::info, std::string("Navigation v") + kDistributionVersion + " — 연속 데모 브로드캐스트 (FLAG_OFF 시 일시 중단)");
 
     while (!isStopRequested()) {
         pollEvents();

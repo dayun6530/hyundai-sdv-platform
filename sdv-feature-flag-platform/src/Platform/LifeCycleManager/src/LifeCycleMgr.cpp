@@ -156,7 +156,19 @@ LifeCycleMgr::~LifeCycleMgr() {
 }
 
 std::string LifeCycleMgr::resolveExecPath(const std::string& execName) {
-    // Prefer cwd-relative deploy/active (same working directory as DeploymentMgr / platform).
+    // Prefer deploy artifacts location:
+    // - If SDV_PLATFORM_DEPLOY_ROOT is set, use <root>/active/<execName>
+    // - Otherwise, fallback to cwd-relative deploy/active/<execName>
+    if (const char* envRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
+        if (envRoot[0] != '\0') {
+            std::string base(envRoot);
+            if (!base.empty() && base.back() != '/') base.push_back('/');
+            const std::string deployed = base + "active/" + execName;
+            if (access(deployed.c_str(), X_OK) == 0) {
+                return deployed;
+            }
+        }
+    }
     const std::string deployed = std::string("deploy/active/") + execName;
     if (access(deployed.c_str(), X_OK) == 0) {
         return deployed;

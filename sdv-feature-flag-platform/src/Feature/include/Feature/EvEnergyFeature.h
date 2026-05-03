@@ -12,6 +12,7 @@ public:
 
 protected:
     void execute() override;
+    std::string distributionVersionLabelForLog() const override;
     virtual void runEvEnergyMainLoop();
 
     int battery_;

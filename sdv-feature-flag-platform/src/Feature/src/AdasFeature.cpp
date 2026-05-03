@@ -1,3 +1,4 @@
+// Canonical ADAS feature (platform build). Docker/OTA demo images: sdv-ota-manager/demo_src + build_standalone_demo.sh
 #include "Feature/AdasFeature.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -5,6 +6,7 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <string>
 #include <thread>
 
 #include <signal.h>
@@ -12,13 +14,24 @@
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
 
+namespace {
+
+/** In-repo distribution line for logs/telemetry (not argv Docker tag). Bump with release. */
+constexpr const char* kDistributionVersion = "1.0";
+
+}  // namespace
+
 namespace sdv::feature {
 
 AdasFeature::AdasFeature(EventBusInterface& eventBus)
     : Feature("AdasFeature", eventBus) {}
 
+std::string AdasFeature::distributionVersionLabelForLog() const {
+    return kDistributionVersion;
+}
+
 void AdasFeature::execute() {
-    log(LogLevel::info, "ADAS 실행 — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
+    log(LogLevel::info, std::string("ADAS v") + kDistributionVersion + " — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -148,8 +161,8 @@ void runOtaDemoLoop(const char* versionLabel) {
 
 int main(int argc, char* argv[]) {
     // 사용법: AdasFeature --ota-demo [버전]
-    //   버전 생략 시 아래 기본값 (v2.0 데모 시 소스에서 한 줄만 바꿔 재빌드하면 됨)
-    static constexpr const char* kDefaultOtaDemoVersion = "2.0";
+    //   버전 생략 시 아래 기본값 (플랫폼 기본 라인과 맞춤; 데모만 바꿀 때만 수정)
+    static constexpr const char* kDefaultOtaDemoVersion = "1.0";
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--ota-demo") == 0) {

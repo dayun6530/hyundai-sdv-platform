@@ -12,6 +12,7 @@ public:
 
 protected:
     void execute() override;
+    std::string distributionVersionLabelForLog() const override;
     virtual void runNavigationMainLoop();
 
     /// B-line overrides customize demo route text; loop pacing matches A (shared implementation).

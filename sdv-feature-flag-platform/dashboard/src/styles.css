@@ -1305,6 +1305,41 @@ td {
   margin-bottom: 18px;
 }
 
+.pkg-docker-nested {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pkg-docker-nested-head {
+  margin-bottom: 12px;
+}
+
+.pkg-docker-nested-title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.pkg-integrated-deploy-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.pkg-integrated-deploy-summary {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.rollout-campaign-inner .rollout-flow {
+  margin-top: 4px;
+}
+
 .pkg-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

@@ -13,6 +13,8 @@ protected:
     explicit Car(sdv::platform::communications::eventbus::EventBusInterface& eventBus);
 
     void execute() override = 0;
+    /// Resolves diamond: Adas / Nav / EvEnergy each override \ref Feature::distributionVersionLabelForLog.
+    std::string distributionVersionLabelForLog() const override;
 };
 
 }  // namespace sdv::feature

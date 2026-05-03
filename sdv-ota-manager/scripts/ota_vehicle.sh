@@ -3,6 +3,9 @@
 #   (1) bootstrap — 둘 다 동일 버전(예: v1.0)
 #   (2) deploy-shadow — Shadow 만 새 이미지(예: v2.0)로 교체
 #   (3) promote — Primary 를 Shadow 와 동일 버전으로 승격(관측 후 확정 배포)
+#
+# 배포 검증: 대상 이미지 존재 확인 → 후보 컨테이너(_deploynext)로 기동·Running 검사 후
+#            기존 컨테이너 제거 및 이름 교체. 실패 시 기존 인스턴스는 유지되거나 Primary 롤백.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,6 +32,7 @@ Notes:
   - 이미지 태그: sdv/<domain>-feature:v<x.y> (build_standalone_demo.sh 로 빌드)
   - 컨테이너 이름: <car>_agent_<domain> (Primary), <car>_agent_<domain>_shadow (Shadow)
   - 상태 JSON: deploy/vehicle_runtime/<car>.json
+  - 배포 전 이미지 존재 확인, 기동 후 Running 검사; 실패 시 이전 컨테이너 유지 또는 롤백.
 USAGE
   exit 1
 }
@@ -80,24 +84,89 @@ esac
 PRIMARY_NAME="${CAR}_agent_${DOMAIN_LOWER}"
 SHADOW_NAME="${PRIMARY_NAME}_shadow"
 
+# 버전 문자열에서 선행 v/V 제거 후 이미지 태그에 사용 (v1.0 / 1.0 모두 허용)
 image_for_version() {
   local ver="$1"
+  ver="${ver#v}"
+  ver="${ver#V}"
   echo "sdv/${DOMAIN_LOWER}-feature:v${ver}"
 }
 
-run_container() {
-  local name="$1"
-  local image="$2"
-  local role="$3"
-  local ver="$4"
+verify_target_image_or_exit() {
+  local img="$1"
+  if ! docker image inspect "$img" >/dev/null 2>&1; then
+    echo "[DEPLOY-ABORT] Docker 이미지가 없습니다: $img (build_standalone_demo.sh 등으로 빌드 후 재시도)" >&2
+    exit 1
+  fi
+}
+
+read_domain_versions_from_state() {
+  export RV_STATE_FILE="$STATE_DIR/${CAR}.json"
+  export RV_DOM="$DOMAIN_LOWER"
+  PYBIN="python3"
+  command -v "$PYBIN" >/dev/null 2>&1 || PYBIN="python"
+  eval "$("$PYBIN" - <<'PY'
+import json, os, shlex
+path = os.environ.get("RV_STATE_FILE", "")
+dom = os.environ.get("RV_DOM", "")
+pv = sv = ""
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        d = json.load(f)
+    cur = d.get("domains", {}).get(dom, {})
+    pv = str(cur.get("primary_version") or "").strip()
+    sv = str(cur.get("shadow_version") or "").strip()
+except (FileNotFoundError, json.JSONDecodeError, TypeError, AttributeError):
+    pass
+
+def q(x):
+    return shlex.quote(x)
+
+print(f"export OLD_PV={q(pv)}; export OLD_SV={q(sv)};")
+PY
+)"
+}
+
+docker_run_and_verify() {
+  local name="$1" image="$2" role="$3" ver="$4"
   docker rm -f "$name" >/dev/null 2>&1 || true
-  docker run -d --name "$name" \
-    -e DEPLOY_ROLE="$role" \
-    "$image" "/app/${BINARY_NAME}" "${ver}"
+  if ! docker run -d --name "$name" -e DEPLOY_ROLE="$role" "$image" "/app/${BINARY_NAME}" "${ver}"; then
+    echo "[DEPLOY-VERIFY] docker run 실패: $name ($image)" >&2
+    return 1
+  fi
+  sleep 0.45
+  local st
+  st="$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null || echo unknown)"
+  if [[ "$st" != "running" ]]; then
+    echo "[DEPLOY-VERIFY] 컨테이너 '$name' 상태=$st (기동 직후 비정상 종료 가능)" >&2
+    docker logs --tail 24 "$name" 2>/dev/null || true
+    docker rm -f "$name" >/dev/null 2>&1 || true
+    return 1
+  fi
+  return 0
+}
+
+rollback_primary_to_saved_version() {
+  local old_ver="$1"
+  if [[ -z "$old_ver" ]]; then
+    echo "[DEPLOY-ROLLBACK] 이전 Primary 버전 정보가 없어 Primary 롤백을 건너뜁니다." >&2
+    return 1
+  fi
+  local old_img
+  old_img="$(image_for_version "$old_ver")"
+  if ! docker image inspect "$old_img" >/dev/null 2>&1; then
+    echo "[DEPLOY-ROLLBACK] 이전 이미지가 없습니다: $old_img — 수동 복구가 필요할 수 있습니다." >&2
+    return 1
+  fi
+  echo "[DEPLOY-ROLLBACK] Primary 를 이전 버전으로 되돌립니다: v${old_ver#v} ($old_img)"
+  docker rm -f "$PRIMARY_NAME" >/dev/null 2>&1 || true
+  if ! docker_run_and_verify "$PRIMARY_NAME" "$old_img" "primary" "$old_ver"; then
+    return 1
+  fi
+  return 0
 }
 
 update_state_json() {
-  # PYTHON_JSON_UPDATE
   export STATE_FILE="$STATE_DIR/${CAR}.json"
   export CAR_ID="$CAR"
   export DOM_KEY="$DOMAIN_LOWER"
@@ -152,13 +221,36 @@ case "$CMD" in
       exit 1
     fi
     IMG="$(image_for_version "$VERSION")"
-    echo "== [bootstrap] $CAR  Primary+Shadow → $IMG ($VERSION) =="
-    run_container "$PRIMARY_NAME" "$IMG" "primary" "$VERSION"
-    run_container "$SHADOW_NAME" "$IMG" "shadow" "$VERSION"
-    LAST_MSG_KO="${BINARY_NAME}: Primary·Shadow 모두 실행 버전 v${VERSION}으로 기동했습니다 (bootstrap)."
+    verify_target_image_or_exit "$IMG"
+    echo "== [bootstrap] $CAR  Primary+Shadow → $IMG ($VERSION) (검증 후 전환) =="
+    NEXT_P="${PRIMARY_NAME}_deploynext"
+    NEXT_S="${SHADOW_NAME}_deploynext"
+    docker rm -f "$NEXT_P" "$NEXT_S" >/dev/null 2>&1 || true
+
+    if ! docker_run_and_verify "$NEXT_P" "$IMG" "primary" "$VERSION"; then
+      echo "[DEPLOY-ABORT] Primary 후보 기동 실패 — 기존 컨테이너는 변경하지 않았습니다." >&2
+      exit 1
+    fi
+    if ! docker_run_and_verify "$NEXT_S" "$IMG" "shadow" "$VERSION"; then
+      echo "[DEPLOY-ABORT] Shadow 후보 기동 실패 — 후보만 제거합니다." >&2
+      docker rm -f "$NEXT_P" "$NEXT_S" >/dev/null 2>&1 || true
+      exit 1
+    fi
+
+    docker rm -f "$PRIMARY_NAME" "$SHADOW_NAME" >/dev/null 2>&1 || true
+    docker rename "$NEXT_P" "$PRIMARY_NAME"
+    docker rename "$NEXT_S" "$SHADOW_NAME"
+    sleep 0.2
+    if [[ "$(docker inspect -f '{{.State.Status}}' "$PRIMARY_NAME" 2>/dev/null)" != "running" ]] ||
+       [[ "$(docker inspect -f '{{.State.Status}}' "$SHADOW_NAME" 2>/dev/null)" != "running" ]]; then
+      echo "[DEPLOY-ABORT] 이름 교체 후 상태 비정상 — 수동으로 docker 상태를 확인하세요." >&2
+      exit 1
+    fi
+
+    LAST_MSG_KO="${BINARY_NAME}: Primary·Shadow 모두 실행 버전 v${VERSION#v}으로 기동했습니다 (bootstrap, 검증 후 전환)."
     PRIMARY_VER="$VERSION" SHADOW_VER="$VERSION" LAST_ACTION="bootstrap" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
-    echo "[VERSION] ${CAR} ${DOMAIN}: Bootstrap completed — Primary and Shadow now run image ${IMG} (v${VERSION})."
+    echo "[VERSION] ${CAR} ${DOMAIN}: Bootstrap completed — Primary and Shadow now run image ${IMG} (v${VERSION#v})."
     sleep 1
     echo "Primary: $PRIMARY_NAME"
     docker logs --tail 6 "$PRIMARY_NAME" 2>/dev/null || true
@@ -173,17 +265,29 @@ case "$CMD" in
       exit 1
     fi
     IMG="$(image_for_version "$VERSION")"
-    echo "== [deploy-shadow] $CAR  Shadow 만 → $IMG ($VERSION) =="
+    verify_target_image_or_exit "$IMG"
+    echo "== [deploy-shadow] $CAR  Shadow 만 → $IMG ($VERSION) (검증 후 전환) =="
     if ! docker ps -a --format '{{.Names}}' | grep -qx "$PRIMARY_NAME"; then
       echo "Primary 컨테이너가 없습니다. 먼저 bootstrap 하세요: $PRIMARY_NAME" >&2
       exit 1
     fi
-    run_container "$SHADOW_NAME" "$IMG" "shadow" "$VERSION"
-    # Primary 버전/컨테이너는 그대로 — JSON 은 shadow_version 만 갱신 (primary_version 은 기존 유지)
-    LAST_MSG_KO="${BINARY_NAME}: Shadow(관측) 실행 버전이 v${VERSION}으로 변경되었습니다. Primary(운영)는 그대로입니다."
+    NEXT_S="${SHADOW_NAME}_deploynext"
+    docker rm -f "$NEXT_S" >/dev/null 2>&1 || true
+    if ! docker_run_and_verify "$NEXT_S" "$IMG" "shadow" "$VERSION"; then
+      echo "[DEPLOY-ABORT] Shadow 후보 기동 실패 — 기존 Shadow 는 그대로입니다." >&2
+      exit 1
+    fi
+    docker rm -f "$SHADOW_NAME" >/dev/null 2>&1 || true
+    docker rename "$NEXT_S" "$SHADOW_NAME"
+    sleep 0.2
+    if [[ "$(docker inspect -f '{{.State.Status}}' "$SHADOW_NAME" 2>/dev/null)" != "running" ]]; then
+      echo "[DEPLOY-ABORT] Shadow 이름 교체 후 비정상" >&2
+      exit 1
+    fi
+    LAST_MSG_KO="${BINARY_NAME}: Shadow(관측) 실행 버전이 v${VERSION#v}으로 변경되었습니다. Primary(운영)는 그대로입니다."
     SHADOW_VER="$VERSION" LAST_ACTION="deploy-shadow" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
-    echo "[VERSION] ${CAR} ${DOMAIN}: Deploy-shadow completed — Shadow updated to v${VERSION} (${IMG}); Primary unchanged."
+    echo "[VERSION] ${CAR} ${DOMAIN}: Deploy-shadow completed — Shadow updated to v${VERSION#v} (${IMG}); Primary unchanged."
     sleep 1
     echo "Shadow 로그:"
     docker logs --tail 8 "$SHADOW_NAME" 2>/dev/null || true
@@ -195,22 +299,60 @@ case "$CMD" in
       echo "promote: --domain, --version 필요" >&2
       exit 1
     fi
+    read_domain_versions_from_state
     IMG="$(image_for_version "$VERSION")"
-    echo "== [promote] $CAR  Primary → $IMG ($VERSION) =="
-    run_container "$PRIMARY_NAME" "$IMG" "primary" "$VERSION"
+    verify_target_image_or_exit "$IMG"
+    echo "== [promote] $CAR  Primary → $IMG ($VERSION) (검증 후 전환) =="
+    NEXT_P="${PRIMARY_NAME}_deploynext"
+    docker rm -f "$NEXT_P" >/dev/null 2>&1 || true
+    if ! docker_run_and_verify "$NEXT_P" "$IMG" "primary" "$VERSION"; then
+      echo "[DEPLOY-ABORT] Primary 후보 기동 실패 — 기존 Primary 유지." >&2
+      exit 1
+    fi
+    docker rm -f "$PRIMARY_NAME" >/dev/null 2>&1 || true
+    docker rename "$NEXT_P" "$PRIMARY_NAME"
+    sleep 0.2
+    if [[ "$(docker inspect -f '{{.State.Status}}' "$PRIMARY_NAME" 2>/dev/null)" != "running" ]]; then
+      echo "[DEPLOY-ABORT] Primary 교체 후 비정상" >&2
+      exit 1
+    fi
+
     if [[ "$SYNC_SHADOW" == "1" ]]; then
-      echo "(옵션) Shadow 도 동일 이미지로 재기동"
-      run_container "$SHADOW_NAME" "$IMG" "shadow" "$VERSION"
-      LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION}으로 승격되었고, Shadow도 동일 버전으로 맞췄습니다."
+      echo "(옵션) Shadow 도 동일 이미지로 재기동 (검증 후 전환)"
+      NEXT_SS="${SHADOW_NAME}_deploynext"
+      docker rm -f "$NEXT_SS" >/dev/null 2>&1 || true
+      if ! docker_run_and_verify "$NEXT_SS" "$IMG" "shadow" "$VERSION"; then
+        echo "[DEPLOY-ROLLBACK] Shadow 후보 실패 — Primary 를 이전 버전으로 되돌립니다 (가능한 경우)." >&2
+        if rollback_primary_to_saved_version "$OLD_PV"; then
+          LAST_MSG_KO="${BINARY_NAME}: Shadow 재기동 실패로 Primary 를 이전 버전(v${OLD_PV#v})으로 롤백했습니다."
+          PRIMARY_VER="$OLD_PV" SHADOW_VER="$OLD_SV" LAST_ACTION="promote-rollback" update_state_json
+          echo "[OTA-DEMO] ${LAST_MSG_KO}"
+          exit 1
+        fi
+        echo "[DEPLOY-ROLLBACK] Primary 롤백도 실패했습니다. docker 및 $STATE_DIR/${CAR}.json 을 수동 확인하세요." >&2
+        exit 1
+      fi
+      docker rm -f "$SHADOW_NAME" >/dev/null 2>&1 || true
+      docker rename "$NEXT_SS" "$SHADOW_NAME"
+      sleep 0.2
+      if [[ "$(docker inspect -f '{{.State.Status}}' "$SHADOW_NAME" 2>/dev/null)" != "running" ]]; then
+        echo "[DEPLOY-ROLLBACK] Shadow 교체 후 비정상 — Primary 롤백 시도" >&2
+        if rollback_primary_to_saved_version "$OLD_PV"; then
+          LAST_MSG_KO="${BINARY_NAME}: Shadow 전환 후 비정상으로 Primary 를 이전 버전으로 롤백했습니다."
+          PRIMARY_VER="$OLD_PV" SHADOW_VER="$OLD_SV" LAST_ACTION="promote-rollback" update_state_json
+        fi
+        exit 1
+      fi
+      LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었고, Shadow도 동일 버전으로 맞췄습니다."
     else
-      LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION}으로 승격되었습니다."
+      LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었습니다."
     fi
     PRIMARY_VER="$VERSION" SHADOW_VER="$VERSION" LAST_ACTION="promote" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
     if [[ "$SYNC_SHADOW" == "1" ]]; then
-      echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary and Shadow updated to v${VERSION} (${IMG})."
+      echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary and Shadow updated to v${VERSION#v} (${IMG})."
     else
-      echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary updated to v${VERSION} (${IMG})."
+      echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary updated to v${VERSION#v} (${IMG})."
     fi
     sleep 1
     echo "Primary 로그:"

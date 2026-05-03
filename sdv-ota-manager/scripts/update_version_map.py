@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Append or update a package entry in deploy/version_map.json from manifest.json."""
+"""Append or update a package entry in platform/deploy/package_build_index.json from manifest.json.
+
+Fleet A/B slot versions live in platform/deploy/version_map.json (do not overwrite from this tool).
+This file only tracks locally built Docker package directories for optional workflows.
+"""
 
 from __future__ import annotations
 
@@ -37,12 +41,12 @@ def manifest_to_entry(manifest: dict, package_dir: Path, ota_root: Path) -> dict
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Update deploy/version_map.json from a package manifest.")
+    parser = argparse.ArgumentParser(description="Update platform/deploy/package_build_index.json from a package manifest.")
     parser.add_argument(
         "--package-dir",
         required=True,
         type=Path,
-        help="Directory containing manifest.json (e.g. deploy/packages/ADAS/v0.3)",
+        help="Directory containing manifest.json (e.g. platform/deploy/packages/ADAS/v0.3)",
     )
     args = parser.parse_args()
 
@@ -57,7 +61,7 @@ def main() -> int:
 
     script_dir = Path(__file__).resolve().parent
     ota_root = script_dir.parent
-    version_map_path = ota_root / "deploy" / "version_map.json"
+    version_map_path = ota_root / "platform" / "deploy" / "package_build_index.json"
 
     entry = manifest_to_entry(manifest, package_dir, ota_root)
     key = entry_key(entry)
@@ -79,7 +83,7 @@ def main() -> int:
         f.write("\n")
 
     action = "updated" if replaced else "appended"
-    print(f"version_map.json {action}: {key}")
+    print(f"package_build_index.json {action}: {key}")
     return 0
 
 

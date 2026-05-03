@@ -7,4 +7,8 @@ Car::Car(sdv::platform::communications::eventbus::EventBusInterface& eventBus)
     , NavigationFeature(eventBus)
     , EvEnergyFeature(eventBus) {}
 
+std::string Car::distributionVersionLabelForLog() const {
+    return AdasFeature::distributionVersionLabelForLog();
+}
+
 }  // namespace sdv::feature

@@ -1,3 +1,4 @@
+// Canonical EV energy feature (platform build). Docker/OTA demo: sdv-ota-manager/demo_src + build_standalone_demo.sh
 #include "Feature/EvEnergyFeature.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -10,13 +11,23 @@
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
 
+namespace {
+
+constexpr const char* kDistributionVersion = "1.0";
+
+}  // namespace
+
 namespace sdv::feature {
 
 EvEnergyFeature::EvEnergyFeature(EventBusInterface& eventBus)
     : Feature("EvEnergyFeature", eventBus), battery_(85) {}
 
+std::string EvEnergyFeature::distributionVersionLabelForLog() const {
+    return kDistributionVersion;
+}
+
 void EvEnergyFeature::execute() {
-    log(LogLevel::info, "EV 에너지 모니터링 대기 중 — FLAG_ON 수신 시 활성화");
+    log(LogLevel::info, std::string("EV Energy v") + kDistributionVersion + " — FLAG_ON 수신 시 활성화");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));

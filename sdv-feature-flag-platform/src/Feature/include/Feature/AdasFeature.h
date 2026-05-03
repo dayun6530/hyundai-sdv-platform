@@ -14,6 +14,7 @@ public:
 
 protected:
     void execute() override;
+    std::string distributionVersionLabelForLog() const override;
     virtual void runAdasMainLoop();
 
     virtual void processVehicleLocation(const std::string& message);
