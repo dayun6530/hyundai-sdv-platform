@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { computeOtaSafetyFleet } from "./fleetDashboardModel.js";
+import { computeOtaSafetyFleet, getEffectiveVehicleStatus } from "./fleetDashboardModel.js";
 import {
   buildFleetDeployCliPreview,
   carIdOptions,
@@ -233,7 +233,7 @@ export default function FleetDeployPanel({
                       !missing && String(feat?.active_slot) === String(slot) && String(feat?.active_version) === String(targetVersion);
                     const appr = missing ? "—" : st.ota?.driver_approved ? "Approved" : "Waiting Driver Approval";
                     const net = missing ? "—" : String(st.ota?.network ?? "—");
-                    const effStatus = missing ? "missing" : st.status || v.status || "—";
+                    const effStatus = missing ? "missing" : getEffectiveVehicleStatus(st, v);
 
                     const notes = [];
                     if (sameTarget) notes.push("Already on target version");

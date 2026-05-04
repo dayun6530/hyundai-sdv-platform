@@ -14,6 +14,14 @@ target_link_libraries(LifeCycleManagerLib
         EventBus
 )
 
+find_package(nlohmann_json 3.2.0 QUIET CONFIG)
+if(nlohmann_json_FOUND)
+    target_link_libraries(LifeCycleManagerLib PUBLIC nlohmann_json::nlohmann_json)
+    target_compile_definitions(LifeCycleManagerLib PUBLIC SDV_LIFECYCLE_HAS_NJSON=1)
+else()
+    target_compile_definitions(LifeCycleManagerLib PUBLIC SDV_LIFECYCLE_HAS_NJSON=0)
+endif()
+
 if(TARGET unleash_sdk)
     target_link_libraries(LifeCycleManagerLib PUBLIC unleash_sdk)
     target_compile_definitions(LifeCycleManagerLib PUBLIC SDV_WITH_UNLEASH=1)

@@ -5,14 +5,43 @@
 
 const FEATURE_KEYS = ["ADAS", "Navigation", "Energy"];
 
+/** Normalize version tokens for comparison (strip leading v, lowercase). */
+export function normalizeFleetVersionToken(v) {
+  let s = String(v ?? "").trim().toLowerCase();
+  if (!s) return "";
+  if (s.startsWith("v")) s = s.slice(1);
+  return s;
+}
+
+/**
+ * True when fleet shadow lane is enabled and Shadow version differs from Primary (deploy-shadow / pre-promote).
+ */
+export function featureShadowRolloutActive(feat) {
+  if (!feat || typeof feat !== "object") return false;
+  if (!Boolean(feat.shadow_enabled)) return false;
+  const a = normalizeFleetVersionToken(feat.active_version);
+  const b = normalizeFleetVersionToken(feat.shadow_version);
+  return Boolean(a && b && a !== b);
+}
+
+export function anyFeatureShadowRollout(state) {
+  if (!state?.features) return false;
+  return FEATURE_KEYS.some((k) => featureShadowRolloutActive(state.features[k]));
+}
+
 export function anyFeatureKillSwitch(state) {
   if (!state?.features) return false;
   return FEATURE_KEYS.some((k) => Boolean(state.features[k]?.kill_switch));
 }
 
-export function anyFeatureShadow(state) {
+/** Admin fleet-shadow toggle (deploy/state only). */
+export function anyFeatureShadowAdminFlag(state) {
   if (!state?.features) return false;
   return FEATURE_KEYS.some((k) => Boolean(state.features[k]?.shadow_enabled));
+}
+
+export function anyFeatureShadow(state) {
+  return anyFeatureShadowRollout(state);
 }
 
 export function anyFeatureFlagOff(state) {
@@ -121,6 +150,20 @@ export function getOtaSafetyChecklist(state) {
 /**
  * @returns {{ level: 'READY'|'WAITING_APPROVAL'|'BLOCKED'|'MISSING', failed: {id:string,label:string,value:string}[], tooltip: string }}
  */
+/**
+ * Connectivity for fleet cards / filters: prefer WSL pgrep result when present.
+ * @param {any} state
+ * @param {any} vehicle registry row (optional)
+ * @returns {"missing"|"online"|"offline"|string}
+ */
+export function getEffectiveVehicleStatus(state, vehicle) {
+  if (!state || state.missing) return "missing";
+  if (typeof state.runtime?.car_process_running === "boolean") {
+    return state.runtime.car_process_running ? "online" : "offline";
+  }
+  return state.status || vehicle?.status || "unknown";
+}
+
 export function computeOtaSafetyFleet(state) {
   const full = getOtaSafetyChecklist(state);
   if (full.level === "MISSING") {
@@ -151,22 +194,24 @@ export function computeFleetSummaryCards(vehicles, stateByCar) {
   let safetyReady = 0;
 
   for (const v of list) {
-    const g = v.group || "";
-    if (g === "canary") canary += 1;
-    if (g === "beta") beta += 1;
-    if (g === "stable") stable += 1;
-
     const s = stateByCar[v.car_id];
     const miss = !s || Boolean(s.missing);
-    if (!miss) {
-      if ((s.status || v.status) === "online") online += 1;
+    const eff = getEffectiveVehicleStatus(s, v);
+    const connected = !miss && eff === "online";
+
+    if (connected) {
+      online += 1;
+      const g = v.group || "";
+      if (g === "canary") canary += 1;
+      if (g === "beta") beta += 1;
+      if (g === "stable") stable += 1;
       const ota = s.ota || {};
       if (ota.driver_approved === false) waitingApproval += 1;
       const inst = String(ota.install_status || "").toLowerCase();
       if (inst.includes("completed") || inst.includes("installed")) installCompleted += 1;
       if (computeOtaSafetyFleet(s).level === "READY") safetyReady += 1;
       if (anyFeatureKillSwitch(s)) killActive += 1;
-      if (anyFeatureShadow(s)) shadowActive += 1;
+      if (anyFeatureShadowRollout(s)) shadowActive += 1;
     }
   }
 
@@ -198,12 +243,13 @@ export function filterFleetRows(vehicles, stateByCar, filters) {
 
     const st = stateByCar[v.car_id];
     const miss = !st || Boolean(st.missing);
+    const eff = getEffectiveVehicleStatus(st, v);
     if (fs === "missing") return miss;
-    if (fs === "online") return !miss && (st.status || v.status) === "online";
-    if (fs === "offline") return !miss && (st.status || v.status) !== "online";
+    if (fs === "online") return !miss && eff === "online";
+    if (fs === "offline") return !miss && eff === "offline";
 
     if (fi === "kill_active") return !miss && anyFeatureKillSwitch(st);
-    if (fi === "shadow_active") return !miss && anyFeatureShadow(st);
+    if (fi === "shadow_active") return !miss && anyFeatureShadowRollout(st);
     if (fi === "flag_off") return !miss && anyFeatureFlagOff(st);
 
     return true;

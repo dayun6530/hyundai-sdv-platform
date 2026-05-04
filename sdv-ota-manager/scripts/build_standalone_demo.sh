@@ -3,11 +3,13 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 --domain <DOMAIN> --version <x.y> [--cpp <file.cpp>]" >&2
+  echo "Usage: $0 --domain <DOMAIN> --version <x.y> [--cpp <file.cpp>] [--no-cache] [--pull]" >&2
   echo "  Example: $0 --domain ADAS --version 2.0   # uses demo_src/Adas_v2.0.cpp when present" >&2
   echo "  Example: $0 --domain ADAS --version 2.0 --cpp Adas_v2.0.cpp" >&2
   echo "  Default source: demo_src/<Adas|Navigation|EvEnergy>_v<version>.cpp (no \"Feature\" in filename)." >&2
   echo "  --cpp: basename only under demo_src/." >&2
+  echo "  --no-cache: docker build 캐시 무시(레이어 전부 다시; docker images 의 CREATED 가 오래 보일 때)." >&2
+  echo "  --pull:     베이스 이미지(ubuntu:24.04)를 레지스트리에서 다시 받음(선택)." >&2
   echo "  산출물: build_artifacts/<domain>/v<ver>/{<FeatureBase>,checksum.sha256,Dockerfile} + 이미지 sdv/<domain>-feature:v<ver>" >&2
   exit 1
 }
@@ -15,12 +17,16 @@ usage() {
 DOMAIN=""
 VERSION=""
 CPP_BASENAME=""
+DOCKER_NO_CACHE="0"
+DOCKER_PULL="0"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --domain) DOMAIN="${2:-}"; shift 2 ;;
     --version) VERSION="${2:-}"; shift 2 ;;
     --cpp) CPP_BASENAME="${2:-}"; shift 2 ;;
+    --no-cache) DOCKER_NO_CACHE="1"; shift 1 ;;
+    --pull) DOCKER_PULL="1"; shift 1 ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1" >&2; usage ;;
   esac
@@ -110,9 +116,18 @@ RUN chmod +x /app/${FEATURE_BASE}
 EOF
 
 echo "== (3) Docker 이미지: $IMAGE_TAG (빌드 컨텍스트: $ARTIFACT_DIR) =="
+DOCKER_BUILD_EXTRA=()
+if [[ "$DOCKER_NO_CACHE" == "1" ]]; then
+  DOCKER_BUILD_EXTRA+=(--no-cache)
+  echo "    (docker build --no-cache)"
+fi
+if [[ "$DOCKER_PULL" == "1" ]]; then
+  DOCKER_BUILD_EXTRA+=(--pull)
+  echo "    (docker build --pull)"
+fi
 (
   cd "$ARTIFACT_DIR"
-  docker build -t "$IMAGE_TAG" .
+  docker build "${DOCKER_BUILD_EXTRA[@]}" -t "$IMAGE_TAG" .
 )
 
 echo ""

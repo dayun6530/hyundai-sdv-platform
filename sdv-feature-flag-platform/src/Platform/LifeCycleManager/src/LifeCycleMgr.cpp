@@ -6,8 +6,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 #include <chrono>
 #include <thread>
+#include <cctype>
 #include <cstdlib>
 #include <unistd.h>
 #include <signal.h>
@@ -16,9 +18,16 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <cstring>
 #include <linux/limits.h>
 #include <regex>
 #include <unordered_map>
+#include <string_view>
+#include <filesystem>
+
+#if SDV_LIFECYCLE_HAS_NJSON
+#include <nlohmann/json.hpp>
+#endif
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -45,6 +54,36 @@ std::string resolveAbArgvForExec(const std::string& execName,
     }
     return configAb;
 }
+
+#if SDV_LIFECYCLE_HAS_NJSON
+std::string normalizeFleetVersionToken(std::string_view in) {
+    std::string s;
+    s.reserve(in.size());
+    for (char c : in) {
+        if (!std::isspace(static_cast<unsigned char>(c))) {
+            s.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        }
+    }
+    if (s.size() >= 2 && s[0] == 'v' && std::isdigit(static_cast<unsigned char>(s[1]))) {
+        s.erase(0, 1);
+    }
+    return s;
+}
+
+std::string deriveFleetShadowMode(bool shadowEnabled, const std::string& activeVer, const std::string& shadowVer) {
+    if (!shadowEnabled) {
+        return "inactive";
+    }
+    const std::string sv = normalizeFleetVersionToken(shadowVer);
+    if (sv.empty()) {
+        return "inactive";
+    }
+    if (normalizeFleetVersionToken(activeVer) == sv) {
+        return "inactive";
+    }
+    return "candidate";
+}
+#endif
 
 /// First argv of /proc/<pid>/cmdline, basename only (matches \p execName from config spawn list).
 std::string cmdlineArgv0BaseName(const std::string& cmdlineFirstArg) {
@@ -252,6 +291,13 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
     std::cout << "[LifeCycleMgr] " << communications_.size() << " communication(s), "
               << features_.size() << " feature(s) loaded.\n" << std::endl;
 
+#if SDV_LIFECYCLE_HAS_NJSON
+    removeInactiveShadowFeaturesUsingFleetState();
+    std::cout << "[LifeCycleMgr] After fleet shadow_mode filter: " << features_.size()
+              << " feature(s) will be spawned.\n"
+              << std::endl;
+#endif
+
     // Derive per-instance log root. This avoids crosstalk/cleanup issues when multiple platforms run together.
     // Keep backward-compatible fallback if instance id is missing.
     if (!carInstanceId_.empty()) {
@@ -265,6 +311,113 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
     }
     std::cout << "[LifeCycleMgr] Log root: " << logRootDir_ << std::endl;
     return true;
+}
+
+void LifeCycleMgr::removeInactiveShadowFeaturesUsingFleetState() {
+#if SDV_LIFECYCLE_HAS_NJSON
+    namespace fs = std::filesystem;
+    if (carInstanceId_.empty()) {
+        return;
+    }
+    fs::path fleetPath;
+    if (const char* p = std::getenv("SDV_FLEET_DEPLOY_STATE_PATH")) {
+        if (p[0] != '\0') {
+            fleetPath = p;
+        }
+    }
+    // start_platform_wsl.sh sets SDV_PLATFORM_DEPLOY_ROOT → .../sdv-ota-manager/platform/deploy (reliable on WSL).
+    if (fleetPath.empty()) {
+        if (const char* deployRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
+            if (deployRoot[0] != '\0') {
+                fleetPath = fs::path(deployRoot) / "state" / (carInstanceId_ + ".json");
+            }
+        }
+    }
+    if (fleetPath.empty()) {
+        std::error_code ec;
+        const fs::path cfgAbs = fs::absolute(fs::path(lifecycleConfigPath_));
+        const fs::path cfgCanon = fs::weakly_canonical(cfgAbs, ec);
+        const fs::path& cfgBase = ec ? cfgAbs : cfgCanon;
+        const fs::path platformRoot = cfgBase.parent_path().parent_path().parent_path();
+        fleetPath = platformRoot.parent_path() / "sdv-ota-manager" / "platform" / "deploy" / "state" /
+                    (carInstanceId_ + ".json");
+    }
+    std::error_code ec;
+    if (!fs::is_regular_file(fleetPath, ec)) {
+        std::cout << "[LifeCycleMgr] Fleet deploy state not found (" << fleetPath.string()
+                  << "); omitting native *Shadow spawns (inactive)." << std::endl;
+        const auto newEnd = std::remove_if(features_.begin(), features_.end(), [&](const ProcessInfo& pi) {
+            const std::string w = trimExecToken(pi.execName);
+            const bool isShadow = (w == "AdasFeatureShadow" || w == "NavigationFeatureShadow" ||
+                w == "EvEnergyFeatureShadow");
+            if (isShadow) {
+                std::cout << "[LifeCycleMgr] Skipping " << w << " (no fleet state file)." << std::endl;
+            }
+            return isShadow;
+        });
+        features_.erase(newEnd, features_.end());
+        return;
+    }
+    std::ifstream in(fleetPath);
+    if (!in) {
+        return;
+    }
+    nlohmann::json j;
+    try {
+        in >> j;
+    } catch (const std::exception& e) {
+        std::cerr << "[LifeCycleMgr] Failed to parse fleet state JSON: " << e.what() << std::endl;
+        return;
+    }
+    auto modeFor = [&](const char* fleetKey) -> std::string {
+        try {
+            const auto& f = j.at("features").at(fleetKey);
+            return deriveFleetShadowMode(f.value("shadow_enabled", false), f.value("active_version", std::string{}),
+                f.value("shadow_version", std::string{}));
+        } catch (...) {
+            return "inactive";
+        }
+    };
+    const std::string modeAdas = modeFor("ADAS");
+    const std::string modeNav = modeFor("Navigation");
+    const std::string modeEnergy = modeFor("Energy");
+
+    auto shadowDomain = [](const std::string& exec) -> const char* {
+        const std::string w = trimExecToken(exec);
+        if (w == "AdasFeatureShadow") {
+            return "ADAS";
+        }
+        if (w == "NavigationFeatureShadow") {
+            return "Navigation";
+        }
+        if (w == "EvEnergyFeatureShadow") {
+            return "Energy";
+        }
+        return nullptr;
+    };
+
+    const auto newEnd = std::remove_if(features_.begin(), features_.end(), [&](const ProcessInfo& pi) {
+        const char* d = shadowDomain(pi.execName);
+        if (!d) {
+            return false;
+        }
+        std::string m = "inactive";
+        if (std::string(d) == "ADAS") {
+            m = modeAdas;
+        } else if (std::string(d) == "Navigation") {
+            m = modeNav;
+        } else if (std::string(d) == "Energy") {
+            m = modeEnergy;
+        }
+        if (m == "candidate") {
+            return false;
+        }
+        std::cout << "[LifeCycleMgr] Skipping " << trimExecToken(pi.execName)
+                  << " (fleet shadow lane inactive for " << d << ")." << std::endl;
+        return true;
+    });
+    features_.erase(newEnd, features_.end());
+#endif
 }
 
 void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
@@ -426,6 +579,65 @@ void LifeCycleMgr::killExistingProcesses() {
     for (const auto& f : features_) killByName(f.execName);
 }
 
+void LifeCycleMgr::applyPendingNativeRolloutBeforeSpawn() {
+#ifndef _WIN32
+    if (carInstanceId_.empty() || carInstanceId_.rfind("car_", 0) != 0) {
+        return;
+    }
+    const char* deployRootEnv = std::getenv("SDV_PLATFORM_DEPLOY_ROOT");
+    if (!deployRootEnv || deployRootEnv[0] == '\0') {
+        return;
+    }
+
+    namespace fs = std::filesystem;
+    const fs::path platformRoot = fs::path(deployRootEnv).parent_path();
+    std::string dmPath;
+    if (const char* e = std::getenv("SDV_DEPLOYMENT_MGR_EXE")) {
+        dmPath = e;
+    } else {
+        char buf[PATH_MAX];
+        const ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+        if (len > 0) {
+            buf[len] = '\0';
+            const fs::path cand = fs::path(buf).parent_path() / "DeploymentMgr";
+            if (access(cand.string().c_str(), X_OK) == 0) {
+                dmPath = cand.string();
+            }
+        }
+    }
+    if (dmPath.empty()) {
+        std::cout << "[LifeCycleMgr] apply-pending-native-car skipped (DeploymentMgr not found next to platform "
+                     "binary; set SDV_DEPLOYMENT_MGR_EXE)\n";
+        return;
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        std::cerr << "[LifeCycleMgr] fork() failed for apply-pending-native-car\n";
+        return;
+    }
+    if (pid == 0) {
+        if (chdir(platformRoot.string().c_str()) != 0) {
+            _exit(126);
+        }
+        execl(dmPath.c_str(), "DeploymentMgr", "apply-pending-native-car", carInstanceId_.c_str(),
+            static_cast<char*>(nullptr));
+        _exit(127);
+    }
+    int st = 0;
+    if (waitpid(pid, &st, 0) < 0) {
+        std::cerr << "[LifeCycleMgr] waitpid apply-pending-native-car: " << std::strerror(errno) << std::endl;
+        return;
+    }
+    if (WIFEXITED(st) && WEXITSTATUS(st) == 0) {
+        std::cout << "[LifeCycleMgr] apply-pending-native-car " << carInstanceId_ << " completed.\n";
+    } else {
+        std::cerr << "[LifeCycleMgr] apply-pending-native-car " << carInstanceId_ << " failed (exit "
+                  << (WIFEXITED(st) ? WEXITSTATUS(st) : -1) << ")\n";
+    }
+#endif
+}
+
 void LifeCycleMgr::cleanLogDirectory() {
     DIR* dir = opendir(logRootDir_.c_str());
     if (!dir) return;
@@ -466,6 +678,7 @@ void LifeCycleMgr::start() {
     killDuplicatePlatformManagers();
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     cleanLogDirectory();
+    applyPendingNativeRolloutBeforeSpawn();
     // Stale cleanup SIGKILLs processes that are not children of this manager; our ProcessInfo rows
     // must never keep pre-kill PIDs. Reset so monitor() only tracks PIDs from this start() run.
     for (auto& c : communications_) {

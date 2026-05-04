@@ -69,6 +69,10 @@ if ! command -v docker >/dev/null 2>&1; then
   echo "docker 가 PATH에 없습니다." >&2
   exit 1
 fi
+if ! docker info >/dev/null 2>&1; then
+  echo "[DEPLOY-ABORT] Docker 데몬에 연결할 수 없습니다. WSL에서 'docker ps'가 되는지 확인하세요 (Docker Desktop → Settings → Resources → WSL integration)." >&2
+  exit 1
+fi
 
 DOMAIN_LOWER="$(echo "${DOMAIN:-}" | tr '[:upper:]' '[:lower:]')"
 case "$DOMAIN_LOWER" in
@@ -134,12 +138,17 @@ docker_run_and_verify() {
     echo "[DEPLOY-VERIFY] docker run 실패: $name ($image)" >&2
     return 1
   fi
-  sleep 0.45
+  # Docker Desktop / WSL 볼륨에서는 PID1 기동이 지연될 수 있음. 너무 짧으면 Running 전에 오판한다.
+  sleep 1.0
   local st
   st="$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null || echo unknown)"
   if [[ "$st" != "running" ]]; then
     echo "[DEPLOY-VERIFY] 컨테이너 '$name' 상태=$st (기동 직후 비정상 종료 가능)" >&2
-    docker logs --tail 24 "$name" 2>/dev/null || true
+    docker logs --tail 48 "$name" 2>/dev/null || true
+    echo "[DEPLOY-VERIFY] 힌트: 호스트 g++ 로 빌드한 바이너리는 컨테이너 glibc 와 맞아야 합니다. 로그에 GLIBC_* not found 가 보이면" >&2
+    local ver_build="${ver#v}"
+    ver_build="${ver_build#V}"
+    echo "  이미지 베이스를 Ubuntu 24.04 로 맞추고 재빌드: cd sdv-ota-manager && ./scripts/build_standalone_demo.sh --domain \"$DOMAIN\" --version \"$ver_build\"" >&2
     docker rm -f "$name" >/dev/null 2>&1 || true
     return 1
   fi
@@ -174,6 +183,7 @@ update_state_json() {
   export PV="${PRIMARY_VER:-}"
   export SV="${SHADOW_VER:-}"
   export LA="${LAST_ACTION:-}"
+  export SHADOW_ENABLED="${SHADOW_ENABLED:-}"
   export LAST_MSG_KO="${LAST_MSG_KO:-}"
   PYBIN="python3"
   command -v "$PYBIN" >/dev/null 2>&1 || PYBIN="python"
@@ -194,10 +204,34 @@ except FileNotFoundError:
 if "domains" not in data:
     data["domains"] = {}
 cur = data["domains"].get(key, {})
-if pv:
-    cur["primary_version"] = pv
-if sv:
+if action == "bootstrap":
+    cur["shadow_enabled"] = False
+    cur["shadow_version"] = ""
+    if pv:
+        cur["primary_version"] = pv
+elif action == "deploy-shadow":
+    cur["shadow_enabled"] = True
+    if sv:
+        cur["shadow_version"] = sv
+    if pv:
+        cur["primary_version"] = pv
+elif action == "promote":
+    cur["shadow_enabled"] = False
+    cur["shadow_version"] = ""
+    if pv:
+        cur["primary_version"] = pv
+elif action == "promote-rollback":
+    se = str(os.environ.get("SHADOW_ENABLED", "0")).strip().lower() in ("1", "true", "yes")
+    cur["shadow_enabled"] = se
+    if pv:
+        cur["primary_version"] = pv
     cur["shadow_version"] = sv
+else:
+    if pv:
+        cur["primary_version"] = pv
+    if sv:
+        cur["shadow_version"] = sv
+
 cur["binary"] = binary
 cur["primary_container"] = f"{car}_agent_{key}"
 cur["shadow_container"] = f"{car}_agent_{key}_shadow"
@@ -206,6 +240,23 @@ if action:
 msg_ko = os.environ.get("LAST_MSG_KO", "").strip()
 if msg_ko:
     cur["last_message_ko"] = msg_ko
+
+def _norm_ver_token(x):
+    s = str(x or "").strip().lower()
+    if len(s) >= 2 and s[0] == "v" and s[1].isdigit():
+        s = s[1:]
+    return s
+
+def _shadow_mode(enabled, pv, sv):
+    if not enabled:
+        return "inactive"
+    p = _norm_ver_token(pv)
+    s = _norm_ver_token(sv)
+    if not s or p == s:
+        return "inactive"
+    return "candidate"
+
+cur["shadow_mode"] = _shadow_mode(bool(cur.get("shadow_enabled", False)), cur.get("primary_version"), cur.get("shadow_version"))
 data["domains"][key] = cur
 data["car_id"] = car
 with open(path, "w", encoding="utf-8") as f:
@@ -248,7 +299,7 @@ case "$CMD" in
     fi
 
     LAST_MSG_KO="${BINARY_NAME}: Primary·Shadow 모두 실행 버전 v${VERSION#v}으로 기동했습니다 (bootstrap, 검증 후 전환)."
-    PRIMARY_VER="$VERSION" SHADOW_VER="$VERSION" LAST_ACTION="bootstrap" update_state_json
+    PRIMARY_VER="$VERSION" LAST_ACTION="bootstrap" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
     echo "[VERSION] ${CAR} ${DOMAIN}: Bootstrap completed — Primary and Shadow now run image ${IMG} (v${VERSION#v})."
     sleep 1
@@ -325,6 +376,7 @@ case "$CMD" in
         echo "[DEPLOY-ROLLBACK] Shadow 후보 실패 — Primary 를 이전 버전으로 되돌립니다 (가능한 경우)." >&2
         if rollback_primary_to_saved_version "$OLD_PV"; then
           LAST_MSG_KO="${BINARY_NAME}: Shadow 재기동 실패로 Primary 를 이전 버전(v${OLD_PV#v})으로 롤백했습니다."
+          if [[ -n "$OLD_SV" && "$OLD_PV" != "$OLD_SV" ]]; then export SHADOW_ENABLED=1; else export SHADOW_ENABLED=0; fi
           PRIMARY_VER="$OLD_PV" SHADOW_VER="$OLD_SV" LAST_ACTION="promote-rollback" update_state_json
           echo "[OTA-DEMO] ${LAST_MSG_KO}"
           exit 1
@@ -339,6 +391,7 @@ case "$CMD" in
         echo "[DEPLOY-ROLLBACK] Shadow 교체 후 비정상 — Primary 롤백 시도" >&2
         if rollback_primary_to_saved_version "$OLD_PV"; then
           LAST_MSG_KO="${BINARY_NAME}: Shadow 전환 후 비정상으로 Primary 를 이전 버전으로 롤백했습니다."
+          if [[ -n "$OLD_SV" && "$OLD_PV" != "$OLD_SV" ]]; then export SHADOW_ENABLED=1; else export SHADOW_ENABLED=0; fi
           PRIMARY_VER="$OLD_PV" SHADOW_VER="$OLD_SV" LAST_ACTION="promote-rollback" update_state_json
         fi
         exit 1
@@ -347,7 +400,7 @@ case "$CMD" in
     else
       LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었습니다."
     fi
-    PRIMARY_VER="$VERSION" SHADOW_VER="$VERSION" LAST_ACTION="promote" update_state_json
+    PRIMARY_VER="$VERSION" LAST_ACTION="promote" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
     if [[ "$SYNC_SHADOW" == "1" ]]; then
       echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary and Shadow updated to v${VERSION#v} (${IMG})."

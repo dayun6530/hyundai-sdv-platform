@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <string_view>
 
 namespace sdv::platform::deployment {
 
@@ -188,6 +189,36 @@ void indent(std::ostream& out, int n) {
     for (int i = 0; i < n; ++i) out << ' ';
 }
 
+/// Lowercase, trim spaces, strip a single leading `v` for version tokens (v1.0 / 1.0).
+std::string normalizeVersionToken(std::string_view in) {
+    std::string s;
+    s.reserve(in.size());
+    for (char c : in) {
+        if (!std::isspace(static_cast<unsigned char>(c))) {
+            s.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        }
+    }
+    if (s.size() >= 2 && s[0] == 'v' && std::isdigit(static_cast<unsigned char>(s[1]))) {
+        s.erase(0, 1);
+    }
+    return s;
+}
+
+/// `candidate` only when shadow lane is enabled and shadow version differs from active.
+std::string deriveShadowMode(const StateManager::FeatureState& f) {
+    if (!f.shadow_enabled) {
+        return "inactive";
+    }
+    const std::string sv = normalizeVersionToken(f.shadow_version);
+    if (sv.empty()) {
+        return "inactive";
+    }
+    if (normalizeVersionToken(f.active_version) == sv) {
+        return "inactive";
+    }
+    return "candidate";
+}
+
 std::string quote(const std::string& s) {
     std::string r;
     r.reserve(s.size() + 2);
@@ -218,6 +249,10 @@ bool parseFeature(JsonLite& p, StateManager::FeatureState& out, const std::strin
             if (!p.parseString(out.active_slot, err)) return false;
         } else if (key == "active_version") {
             if (!p.parseString(out.active_version, err)) return false;
+        } else if (key == "pending_active_slot") {
+            if (!p.parseString(out.pending_active_slot, err)) return false;
+        } else if (key == "pending_active_version") {
+            if (!p.parseString(out.pending_active_version, err)) return false;
         } else if (key == "flag") {
             if (!p.parseString(out.flag, err)) return false;
         } else if (key == "shadow_enabled") {
@@ -226,6 +261,10 @@ bool parseFeature(JsonLite& p, StateManager::FeatureState& out, const std::strin
             if (!p.parseString(out.shadow_slot, err)) return false;
         } else if (key == "shadow_version") {
             if (!p.parseString(out.shadow_version, err)) return false;
+        } else if (key == "shadow_mode") {
+            std::string sm;
+            if (!p.parseString(sm, err)) return false;
+            (void)sm;  // authoritative value is re-derived on write (shadow_enabled + versions)
         } else if (key == "kill_switch") {
             if (!p.parseBool(out.kill_switch, err)) return false;
         } else if (key == "kill_reason") {
@@ -389,6 +428,8 @@ void writeFeature(std::ostream& out, const StateManager::FeatureState& f, const 
     indent(out, ind); out << "{\n";
     indent(out, ind + 2); out << "\"active_slot\": " << quote(f.active_slot) << ",\n";
     indent(out, ind + 2); out << "\"active_version\": " << quote(f.active_version) << ",\n";
+    indent(out, ind + 2); out << "\"pending_active_slot\": " << quote(f.pending_active_slot) << ",\n";
+    indent(out, ind + 2); out << "\"pending_active_version\": " << quote(f.pending_active_version) << ",\n";
     indent(out, ind + 2); out << "\"flag\": " << quote(f.flag) << ",\n";
 
     if (!f.realtime_route_flag.empty()) {
@@ -404,6 +445,7 @@ void writeFeature(std::ostream& out, const StateManager::FeatureState& f, const 
     indent(out, ind + 2); out << "\"shadow_enabled\": " << (f.shadow_enabled ? "true" : "false") << ",\n";
     indent(out, ind + 2); out << "\"shadow_slot\": " << quote(f.shadow_slot) << ",\n";
     indent(out, ind + 2); out << "\"shadow_version\": " << quote(f.shadow_version) << ",\n";
+    indent(out, ind + 2); out << "\"shadow_mode\": " << quote(deriveShadowMode(f)) << ",\n";
     indent(out, ind + 2); out << "\"kill_switch\": " << (f.kill_switch ? "true" : "false") << ",\n";
     indent(out, ind + 2); out << "\"kill_reason\": " << quote(f.kill_reason) << ",\n";
     indent(out, ind + 2); out << "\"fallback_slot\": " << quote(f.fallback_slot) << ",\n";
@@ -600,6 +642,62 @@ bool StateManager::updateFeatureSlot(const std::string& car_id, const std::strin
     }
     fs->active_slot = slot;
     fs->active_version = version;
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::updateFeaturePending(const std::string& car_id, const std::string& feature,
+    const std::string& slot, const std::string& version, std::string& error) const {
+    error.clear();
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature + " (expected ADAS|Navigation|Energy)";
+        return false;
+    }
+    if (!isValidSlot(slot)) {
+        error = "StateManager: invalid slot: " + slot + " (expected A|B)";
+        return false;
+    }
+    if (version.empty()) {
+        error = "StateManager: version is empty";
+        return false;
+    }
+
+    auto s = loadState(car_id, error);
+    if (!s) return false;
+    auto* fs = featureRef(*s, feature);
+    if (!fs) {
+        error = "StateManager: internal error: featureRef failed";
+        return false;
+    }
+    fs->pending_active_slot = slot;
+    fs->pending_active_version = version;
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::promotePendingToActive(const std::string& car_id, const std::string& feature,
+    std::string& error) const {
+    error.clear();
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature + " (expected ADAS|Navigation|Energy)";
+        return false;
+    }
+    auto s = loadState(car_id, error);
+    if (!s) return false;
+    auto* fs = featureRef(*s, feature);
+    if (!fs) {
+        error = "StateManager: internal error: featureRef failed";
+        return false;
+    }
+    if (fs->pending_active_version.empty()) {
+        return true;
+    }
+    if (!isValidSlot(fs->pending_active_slot)) {
+        error = "StateManager: invalid pending_active_slot: " + fs->pending_active_slot;
+        return false;
+    }
+    fs->active_slot = fs->pending_active_slot;
+    fs->active_version = fs->pending_active_version;
+    fs->pending_active_slot.clear();
+    fs->pending_active_version.clear();
     return saveState(car_id, *s, error);
 }
 

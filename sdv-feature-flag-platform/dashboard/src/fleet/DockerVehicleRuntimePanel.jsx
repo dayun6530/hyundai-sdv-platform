@@ -5,6 +5,7 @@ import {
   fetchVehicleRuntimePendingQueue,
   fetchVehicleRuntimeState,
   postVehicleRuntimeApplyPending,
+  postVehicleRuntimeClearPendingQueue,
   postVehicleRuntimeBootstrap,
   postVehicleRuntimeDeployShadow,
   postVehicleRuntimePromote,
@@ -55,7 +56,6 @@ export default function DockerVehicleRuntimePanel({
   const [carId, setCarId] = useState("car_1");
   const [domain, setDomain] = useState("ADAS");
   const [version, setVersion] = useState("1.0");
-  const [syncShadowOnPromote, setSyncShadowOnPromote] = useState(false);
 
   const [health, setHealth] = useState(null);
   const [runtimeState, setRuntimeState] = useState(null);
@@ -65,6 +65,7 @@ export default function DockerVehicleRuntimePanel({
   const [error, setError] = useState("");
   const [lastOut, setLastOut] = useState({ stdout: "", stderr: "", exit_code: null, label: "" });
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingQueueItems, setPendingQueueItems] = useState([]);
 
   const deferMutatingOps = Boolean(integrationMode && queueMutatingDockerOps);
   const compactRuntimeUi = Boolean(integrationMode && integrationCompact);
@@ -111,10 +112,9 @@ export default function DockerVehicleRuntimePanel({
 
   useEffect(() => {
     setError("");
-    if (!compactRuntimeUi) {
-      loadRuntimeState();
-    }
-  }, [loadRuntimeState, compactRuntimeUi]);
+    // Always load so Shadow lane buttons work in package (compact) integration too.
+    loadRuntimeState();
+  }, [loadRuntimeState]);
 
   useEffect(() => {
     if (integrationMode) return;
@@ -138,19 +138,26 @@ export default function DockerVehicleRuntimePanel({
     return version;
   }, [integrationMode, integrationVersion, version]);
 
-  const refreshPendingCount = useCallback(async () => {
-    if (!deferMutatingOps) return;
+  const refreshPendingQueue = useCallback(async () => {
+    if (!deferMutatingOps) {
+      setPendingCount(0);
+      setPendingQueueItems([]);
+      return;
+    }
     try {
       const r = await fetchVehicleRuntimePendingQueue();
-      setPendingCount(Array.isArray(r.queue) ? r.queue.length : 0);
+      const q = Array.isArray(r.queue) ? r.queue : [];
+      setPendingQueueItems(q);
+      setPendingCount(q.length);
     } catch {
       setPendingCount(0);
+      setPendingQueueItems([]);
     }
   }, [deferMutatingOps]);
 
   useEffect(() => {
-    refreshPendingCount();
-  }, [refreshPendingCount]);
+    refreshPendingQueue();
+  }, [refreshPendingQueue]);
 
   const runOp = async (label, fn) => {
     setBusy(true);
@@ -177,18 +184,19 @@ export default function DockerVehicleRuntimePanel({
       });
       if (r.ok === false) {
         const fromResults = Array.isArray(r.results) ? r.results.find((x) => x && x.ok === false) : null;
+        const scriptErr = (fromResults?.stderr || r.stderr || "").trim();
         setError(
-          r.note ||
-            r.error ||
-            r.stderr?.trim() ||
-            fromResults?.stderr?.trim() ||
-            (r.exit_code != null ? `Command failed (exit ${r.exit_code})` : "Request returned ok: false"),
+          scriptErr
+            ? `${scriptErr}${r.note ? `\n\n— ${r.note}` : ""}`
+            : r.note ||
+                r.error ||
+                (r.exit_code != null ? `Command failed (exit ${r.exit_code})` : "Request returned ok: false"),
         );
       }
       if (!compactRuntimeUi) {
         await loadRuntimeState();
       }
-      await refreshPendingCount();
+      await refreshPendingQueue();
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -201,7 +209,7 @@ export default function DockerVehicleRuntimePanel({
     car_id: activeCarId,
     domain: effectiveDomain,
     version: effectiveVersion,
-    sync_shadow: syncShadowOnPromote,
+    sync_shadow: false,
   });
 
   const onBootstrap = () =>
@@ -226,11 +234,17 @@ export default function DockerVehicleRuntimePanel({
             car_id: activeCarId,
             domain: effectiveDomain,
             version: effectiveVersion,
-            sync_shadow: syncShadowOnPromote,
+            sync_shadow: false,
           }),
         );
 
   const onApplyPending = () => runOp("apply-pending", () => postVehicleRuntimeApplyPending());
+
+  const onClearPendingQueueAll = () =>
+    runOp("clear-pending-queue(all)", () => postVehicleRuntimeClearPendingQueue("all"));
+
+  const onDropPendingQueueHead = () =>
+    runOp("clear-pending-queue(head)", () => postVehicleRuntimeClearPendingQueue("head"));
 
   const onDockerStatus = () =>
     runOp("status", () => fetchVehicleRuntimeDockerStatus(activeCarId, effectiveDomain));
@@ -243,7 +257,64 @@ export default function DockerVehicleRuntimePanel({
   const domainRuntime = runtimeState?.domains?.[runtimeKey];
   const primaryVer = domainRuntime?.primary_version;
   const shadowVer = domainRuntime?.shadow_version;
+  const shadowLaneEnabled = Boolean(domainRuntime?.shadow_enabled);
   const lastMsgKo = domainRuntime?.last_message_ko;
+
+  const shadowLaneVersionsDiffer = useMemo(() => {
+    if (!shadowLaneEnabled) return false;
+    const p = normalizeOtaDockerVersionArg(primaryVer);
+    const s = normalizeOtaDockerVersionArg(shadowVer);
+    return Boolean(p && s && p !== s);
+  }, [primaryVer, shadowVer, shadowLaneEnabled]);
+
+  const primaryVersionForApi = useMemo(
+    () => (primaryVer != null && String(primaryVer).trim() !== "" ? normalizeOtaDockerVersionArg(String(primaryVer)) : ""),
+    [primaryVer],
+  );
+  const shadowVersionForApi = useMemo(
+    () => (shadowVer != null && String(shadowVer).trim() !== "" ? normalizeOtaDockerVersionArg(String(shadowVer)) : ""),
+    [shadowVer],
+  );
+
+  const onApplyShadowToPrimary = () => {
+    if (!shadowLaneVersionsDiffer || !shadowVersionForApi) return undefined;
+    const body = {
+      operation: "promote",
+      car_id: activeCarId,
+      domain: effectiveDomain,
+      version: shadowVersionForApi,
+      sync_shadow: true,
+    };
+    return deferMutatingOps
+      ? runOp("queue-promote-shadow→primary", () => postVehicleRuntimeQueueOperation(body))
+      : runOp("promote-shadow→primary", () =>
+          postVehicleRuntimePromote({
+            car_id: activeCarId,
+            domain: effectiveDomain,
+            version: shadowVersionForApi,
+            sync_shadow: true,
+          }),
+        );
+  };
+
+  const onDropShadowCandidate = () => {
+    if (!primaryVersionForApi) return undefined;
+    const body = {
+      operation: "deploy-shadow",
+      car_id: activeCarId,
+      domain: effectiveDomain,
+      version: primaryVersionForApi,
+    };
+    return deferMutatingOps
+      ? runOp("queue-drop-shadow", () => postVehicleRuntimeQueueOperation(body))
+      : runOp("drop-shadow", () =>
+          postVehicleRuntimeDeployShadow({
+            car_id: activeCarId,
+            domain: effectiveDomain,
+            version: primaryVersionForApi,
+          }),
+        );
+  };
 
   const Root = embed ? "div" : "section";
   const rootClass = embed ? "pkg-docker-nested rollout-campaign-inner" : "card rollout-campaign-card";
@@ -273,12 +344,7 @@ export default function DockerVehicleRuntimePanel({
         </div>
       ) : compactRuntimeUi ? (
         <div className="pkg-docker-nested-head">
-          <div className="label pkg-integrated-deploy-label">Docker rollout (same form)</div>
-          <p className="rollout-subtitle subtle" style={{ marginTop: "0.25rem" }}>
-            <strong>Mutating</strong> steps are <strong>queued</strong> first. They actually run when you click{" "}
-            <strong>Apply queued Docker now</strong>, or automatically after a full <code className="mono">run_sdv.ps1</code>{" "}
-            restart once status-server is up.
-          </p>
+          <div className="label pkg-integrated-deploy-label">Docker rollout</div>
           <p className="pkg-integrated-deploy-summary mono subtle">
             car_id={activeCarId} · domain={effectiveDomain} · tag=v{versionForTag || "—"}
             {deferMutatingOps ? ` · pending_queue=${pendingCount}` : null}
@@ -286,12 +352,7 @@ export default function DockerVehicleRuntimePanel({
         </div>
       ) : (
         <div className="pkg-docker-nested-head">
-          <div className="label pkg-integrated-deploy-label">Apply to vehicle (Docker Primary / Shadow)</div>
-          <p className="rollout-subtitle subtle" style={{ marginTop: "0.25rem" }}>
-            Uses <strong>Feature</strong> / <strong>Version</strong> / <strong>Car</strong> from this form. WSL +{" "}
-            <code className="mono">sdv-ota-manager/scripts/ota_vehicle.sh</code>. Image example:{" "}
-            <code className="mono">sdv/adas-feature:v1.0</code>.
-          </p>
+          <div className="label pkg-integrated-deploy-label">Docker rollout</div>
           <p className="pkg-integrated-deploy-summary mono subtle">
             car_id={activeCarId} · domain={effectiveDomain} · tag=v{versionForTag || "—"}
           </p>
@@ -303,6 +364,54 @@ export default function DockerVehicleRuntimePanel({
           <strong>Script not found.</strong> Expected sibling repo{" "}
           <code className="mono">sdv-ota-manager/scripts/ota_vehicle.sh</code> next to{" "}
           <code className="mono">sdv-feature-flag-platform</code>.
+        </div>
+      ) : null}
+
+      {deferMutatingOps && pendingCount > 0 ? (
+        <div className="rollout-banner warn" style={{ margin: "0.5rem 0" }}>
+          <strong>큐에 Docker 작업이 {pendingCount}건 대기 중입니다.</strong>{" "}
+          <code className="mono">Queue …</code> 버튼은 파일 큐에만 넣을 뿐이며, 아래{" "}
+          <strong>Apply queued Docker now</strong>를 눌러야 <code className="mono">ota_vehicle.sh</code>가 실제로
+          실행되고 <code className="mono">vehicle_runtime</code> JSON이 갱신됩니다.
+          <div className="rollout-action-row" style={{ marginTop: "0.6rem", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={busy}
+              onClick={() => void refreshPendingQueue()}
+            >
+              Refresh queue list
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={busy || pendingCount === 0}
+              onClick={() => void onDropPendingQueueHead()}
+            >
+              Remove first item only
+            </button>
+            <button
+              type="button"
+              className="btn"
+              style={{ borderColor: "var(--danger, #c0392b)", color: "var(--danger, #c0392b)" }}
+              disabled={busy || pendingCount === 0}
+              onClick={() => void onClearPendingQueueAll()}
+            >
+              Clear entire queue
+            </button>
+          </div>
+          {pendingQueueItems.length ? (
+            <pre className="rollout-cli" style={{ marginTop: "0.45rem", maxHeight: "12rem", overflow: "auto" }}>
+              {JSON.stringify(pendingQueueItems, null, 2)}
+            </pre>
+          ) : null}
+        </div>
+      ) : deferMutatingOps ? (
+        <div className="rollout-hint subtle" style={{ margin: "0.35rem 0" }}>
+          큐가 비어 있습니다.{" "}
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void refreshPendingQueue()}>
+            Refresh queue
+          </button>
         </div>
       ) : null}
 
@@ -389,14 +498,51 @@ export default function DockerVehicleRuntimePanel({
                 </button>
               ) : null}
             </div>
-            <label className="rollout-check">
-              <input
-                type="checkbox"
-                checked={syncShadowOnPromote}
-                onChange={(e) => setSyncShadowOnPromote(e.target.checked)}
-              />
-              <span>On promote, also restart shadow with same image (--sync-shadow)</span>
-            </label>
+
+            <div className="rollout-shadow-lane-compact" style={{ marginTop: "0.75rem" }}>
+              <p className="rollout-meta-line mono subtle" style={{ marginBottom: "0.35rem" }}>
+                runtime: Primary v{primaryVersionForApi || "—"} · Shadow v{shadowVersionForApi || "—"}
+                {compactRuntimeUi ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ marginLeft: "0.5rem", padding: "0.2rem 0.5rem", fontSize: "0.85rem" }}
+                    disabled={busy}
+                    onClick={() => loadRuntimeState()}
+                  >
+                    Refresh runtime
+                  </button>
+                ) : null}
+              </p>
+              <div className="rollout-action-row">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={busy || scriptMissing || !shadowLaneVersionsDiffer || !shadowVersionForApi}
+                  title={
+                    !shadowLaneVersionsDiffer
+                      ? "Primary와 Shadow 버전이 같으면 Shadow 후보가 없습니다."
+                      : "promote shadow 버전 + --sync-shadow"
+                  }
+                  onClick={() => void onApplyShadowToPrimary()}
+                >
+                  {deferMutatingOps ? "Queue Shadow→Primary (sync)" : "Apply: Shadow → Primary"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={busy || scriptMissing || !primaryVersionForApi}
+                  title={
+                    primaryVersionForApi
+                      ? "deploy-shadow로 Shadow만 Primary와 같은 이미지로 (후보 폐기)"
+                      : "vehicle_runtime JSON에 primary_version이 없습니다. Refresh runtime."
+                  }
+                  onClick={() => void onDropShadowCandidate()}
+                >
+                  {deferMutatingOps ? "Queue drop shadow (discard)" : "Drop: Shadow → match Primary"}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -417,6 +563,9 @@ export default function DockerVehicleRuntimePanel({
                 {" · "}
                 <strong>Shadow</strong>:{" "}
                 <span className="mono">{shadowVer != null && shadowVer !== "" ? `v${shadowVer}` : "—"}</span>
+              </p>
+              <p className="rollout-hint subtle" style={{ marginTop: "0.5rem" }}>
+                Shadow 승격/폐기 버튼은 위 <strong>Commands</strong> 블록에 있습니다.
               </p>
             </section>
 

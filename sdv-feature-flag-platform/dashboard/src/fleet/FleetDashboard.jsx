@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import {
   computeFleetSummaryCards,
   computeOtaSafetyFleet,
+  featureShadowRolloutActive,
   filterFleetRows,
+  getEffectiveVehicleStatus,
 } from "./fleetDashboardModel.js";
 
 const FEATURE_KEYS = ["ADAS", "Navigation", "Energy"];
@@ -24,6 +26,7 @@ function FeatureStatusBadge({ name, feat }) {
   const flag = (feat.flag || "").toUpperCase();
   const kill = Boolean(feat.kill_switch);
   const shadow = Boolean(feat.shadow_enabled);
+  const rollout = featureShadowRolloutActive(feat);
   const slot = feat.active_slot || "—";
   const ver = feat.active_version || "—";
   const sSlot = feat.shadow_slot;
@@ -39,14 +42,19 @@ function FeatureStatusBadge({ name, feat }) {
     text: kill ? "KILL ON" : "KILL OFF",
     cls: classNames("fb-line", kill && "fb-danger"),
   });
-  if (shadow && (sSlot || sVer)) {
+  if (rollout) {
     lines.push({
-      text: `SHADOW ON → ${sSlot || "—"} / ${sVer || "—"}`,
+      text: `SHADOW rollout → ${sVer || "—"} (≠ ${ver})`,
+      cls: classNames("fb-line", "fb-info"),
+    });
+  } else if (shadow && (sSlot || sVer)) {
+    lines.push({
+      text: `SHADOW admin ON → ${sSlot || "—"} / ${sVer || "—"}`,
       cls: classNames("fb-line", "fb-info"),
     });
   } else {
     lines.push({
-      text: shadow ? "SHADOW ON" : "SHADOW OFF",
+      text: shadow ? "SHADOW admin ON" : "SHADOW OFF",
       cls: classNames("fb-line", shadow && "fb-info"),
     });
   }
@@ -236,7 +244,7 @@ export default function FleetDashboard({
             {rows.map((v) => {
               const st = stateByCar[v.car_id];
               const missing = !st || Boolean(st?.missing);
-              const effStatus = missing ? "missing" : st?.status || v.status || "—";
+              const effStatus = missing ? "missing" : getEffectiveVehicleStatus(st, v);
               const ota = missing ? {} : st?.ota || {};
               const feats = st?.features || {};
               const safety = computeOtaSafetyFleet(missing ? null : st);

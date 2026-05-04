@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchRollbackStatus } from "../api/fleet.js";
-import { getOtaSafetyChecklist } from "./fleetDashboardModel.js";
+import {
+  featureShadowRolloutActive,
+  getEffectiveVehicleStatus,
+  getOtaSafetyChecklist,
+} from "./fleetDashboardModel.js";
 import VehicleActionsSection from "./VehicleActionsSection.jsx";
 import { filterHistoryForCar, historyExtraCell } from "./vehicleHistoryFilter.js";
 
@@ -28,6 +32,7 @@ function FeatureDetailCard({ name, feat }) {
   const flagOn = (feat.flag || "").toUpperCase() === "ON";
   const kill = Boolean(feat.kill_switch);
   const shadow = Boolean(feat.shadow_enabled);
+  const rollout = featureShadowRolloutActive(feat);
   const activeSlot = feat.active_slot || "—";
 
   return (
@@ -37,7 +42,9 @@ function FeatureDetailCard({ name, feat }) {
         <div className="vd-badge-row">
           <span className={`vd-mini-badge ${flagOn ? "ok" : "warn"}`}>FLAG {flagOn ? "ON" : "OFF"}</span>
           <span className={`vd-mini-badge ${kill ? "danger" : "ok"}`}>KILL {kill ? "ON" : "OFF"}</span>
-          <span className={`vd-mini-badge ${shadow ? "info" : "ok"}`}>SHADOW {shadow ? "ON" : "OFF"}</span>
+          <span className={`vd-mini-badge ${rollout ? "info" : shadow ? "info" : "ok"}`}>
+            SHADOW {rollout ? "ROLLOUT" : shadow ? "ADMIN" : "OFF"}
+          </span>
           <span className="vd-mini-badge neutral">ACTIVE {activeSlot}</span>
           {(feat.fallback_slot || feat.fallback_version) && (
             <span className="vd-mini-badge neutral">
@@ -118,7 +125,7 @@ export default function VehicleDetailPanel({
       const f = state.features?.[k];
       if (!f) continue;
       bits.push(
-        `${k}: flag=${f.flag || "?"} kill=${f.kill_switch ? "ON" : "OFF"} shadow=${f.shadow_enabled ? "ON" : "OFF"}`,
+        `${k}: flag=${f.flag || "?"} kill=${f.kill_switch ? "ON" : "OFF"} shadow=${featureShadowRolloutActive(f) ? "ROLLOUT" : f.shadow_enabled ? "ADMIN" : "OFF"}`,
       );
     }
     return bits.length ? bits.join(" · ") : "—";
@@ -196,7 +203,16 @@ export default function VehicleDetailPanel({
           {kv("model", vehicle?.model)}
           {kv("region", vehicle?.region)}
           {kv("group", vehicle?.group)}
-          {kv("status", missing ? "missing" : state.status || vehicle?.status)}
+          {kv("status", missing ? "missing" : getEffectiveVehicleStatus(state, vehicle))}
+          {!missing && state.runtime?.source ? (
+            <div className="vd-kv">
+              <span className="vd-k">runtime</span>
+              <span className="vd-v mono">
+                {String(state.runtime.car_process_running)} ({state.runtime.source}
+                {state.runtime.probed_at ? ` @ ${state.runtime.probed_at}` : ""})
+              </span>
+            </div>
+          ) : null}
           {kv("network", ota.network)}
           {kv("driver_approved", missing ? "—" : String(Boolean(ota.driver_approved)))}
           {kv("download_status", ota.download_status)}

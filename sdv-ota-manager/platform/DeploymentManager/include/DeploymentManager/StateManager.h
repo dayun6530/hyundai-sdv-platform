@@ -22,6 +22,10 @@ public:
         std::string fallback_slot;    // "A" | "B"
         std::string fallback_version; // e.g. v0.1
 
+        /// Staged fleet slot/version (written by deferred `fleet-deploy vehicle`); applied on next car start.
+        std::string pending_active_slot;     // "" | "A" | "B"
+        std::string pending_active_version;  // e.g. v0.2
+
         // Optional per-feature flags (only populated when present in JSON).
         std::string realtime_route_flag;       // Navigation only
         std::string charging_recommend_flag;   // Navigation + Energy
@@ -63,6 +67,11 @@ public:
 
     bool updateFeatureSlot(const std::string& car_id, const std::string& feature,
         const std::string& slot, const std::string& version, std::string& error) const;
+    /// Records pending slot/version only; does not change active_slot/active_version.
+    bool updateFeaturePending(const std::string& car_id, const std::string& feature,
+        const std::string& slot, const std::string& version, std::string& error) const;
+    /// If pending version is set, copies pending → active and clears pending for that feature.
+    bool promotePendingToActive(const std::string& car_id, const std::string& feature, std::string& error) const;
     bool updateFeatureFlag(const std::string& car_id, const std::string& feature,
         const std::string& flag, std::string& error) const;
     bool updateKillSwitch(const std::string& car_id, const std::string& feature,

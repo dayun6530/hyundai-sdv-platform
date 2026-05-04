@@ -1,5 +1,6 @@
 #include "DeploymentManager/DeploymentManager.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cctype>
 #include <cstdint>
@@ -11,6 +12,7 @@
 #include <array>
 #include <regex>
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 
 namespace sdv::platform::deployment {
@@ -283,7 +285,7 @@ bool DeploymentManager::validateTargetVersion(const VersionManager& vm, const st
 bool DeploymentManager::deployToVehicle(const std::string& car_id, const std::string& feature,
     const std::string& target_slot, const std::string& target_version, std::string& outMessage) {
     outMessage.clear();
-    const auto r = deployToVehicleInternal(car_id, feature, target_slot, target_version, false);
+    const auto r = deployToVehicleInternal(car_id, feature, target_slot, target_version, false, false);
     outMessage = r.success ? "deploy success" : r.reason;
     return r.success;
 }
@@ -292,7 +294,8 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
     const std::string& feature,
     const std::string& target_slot,
     const std::string& target_version,
-    bool sync_config_requested) {
+    bool sync_config_requested,
+    bool defer_native_until_restart) {
     DeployResult r;
     r.car_id = car_id;
     r.feature = feature;
@@ -343,6 +346,67 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
     const auto* fs = feature == "ADAS" ? &stateOpt->adas : (feature == "Navigation" ? &stateOpt->navigation : &stateOpt->energy);
     if (fs->kill_switch) {
         return fail("deploy failed: kill switch enabled for " + feature);
+    }
+
+    if (defer_native_until_restart) {
+        std::string versionReasonDefer;
+        if (!validateTargetVersion(*vmOpt, feature, target_slot, target_version, versionReasonDefer)) {
+            const std::string failed = "failed";
+            const std::string failedMode = "FAILED";
+            const bool notRunning = false;
+            (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+            std::cout << "[OTA] target=" << car_id << " mode=FAILED (defer-native validation)\n";
+            return fail(versionReasonDefer);
+        }
+
+        const StateManager::FeatureState prevSnapshotDefer = *fs;
+        const std::string rollback_id = generateRollbackIdFleet();
+        const std::string rollback_ts = currentTimestamp();
+        const std::filesystem::path absPathFs =
+            std::filesystem::path(workDir_) / "deploy" / "rollback" / car_id / (feature + ".json");
+        const std::string absPath = absPathFs.generic_string();
+        const std::string stateRel = std::string("deploy/state/") + car_id + ".json";
+        const std::string configRel = std::string("config/car/") + car_id + ".conf";
+        const std::string backupRel =
+            sync_config_requested ? (std::string("config/car/") + car_id + ".conf.bak") : std::string();
+
+        {
+            std::string phase1 = buildFleetRollbackMetadataPrettyJson(rollback_id, rollback_ts, car_id, feature,
+                prevSnapshotDefer, target_slot, target_version, sync_config_requested, false, "", stateRel, configRel,
+                backupRel);
+            std::error_code mec;
+            std::filesystem::create_directories(absPathFs.parent_path(), mec);
+            if (mec) {
+                return fail("rollback metadata save failed: cannot create directory " +
+                    absPathFs.parent_path().generic_string() + ": " + mec.message());
+            }
+            std::string werr;
+            if (!writeAtomicTextFile(absPath, phase1, werr)) {
+                return fail("rollback metadata save failed: " + werr);
+            }
+        }
+
+        rb.path = absPath;
+        r.rollback_prev_feature = prevSnapshotDefer;
+        r.rollback_prev_valid = true;
+        r.rollback_meta_id = rollback_id;
+        r.rollback_meta_timestamp = rollback_ts;
+        r.rollback_meta_abs_path = absPath;
+
+        std::cout << "[FLEET] defer-native: skipping OTA safety gate + demo OTA progression; "
+                     "recording pending_active_* only (apply on next car start via apply-pending-native-car)\n";
+        if (!sm.updateFeaturePending(car_id, feature, target_slot, target_version, err)) {
+            return fail(err.empty() ? "deploy failed: unable to update pending feature fields" : err);
+        }
+
+        rb.commit();
+        r.rollback_metadata_path = std::string("deploy/rollback/") + car_id + "/" + feature + ".json";
+        r.rollback_metadata_saved = true;
+        r.success = true;
+        r.reason.clear();
+        std::cout << "[DEPLOY] target=" << car_id << " feature=" << feature << " slot=" << target_slot
+                  << " version=" << target_version << " result=SUCCESS (pending until restart)\n";
+        return r;
     }
 
     std::string safetyReason;
@@ -783,7 +847,7 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupWithSummary(con
     }
 
     for (const auto& v : targets) {
-        auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success);
+        auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success, false);
         applyPostDeployConfigSync(r, sync_config_after_success);
         if (r.success) ++s.success; else ++s.failed;
         if (!r.success) {
@@ -825,7 +889,7 @@ DeploymentManager::DeploySummary DeploymentManager::deployToRegionWithSummary(co
     }
 
     for (const auto& v : targets) {
-        auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success);
+        auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success, false);
         applyPostDeployConfigSync(r, sync_config_after_success);
         if (r.success) ++s.success; else ++s.failed;
         if (!r.success) {
@@ -869,7 +933,7 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupAndRegionWithSu
     }
 
     for (const auto& v : targets) {
-        auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success);
+        auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success, false);
         applyPostDeployConfigSync(r, sync_config_after_success);
         if (r.success) ++s.success; else ++s.failed;
         if (!r.success) {
@@ -885,7 +949,8 @@ DeploymentManager::DeploySummary DeploymentManager::deployToVehicleWithSummary(c
     const std::string& feature,
     const std::string& target_slot,
     const std::string& target_version,
-    bool sync_config_after_success) {
+    bool sync_config_after_success,
+    bool defer_native_until_restart) {
     DeploySummary s;
     s.deploy_id = generateDeployId();
     s.timestamp = currentTimestamp();
@@ -896,7 +961,8 @@ DeploymentManager::DeploySummary DeploymentManager::deployToVehicleWithSummary(c
     s.sync_config_requested = sync_config_after_success;
     s.total = 1;
 
-    auto r = deployToVehicleInternal(car_id, feature, target_slot, target_version, sync_config_after_success);
+    auto r = deployToVehicleInternal(car_id, feature, target_slot, target_version, sync_config_after_success,
+        defer_native_until_restart);
     applyPostDeployConfigSync(r, sync_config_after_success);
     s.results.push_back(r);
     if (r.success) {
@@ -2941,6 +3007,69 @@ void DeploymentManager::printInventory() const {
     for (const auto& l : tail) {
         std::cout << l << "\n";
     }
+}
+
+bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std::string& outMessage) {
+    outMessage.clear();
+    std::string err;
+    StateManager sm(workDir_);
+    auto stateOpt = sm.loadState(car_id, err);
+    if (!stateOpt) {
+        outMessage = err.empty() ? "loadState failed" : err;
+        return false;
+    }
+    const auto vmOpt = VersionManager::loadFromFile(workDir_ + "/deploy/version_map.json", err);
+    if (!vmOpt) {
+        outMessage = err.empty() ? "version_map load failed" : err;
+        return false;
+    }
+
+    static const char* kFeatures[] = {"ADAS", "Navigation", "Energy"};
+    std::vector<std::string> binariesOrdered;
+    std::vector<std::string> featuresWithPending;
+    for (const char* feat : kFeatures) {
+        const StateManager::FeatureState* fs = StateManager::featureRef(*stateOpt, feat);
+        if (!fs || fs->pending_active_version.empty()) {
+            continue;
+        }
+        std::string vr;
+        if (!validateTargetVersion(*vmOpt, feat, fs->pending_active_slot, fs->pending_active_version, vr)) {
+            outMessage = vr;
+            return false;
+        }
+        const char slotCh = fs->pending_active_slot.empty() ? 'A' : fs->pending_active_slot[0];
+        const auto bin = vmOpt->getBinary(feat, slotCh, err);
+        if (!bin) {
+            outMessage = err.empty() ? "getBinary failed" : err;
+            return false;
+        }
+        if (std::find(binariesOrdered.begin(), binariesOrdered.end(), *bin) == binariesOrdered.end()) {
+            binariesOrdered.push_back(*bin);
+        }
+        featuresWithPending.push_back(feat);
+    }
+
+    if (featuresWithPending.empty()) {
+        outMessage = "no pending native rollout";
+        return true;
+    }
+
+    for (const std::string& bin : binariesOrdered) {
+        if (!deployExecutable(bin)) {
+            outMessage = "deployExecutable failed for " + bin;
+            return false;
+        }
+    }
+
+    for (const std::string& feat : featuresWithPending) {
+        if (!sm.promotePendingToActive(car_id, feat, err)) {
+            outMessage = err.empty() ? "promotePendingToActive failed" : err;
+            return false;
+        }
+    }
+
+    outMessage = "applied pending native for " + car_id;
+    return true;
 }
 
 }  // namespace sdv::platform::deployment

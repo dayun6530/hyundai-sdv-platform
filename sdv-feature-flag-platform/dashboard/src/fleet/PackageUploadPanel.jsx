@@ -165,17 +165,6 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
       <div className="card-header">
         <div>
           <h2>Package Upload / Version Registry</h2>
-          <p className="tiny subtle">
-            <strong>Registry:</strong> manifest JSON is validated and written under{" "}
-            <code className="mono">sdv-ota-manager/platform/deploy/packages/&lt;Feature&gt;/&lt;Version&gt;/</code> (same
-            tree as <code className="mono">package_registry.json</code>). <strong>ZIP upload</strong> can be added later
-            without changing the schema.
-          </p>
-          <p className="tiny subtle" style={{ marginTop: "0.35rem" }}>
-            <strong>Docker rollout:</strong> use <strong>Car</strong> with the same <strong>Feature</strong> /{" "}
-            <strong>Version</strong> fields — <code className="mono">ota_vehicle.sh</code> in WSL (Primary/Shadow,
-            separate from Fleet <code className="mono">deploy/state</code> A/B).
-          </p>
         </div>
       </div>
 
@@ -219,12 +208,6 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
           <input className="input mono" value={packageId} onChange={(e) => setPackageId(e.target.value)} placeholder="ADAS_v1.0_20260428" />
         </label>
       </div>
-
-      <p className="tiny subtle" style={{ marginTop: "0.35rem", marginBottom: 0 }}>
-        <strong>Docker Primary/Shadow:</strong> commands below use the same Feature / Version / Car as this form. With
-        queuing, containers are <strong>not</strong> recreated until you click <strong>Apply queued Docker now</strong> or
-        run a full <code className="mono">run_sdv.ps1</code> (status-server drains the queue after it starts).
-      </p>
 
       <DockerVehicleRuntimePanel
         vehicles={vehicles}

@@ -78,3 +78,13 @@ export async function postVehicleRuntimeApplyPending() {
   const res = await fetch("/api/vehicle-runtime/apply-pending", { method: "POST" });
   return parseJsonOrThrow(res);
 }
+
+/** @param {"all" | "head"} mode */
+export async function postVehicleRuntimeClearPendingQueue(mode = "all") {
+  const res = await fetch("/api/vehicle-runtime/clear-pending-queue", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ mode }),
+  });
+  return parseJsonOrThrow(res);
+}

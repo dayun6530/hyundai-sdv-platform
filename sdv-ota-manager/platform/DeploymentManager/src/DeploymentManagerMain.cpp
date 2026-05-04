@@ -26,13 +26,17 @@ namespace {
             << "  sync-config           Release helper: apply deploy/active_selection.conf to config only\n"
             << "  sync-config-car <id>  Per-car: rewrite config/car/<id>.conf feature block from deploy/state/<id>.json (car_1..car_10)\n"
             << "  fleet-selftest        Fleet deploy self-test (VehicleRegistry + VersionManager + StateManager)\n"
-            << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <SLOT> <VERSION> [--sync-config]\n"
+            << "  apply-pending-native-car <car_id>\n"
+            << "                      After a deferred fleet-deploy: copy packages → active for pending features, then promote pending→active in deploy/state.\n"
+            << "                      Invoked automatically at car platform start when SDV_PLATFORM_DEPLOY_ROOT is set.\n"
+            << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n"
             << "                      SCOPE=vehicle|group|region|group_region\n"
             << "                      vehicle: <car_id>\n"
             << "                      group: <group>\n"
             << "                      region: <region>\n"
             << "                      group_region: <group> <region>\n"
             << "                      Optional trailing --sync-config: after successful state deploy, sync config/car/<id>.conf\n"
+            << "                      vehicle only: default deferred native rollout (pending_active_*; active unchanged until apply-pending-native-car / restart). --no-defer-native restores immediate OTA-safety-gated active update.\n"
             << "  fleet-set-approval <car_id> <true|false>\n"
             << "  fleet-rollback vehicle <car_id> <FEATURE> [--sync-config]\n"
             << "                      FEATURE=ADAS|Navigation|Energy; car_id=car_1..car_10\n"
@@ -308,9 +312,21 @@ int main(int argc, char* argv[]) {
         dm.emitSummaryJsonWithFleetHistory(dm.fleetShadowSummaryToJson(sum));
         return ok ? 0 : 1;
     }
+    if (cmd == "apply-pending-native-car") {
+        if (positional.size() < 2) {
+            std::cerr << "Usage: DeploymentMgr apply-pending-native-car <car_id>\n";
+            return 1;
+        }
+        std::string msg;
+        const bool ok = dm.applyPendingNativeForCar(positional[1], msg);
+        if (!msg.empty()) {
+            std::cout << (ok ? "[apply-pending-native-car] " : "[apply-pending-native-car] ERROR: ") << msg << "\n";
+        }
+        return ok ? 0 : 1;
+    }
     if (cmd == "fleet-deploy") {
         if (positional.size() < 6) {
-            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n";
             return 1;
         }
         std::vector<std::string> fd;
@@ -319,28 +335,42 @@ int main(int argc, char* argv[]) {
             fd.emplace_back(positional[i]);
         }
         bool sync_config = false;
-        while (!fd.empty() && fd.back() == "--sync-config") {
-            sync_config = true;
-            fd.pop_back();
+        bool defer_native_vehicle = true;
+        for (;;) {
+            if (fd.empty()) {
+                break;
+            }
+            if (fd.back() == "--sync-config") {
+                sync_config = true;
+                fd.pop_back();
+                continue;
+            }
+            if (fd.back() == "--no-defer-native") {
+                defer_native_vehicle = false;
+                fd.pop_back();
+                continue;
+            }
+            break;
         }
         for (const auto& a : fd) {
             if (!a.empty() && a[0] == '-') {
-                std::cerr << "Unknown or misplaced fleet-deploy option: " << a << " (only trailing --sync-config is supported)\n";
+                std::cerr << "Unknown or misplaced fleet-deploy option: " << a
+                          << " (only trailing --sync-config / --no-defer-native are supported)\n";
                 return 1;
             }
         }
         if (fd.size() < 5) {
-            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n";
             return 1;
         }
         const std::string& scope = fd[0];
         sdv::platform::deployment::DeploymentManager::DeploySummary sum;
         if (scope == "vehicle") {
             if (fd.size() != 5) {
-                std::cerr << "Usage: DeploymentMgr fleet-deploy vehicle <car_id> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";
+                std::cerr << "Usage: DeploymentMgr fleet-deploy vehicle <car_id> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n";
                 return 1;
             }
-            sum = dm.deployToVehicleWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config);
+            sum = dm.deployToVehicleWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config, defer_native_vehicle);
         } else if (scope == "group") {
             if (fd.size() != 5) {
                 std::cerr << "Usage: DeploymentMgr fleet-deploy group <group> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";

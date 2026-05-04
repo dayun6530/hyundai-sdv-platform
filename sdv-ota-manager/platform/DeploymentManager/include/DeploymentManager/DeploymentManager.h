@@ -110,7 +110,12 @@ public:
         const std::string& feature, const std::string& target_slot, const std::string& target_version,
         bool sync_config_after_success = false);
     DeploySummary deployToVehicleWithSummary(const std::string& car_id, const std::string& feature,
-        const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false);
+        const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false,
+        bool defer_native_until_restart = false);
+
+    /// For \p car_id: for each feature with non-empty pending version, \c deployExecutable from \c version_map,
+    /// then promote pending → active in \c deploy/state. No-op when nothing pending. CWD must be platform root.
+    bool applyPendingNativeForCar(const std::string& car_id, std::string& outMessage);
 
     // Fleet deploy reporting helpers (kept separate so UI/API can reuse the exact format).
     void printFleetDeploySummary(const DeploySummary& summary) const;
@@ -326,7 +331,8 @@ private:
         const std::string& slot, const std::string& version, std::string& reason) const;
 
     DeployResult deployToVehicleInternal(const std::string& car_id, const std::string& feature,
-        const std::string& target_slot, const std::string& target_version, bool sync_config_requested);
+        const std::string& target_slot, const std::string& target_version, bool sync_config_requested,
+        bool defer_native_until_restart = false);
 
     void finalizeFleetRollbackMetadata(DeployResult& r);
     void printDeploySummary(const DeploySummary& summary) const;

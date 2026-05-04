@@ -44,11 +44,19 @@ function toWslPath(winPath) {
 }
 
 function execWslBash(args, options = {}) {
+  const { wslDistro, ...execOpts } = options;
+  const envDistro = process.env.SDV_WSL_DISTRO && String(process.env.SDV_WSL_DISTRO).trim();
+  const distro =
+    wslDistro && String(wslDistro).trim().length > 0
+      ? String(wslDistro).trim()
+      : envDistro && envDistro.length > 0
+        ? envDistro
+        : "Ubuntu";
   return new Promise((resolve, reject) => {
     execFile(
       "wsl.exe",
-      ["-d", "Ubuntu", "--", "bash", "-lc", args],
-      { windowsHide: true, maxBuffer: 5 * 1024 * 1024, ...options },
+      ["-d", distro, "--", "bash", "-lc", args],
+      { windowsHide: true, maxBuffer: 5 * 1024 * 1024, ...execOpts },
       (err, stdout, stderr) => {
         // Non-zero exit codes are expected for "partial failures" (fleet deploy),
         // so we always resolve with the captured output.
@@ -721,6 +729,68 @@ app.post("/api/fleet/version-map/assign", (req, res) => {
   });
 });
 
+/**
+ * Best-effort: detect native `car_N` parent processes in WSL (same layout as run_sdv.ps1).
+ * Returns map car_id -> boolean for car_1..car_10 when WSL succeeds (even if all false).
+ * Empty map only when WSL cannot run — then the dashboard keeps file-based `status` (often all "online").
+ */
+async function probeFleetCarProcessesWsl(warnings) {
+  const empty = {};
+  const distro = process.env.SDV_WSL_DISTRO;
+  const inner =
+    "{ pgrep -af /build_unleash/car_ 2>/dev/null || true; pgrep -af /build/car_ 2>/dev/null || true; }";
+  try {
+    const { code, stdout, stderr } = await execWslBash(inner, { wslDistro: distro });
+    if (code !== 0) {
+      warnings.push(
+        `fleet runtime probe: wsl/bash exit ${code}: ${String(stderr || "")
+          .trim()
+          .slice(0, 240)}`,
+      );
+      return empty;
+    }
+    const running = new Set();
+    const re = /\/(?:build_unleash|build)\/car_(10|[1-9])\b/;
+    for (const line of String(stdout || "").split(/\r?\n/)) {
+      const m = line.match(re);
+      if (m) {
+        running.add(`car_${m[1]}`);
+      }
+    }
+    const out = {};
+    for (let i = 1; i <= 10; i += 1) {
+      const id = `car_${i}`;
+      out[id] = running.has(id);
+    }
+    return out;
+  } catch (e) {
+    warnings.push(`fleet runtime probe failed: ${e.message || String(e)}`);
+    return empty;
+  }
+}
+
+function mergeRuntimeProbeIntoStates(states, probeMap, warnings) {
+  const keys = Object.keys(probeMap || {});
+  if (!keys.length) {
+    return;
+  }
+  const iso = new Date().toISOString();
+  for (const st of states) {
+    const id = st && st.car_id;
+    if (!id || typeof probeMap[id] !== "boolean") continue;
+    st.runtime = {
+      car_process_running: probeMap[id],
+      probed_at: iso,
+      source: "wsl_pgrep",
+    };
+  }
+  const expected = states.filter((s) => s && s.car_id && RUNTIME_DOCKER_CAR_RE.test(s.car_id)).length;
+  const probed = states.filter((s) => s && typeof s.runtime?.car_process_running === "boolean").length;
+  if (expected > 0 && probed > 0 && probed < expected) {
+    warnings.push(`fleet runtime probe: partial (${probed}/${expected} cars got a pgrep result)`);
+  }
+}
+
 function readFleetStatesCar1To10(warnings) {
   const states = [];
   for (let i = 1; i <= 10; i += 1) {
@@ -759,10 +829,12 @@ function readFleetStatesCar1To10(warnings) {
   return states;
 }
 
-app.get("/api/fleet/state", (_req, res) => {
+app.get("/api/fleet/state", async (_req, res) => {
   const warnings = [];
   try {
     const states = readFleetStatesCar1To10(warnings);
+    const probeMap = await probeFleetCarProcessesWsl(warnings);
+    mergeRuntimeProbeIntoStates(states, probeMap, warnings);
     res.json({ ok: true, states, warnings });
   } catch (err) {
     warnings.push(`fleet state: ${err.message}`);
@@ -964,6 +1036,24 @@ function readFleetStateActiveVersion(carId, fleetFeatureLabel) {
   }
 }
 
+function readFleetStatePendingVersion(carId, fleetFeatureLabel) {
+  const key = fleetFeatureToStateKey(fleetFeatureLabel);
+  if (!key) return null;
+  const fp = path.join(DEPLOY_ROOT, "state", `${carId}.json`);
+  try {
+    const j = readJson(fp);
+    const v = j?.features?.[key]?.pending_active_version;
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function fleetStateVersionMatchesRequested(stateVersion, requestedToken) {
+  if (!stateVersion) return false;
+  return fleetVersionToken(stateVersion) === requestedToken;
+}
+
 function safeWriteJsonAtomic(filePath, data) {
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
@@ -1012,12 +1102,26 @@ function otaDomainToFleetFeature(domain) {
   return null;
 }
 
+/** Matches `StateManager` / `vehicle_runtime`: candidate only when shadow lane is on and versions differ. */
+function fleetFeatureShadowMode(shadowEnabled, activeVersion, shadowVersion) {
+  if (!shadowEnabled) return "inactive";
+  const norm = (x) =>
+    String(x ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/^v(?=\d)/i, "");
+  const a = norm(activeVersion);
+  const s = norm(shadowVersion);
+  if (!s || a === s) return "inactive";
+  return "candidate";
+}
+
 /**
  * After a successful `ota_vehicle.sh` run, align `platform/deploy/state/<car>.json`
  * (`features.<ADAS|Navigation|Energy>.active_version` / `shadow_version`) with the Docker
  * tag so native `Feature::maybeLogFleetFeatureDeployBanner` and fleet UI match `vehicle_runtime`.
  */
-function syncFleetStateAfterDockerRuntime(carId, fleetFeatureLabel, subcommand, version, syncShadow) {
+function syncFleetStateAfterDockerRuntime(carId, fleetFeatureLabel, subcommand, version, _syncShadow) {
   if (!CAR_ID_RE.test(carId)) return;
   const key = fleetFeatureToStateKey(fleetFeatureLabel);
   if (!key) return;
@@ -1040,15 +1144,27 @@ function syncFleetStateAfterDockerRuntime(carId, fleetFeatureLabel, subcommand, 
   const token = fleetVersionToken(version);
   if (subcommand === "bootstrap") {
     f.active_version = token;
-    f.shadow_version = token;
+    f.shadow_enabled = false;
+    f.shadow_slot = "";
+    f.shadow_version = "";
   } else if (subcommand === "deploy-shadow") {
     f.shadow_version = token;
+    f.shadow_enabled = true;
+    if (!f.shadow_slot) {
+      f.shadow_slot = "B";
+    }
   } else if (subcommand === "promote") {
     f.active_version = token;
-    if (syncShadow) {
-      f.shadow_version = token;
-    }
+    f.shadow_enabled = false;
+    f.shadow_slot = "";
+    f.shadow_version = "";
+    // `_syncShadow` is applied by ota_vehicle.sh to Docker only; fleet shadow lane is cleared here.
   }
+  f.shadow_mode = fleetFeatureShadowMode(
+    Boolean(f.shadow_enabled),
+    f.active_version,
+    f.shadow_version,
+  );
   try {
     safeWriteJsonAtomic(fp, j);
   } catch (err) {
@@ -1310,32 +1426,45 @@ app.post("/api/fleet/deploy", async (req, res) => {
     const notAppliedCars = [];
     const forcedUpdated = [];
     for (const cid of cars) {
-      let actual = readFleetStateActiveVersion(cid, feature);
+      const activeVer = readFleetStateActiveVersion(cid, feature);
+      const pendingVer = readFleetStatePendingVersion(cid, feature);
+      const satisfiedActive = fleetStateVersionMatchesRequested(activeVer, requestedToken);
+      const satisfiedPending = fleetStateVersionMatchesRequested(pendingVer, requestedToken);
 
-      // If the state file was NOT updated, force-update it (user expectation: deploy => JSON changes).
-      if (!actual || actual !== requestedToken) {
+      // Legacy recovery: only rewrite active_slot/active_version when deploy succeeded but state is inconsistent.
+      if (Number(r.code) === 0 && !satisfiedActive && !satisfiedPending) {
         const forced = forceUpdateFleetState(cid, feature, slot, requestedToken);
         if (forced.ok) {
           forcedUpdated.push(cid);
-          actual = readFleetStateActiveVersion(cid, feature);
         }
       }
 
-      // Always emit an event line (for CMD + version_events.log), and only claim "is deployed!"
-      // when deploy/state active_version matches the requested token (after forced update).
-      if (actual && actual === requestedToken) {
+      const actualAfter = readFleetStateActiveVersion(cid, feature);
+      const pendingAfter = readFleetStatePendingVersion(cid, feature);
+      const okActive = fleetStateVersionMatchesRequested(actualAfter, requestedToken);
+      const okPending = fleetStateVersionMatchesRequested(pendingAfter, requestedToken);
+
+      if (okActive && actualAfter) {
         notifyCarVersionChange(cid, feature, {
           messagePrimary: verMsg,
           plainConsoleLine: verMsg,
-          // Avoid touching the live feature log file; keep ADAS running and logs stable.
           writeFeatureLog: false,
-          // Still mirror the same event into the shadow stream so both CMD windows show it.
           alsoShadowEvent: true,
           plainConsoleLineShadow: fleetDeployShadowConsoleLine(verMsg),
         });
         loggedCars.push(cid);
+      } else if (okPending && pendingAfter) {
+        const sched = `${feature} ${requestedToken} scheduled (stays on ${actualAfter || "previous"} until next car restart / apply-pending-native-car).`;
+        notifyCarVersionChange(cid, feature, {
+          messagePrimary: sched,
+          plainConsoleLine: sched,
+          writeFeatureLog: false,
+          alsoShadowEvent: true,
+          plainConsoleLineShadow: `Shadow observer: ${sched}`,
+        });
+        loggedCars.push(cid);
       } else {
-        const note = `Deploy requested (${requestedToken}) but state not updated yet (active_version=${actual || "<missing>"}).`;
+        const note = `Deploy requested (${requestedToken}) but state not updated (active=${actualAfter || "<missing>"}, pending=${pendingAfter || "<missing>"}).`;
         notifyCarVersionChange(cid, feature, {
           messagePrimary: note,
           plainConsoleLine: note,
@@ -1343,7 +1472,11 @@ app.post("/api/fleet/deploy", async (req, res) => {
           alsoShadowEvent: true,
           plainConsoleLineShadow: `Shadow observer: ${note}`,
         });
-        notAppliedCars.push({ car_id: cid, active_version: actual || "<missing>" });
+        notAppliedCars.push({
+          car_id: cid,
+          active_version: actualAfter || "<missing>",
+          pending_version: pendingAfter || "<missing>",
+        });
       }
     }
     if (!cars.length) {
@@ -1354,7 +1487,9 @@ app.post("/api/fleet/deploy", async (req, res) => {
     if (notAppliedCars.length) {
       console.log(
         `[VERSION] fleet-deploy verify failed for ${feature} ${requestedToken}: ` +
-          notAppliedCars.map((x) => `${x.car_id} active_version=${x.active_version}`).join(", ")
+          notAppliedCars
+            .map((x) => `${x.car_id} active=${x.active_version} pending=${x.pending_version ?? "<missing>"}`)
+            .join(", ")
       );
     }
 
@@ -1465,7 +1600,13 @@ function readPendingDockerRollout() {
     if (!fs.existsSync(PENDING_DOCKER_ROLLOUT_PATH)) {
       return defaultPendingDockerRollout();
     }
-    const data = readJson(PENDING_DOCKER_ROLLOUT_PATH);
+    const raw = fs.readFileSync(PENDING_DOCKER_ROLLOUT_PATH, "utf8").trim();
+    if (!raw) {
+      const fresh = defaultPendingDockerRollout();
+      writePendingDockerRollout(fresh);
+      return fresh;
+    }
+    const data = JSON.parse(raw);
     if (!data || typeof data !== "object" || !Array.isArray(data.queue)) {
       return defaultPendingDockerRollout();
     }
@@ -1625,6 +1766,41 @@ app.get("/api/vehicle-runtime/pending-queue", (_req, res) => {
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/** Drop queued Docker ops without running `ota_vehicle.sh`. `mode=all` clears the file queue; `mode=head` removes only the first item (unstick a failed head). */
+app.post("/api/vehicle-runtime/clear-pending-queue", (req, res) => {
+  try {
+    const mode = String(req.body?.mode || "all")
+      .trim()
+      .toLowerCase();
+    const data = readPendingDockerRollout();
+    if (!Array.isArray(data.queue)) {
+      data.queue = [];
+    }
+    if (mode === "head") {
+      if (data.queue.length) {
+        data.queue.shift();
+      }
+    } else if (mode === "all") {
+      data.queue = [];
+    } else {
+      res.status(400).json({ ok: false, error: 'mode must be "all" or "head"' });
+      return;
+    }
+    writePendingDockerRollout(data);
+    res.json({
+      ok: true,
+      mode,
+      queue_length: data.queue.length,
+      queue: data.queue,
+      file: path.relative(REPO_ROOT, PENDING_DOCKER_ROLLOUT_PATH).replace(/\\/g, "/"),
+    });
+  } catch (err) {
+    const msg = err.message || String(err);
+    const isMissing = msg.includes("not found");
+    res.status(isMissing ? 503 : 500).json({ ok: false, error: msg });
   }
 });
 

@@ -39,6 +39,10 @@ echo "[start_platform_wsl] platform=${PLATFORM} config=${CONFIG_REL} (arg=${CONF
 
 # Ensure log directory exists (repo-relative, works regardless of caller cwd).
 mkdir -p logs
+# LifeCycleMgr resolves fleet shadow policy from this file (see removeInactiveShadowFeaturesUsingFleetState).
+if [[ "${LOG_TAG}" =~ ^car_[0-9]+$ ]] && [[ -n "${SDV_PLATFORM_DEPLOY_ROOT:-}" ]]; then
+  export SDV_FLEET_DEPLOY_STATE_PATH="${SDV_PLATFORM_DEPLOY_ROOT}/state/${LOG_TAG}.json"
+fi
 START_LOG="logs/start_${LOG_TAG}.log"
 
 # If 127.0.0.1:1884 is closed inside WSL, default SDV_MQTT_BROKER_URI to Windows host gateway.

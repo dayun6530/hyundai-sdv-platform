@@ -30,6 +30,8 @@ function Resolve-WslDistro {
 $WslDistro = Resolve-WslDistro
 if ($WslDistro) {
     Write-Host "Using WSL distro: $WslDistro (override with `$env:SDV_WSL_DISTRO)"
+    # status-server / Node children must match (execWslBash uses SDV_WSL_DISTRO before defaulting to Ubuntu).
+    $env:SDV_WSL_DISTRO = $WslDistro
 } else {
     Write-Host "Using WSL default distro (override with `$env:SDV_WSL_DISTRO)"
 }

@@ -37,6 +37,10 @@ private:
     void spawnProcess(ProcessInfo& slot);
     void terminateWithTimeout(std::vector<ProcessInfo>& list, const std::string& label);
     std::string resolveExecPath(const std::string& execName);
+    /// Drops `*Shadow` rows from \p features_ when fleet `deploy/state` says shadow lane is inactive.
+    void removeInactiveShadowFeaturesUsingFleetState();
+    /// Runs \c DeploymentMgr apply-pending-native-car for this instance when fleet deploy root + binary exist.
+    void applyPendingNativeRolloutBeforeSpawn();
 
     std::string address_;
     /// Path passed to \ref loadConfig (exported as \c SDV_LIFECYCLE_CONFIG for FeatureEvaluator KILL resolution).
