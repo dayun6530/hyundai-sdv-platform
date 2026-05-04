@@ -3,6 +3,7 @@
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <chrono>
 #include <unistd.h>
@@ -120,6 +121,98 @@ static std::optional<std::string> readQuotedFieldInFeatureBlock(const std::strin
     return block.substr(valStart, i - valStart);
 }
 
+/// Reads `domains.<domainKey>.<field>` in `deploy/vehicle_runtime/<car>.json` (best-effort).
+static std::optional<std::string> readQuotedFieldInDomainBlock(const std::string& json,
+    const char* domainKey,
+    const char* field) {
+    const std::string marker = std::string("\"") + domainKey + "\"";
+    const std::size_t start = json.find(marker);
+    if (start == std::string::npos) {
+        return std::nullopt;
+    }
+    std::size_t end = std::string::npos;
+    if (std::strcmp(domainKey, "adas") == 0) {
+        end = json.find("\"navigation\"", start + 1);
+    } else if (std::strcmp(domainKey, "navigation") == 0) {
+        end = json.find("\"evenergy\"", start + 1);
+    } else if (std::strcmp(domainKey, "evenergy") == 0) {
+        end = std::min(json.size(), start + 8192);
+    }
+    if (end == std::string::npos) {
+        end = json.size();
+    }
+    const std::string block = json.substr(start, end - start);
+    const std::string key = std::string("\"") + field + "\"";
+    const std::size_t k = block.find(key);
+    if (k == std::string::npos) {
+        return std::nullopt;
+    }
+    const std::size_t colon = block.find(':', k);
+    if (colon == std::string::npos) {
+        return std::nullopt;
+    }
+    std::size_t i = colon + 1;
+    while (i < block.size() && (block[i] == ' ' || block[i] == '\t')) {
+        ++i;
+    }
+    if (i >= block.size() || block[i] != '"') {
+        return std::nullopt;
+    }
+    ++i;
+    const std::size_t valStart = i;
+    while (i < block.size() && block[i] != '"') {
+        ++i;
+    }
+    if (i <= valStart) {
+        return std::nullopt;
+    }
+    return block.substr(valStart, i - valStart);
+}
+
+static std::string vehicleRuntimeJsonPathForCar(const std::string& statePath, const std::string& car) {
+    if (const char* p = std::getenv("SDV_VEHICLE_RUNTIME_JSON")) {
+        if (p[0] != '\0') {
+            return std::string(p);
+        }
+    }
+    if (const char* deployRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
+        if (deployRoot[0] != '\0') {
+            std::string root(deployRoot);
+            while (!root.empty() && (root.back() == '/' || root.back() == '\\')) {
+                root.pop_back();
+            }
+            return root + "/../../deploy/vehicle_runtime/" + car + ".json";
+        }
+    }
+    const std::string needle = "/platform/deploy/state/";
+    const auto pos = statePath.find(needle);
+    if (pos != std::string::npos) {
+        return statePath.substr(0, pos) + "/deploy/vehicle_runtime/" + car + ".json";
+    }
+    return {};
+}
+
+static std::string normalizeVersionForDeployBanner(std::string s) {
+    while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) {
+        s.erase(s.begin());
+    }
+    while (!s.empty() && (s.back() == ' ' || s.back() == '\t')) {
+        s.pop_back();
+    }
+    if (s.empty()) {
+        return s;
+    }
+    if (s[0] == 'v' || s[0] == 'V') {
+        if (s.size() >= 2 && std::isdigit(static_cast<unsigned char>(s[1]))) {
+            return std::string("v") + s.substr(1);
+        }
+    }
+    if (std::isdigit(static_cast<unsigned char>(s[0]))) {
+        return std::string("v") + s;
+    }
+    return s;
+}
+
 }  // namespace
 
 std::atomic<bool> Feature::stopRequested_(false);
@@ -182,14 +275,17 @@ void Feature::maybeLogFleetFeatureDeployBanner() {
         const char* jsonFeatureKey;
         const char* jsonField;
         const char* logPrefix;
+        const char* runtimeDomainKey;
+        const char* runtimeVersionField;
     };
     static const BannerRow kRows[] = {
-        {"AdasFeature", "ADAS", "active_version", "AdasFeature_"},
-        {"AdasFeatureShadow", "ADAS", "shadow_version", "AdasFeature_Shadow_"},
-        {"NavigationFeature", "Navigation", "active_version", "NavigationFeature_"},
-        {"NavigationFeatureShadow", "Navigation", "shadow_version", "NavigationFeature_Shadow_"},
-        {"EvEnergyFeature", "Energy", "active_version", "EvEnergyFeature_"},
-        {"EvEnergyFeatureShadow", "Energy", "shadow_version", "EvEnergyFeature_Shadow_"},
+        {"AdasFeature", "ADAS", "active_version", "AdasFeature_", "adas", "primary_version"},
+        {"AdasFeatureShadow", "ADAS", "shadow_version", "AdasFeature_Shadow_", "adas", "shadow_version"},
+        {"NavigationFeature", "Navigation", "active_version", "NavigationFeature_", "navigation", "primary_version"},
+        {"NavigationFeatureShadow", "Navigation", "shadow_version", "NavigationFeature_Shadow_", "navigation",
+            "shadow_version"},
+        {"EvEnergyFeature", "Energy", "active_version", "EvEnergyFeature_", "evenergy", "primary_version"},
+        {"EvEnergyFeatureShadow", "Energy", "shadow_version", "EvEnergyFeature_Shadow_", "evenergy", "shadow_version"},
     };
     const BannerRow* row = nullptr;
     for (const auto& r : kRows) {
@@ -222,14 +318,31 @@ void Feature::maybeLogFleetFeatureDeployBanner() {
     }
     std::ostringstream buf;
     buf << in.rdbuf();
-    const std::string json = buf.str();
+    const std::string fleetJson = buf.str();
 
-    const auto ver = readQuotedFieldInFeatureBlock(json, row->jsonFeatureKey, row->jsonField);
+    std::optional<std::string> ver;
+    const std::string rtPath = vehicleRuntimeJsonPathForCar(statePath, car);
+    if (!rtPath.empty()) {
+        std::ifstream rt(rtPath);
+        if (rt) {
+            std::ostringstream rtbuf;
+            rtbuf << rt.rdbuf();
+            ver = readQuotedFieldInDomainBlock(rtbuf.str(), row->runtimeDomainKey, row->runtimeVersionField);
+        }
+    }
+    if (!ver || ver->empty()) {
+        ver = readQuotedFieldInFeatureBlock(fleetJson, row->jsonFeatureKey, row->jsonField);
+    }
     if (!ver || ver->empty()) {
         return;
     }
 
-    const std::string msg = std::string(row->logPrefix) + *ver + " is deployed!";
+    const std::string canon = normalizeVersionForDeployBanner(*ver);
+    if (canon.empty()) {
+        return;
+    }
+
+    const std::string msg = std::string(row->logPrefix) + canon + " is deployed!";
     log(LogLevel::info, msg);
     std::cerr << "[VERSION] " << msg << std::endl;
 }

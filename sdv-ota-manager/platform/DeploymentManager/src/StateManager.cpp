@@ -849,9 +849,9 @@ std::string StateManager::selfTest() const {
     const auto s1 = loadState("car_1", err);
     if (!s1) return err;
     if (s1->car_id != "car_1") return "selfTest: car_id mismatch";
-    if (s1->adas.active_slot != "A" || s1->adas.active_version != "v0.1") return "selfTest: ADAS A mismatch";
+    if (s1->adas.active_slot != "A" || s1->adas.active_version != "v1.0") return "selfTest: ADAS A mismatch";
     if (s1->navigation.active_slot != "A" || s1->navigation.active_version != "v1.0") return "selfTest: NAV A mismatch";
-    if (s1->energy.active_slot != "A" || s1->energy.active_version != "v0.5") return "selfTest: Energy A mismatch";
+    if (s1->energy.active_slot != "A" || s1->energy.active_version != "v1.0") return "selfTest: Energy A mismatch";
     if (s1->ota.speed != 0) return "selfTest: ota.speed mismatch";
     return {};
 }

@@ -103,7 +103,8 @@ private:
     void logEvEnergyShadowEnergyState(const std::string& payload);
     void logSubFeatureSnapshotAfterToggle();
 
-    /// If `deploy/state/<SDV_CAR_INSTANCE>.json` lists fleet slot versions, log a one-line deploy banner per domain.
+    /// If `deploy/vehicle_runtime/<SDV_CAR_INSTANCE>.json` (or `deploy/state/...` fallback) lists per-domain
+    /// versions, log a one-line deploy banner (Primary uses `primary_version`, Shadow uses `shadow_version`).
     void maybeLogFleetFeatureDeployBanner();
 
     std::ofstream logFile_;

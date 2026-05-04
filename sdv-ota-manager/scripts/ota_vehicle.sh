@@ -175,6 +175,79 @@ rollback_primary_to_saved_version() {
   return 0
 }
 
+# Align platform/deploy/state/<car>.json with deploy/vehicle_runtime/<car>.json:
+#   primary_version  -> features.*.active_version
+#   shadow_version   -> features.*.shadow_version
+#   shadow_enabled   -> features.*.shadow_enabled (or inferred from version mismatch)
+sync_platform_fleet_state_from_vehicle_runtime_json() {
+  local cid="${1:-}"
+  if [[ -z "$cid" || -z "${OTA_ROOT:-}" ]]; then
+    return 0
+  fi
+  local rt="${OTA_ROOT}/deploy/vehicle_runtime/${cid}.json"
+  local fl="${OTA_ROOT}/platform/deploy/state/${cid}.json"
+  if [[ ! -f "$rt" || ! -f "$fl" ]]; then
+    return 0
+  fi
+  PYBIN="python3"
+  command -v "$PYBIN" >/dev/null 2>&1 || PYBIN="python"
+  "$PYBIN" - "$rt" "$fl" <<'PY'
+import json, sys
+
+def vfmt(s):
+    s = str(s or "").strip()
+    if not s:
+        return ""
+    if s[0] in "vV" and len(s) > 1 and s[1].isdigit():
+        return "v" + s[1:]
+    return "v" + s.lstrip("vV")
+
+
+def norm_token(s):
+    s = str(s or "").strip().lower()
+    if len(s) >= 2 and s[0] == "v" and s[1].isdigit():
+        return s[1:]
+    return s
+
+
+rt_path, fl_path = sys.argv[1], sys.argv[2]
+with open(rt_path, "r", encoding="utf-8") as f:
+    rt = json.load(f)
+with open(fl_path, "r", encoding="utf-8") as f:
+    fl = json.load(f)
+
+m = {"adas": "ADAS", "navigation": "Navigation", "evenergy": "Energy"}
+features = fl.setdefault("features", {})
+for dom, fk in m.items():
+    cur = (rt.get("domains") or {}).get(dom) or {}
+    if not isinstance(cur, dict):
+        continue
+    blk = features.get(fk)
+    if not isinstance(blk, dict):
+        continue
+    pv_raw = str(cur.get("primary_version") or "").strip()
+    sv_raw = str(cur.get("shadow_version") or "").strip()
+    pv = vfmt(pv_raw) if pv_raw else ""
+    if pv:
+        blk["active_version"] = pv
+    if sv_raw == "":
+        blk["shadow_version"] = ""
+    else:
+        sv = vfmt(sv_raw)
+        if sv:
+            blk["shadow_version"] = sv
+    se = cur.get("shadow_enabled")
+    if isinstance(se, bool):
+        blk["shadow_enabled"] = se
+    else:
+        blk["shadow_enabled"] = norm_token(pv_raw) != norm_token(sv_raw) and bool(sv_raw)
+
+with open(fl_path, "w", encoding="utf-8") as f:
+    json.dump(fl, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PY
+}
+
 update_state_json() {
   export STATE_FILE="$STATE_DIR/${CAR}.json"
   export CAR_ID="$CAR"
@@ -206,9 +279,11 @@ if "domains" not in data:
 cur = data["domains"].get(key, {})
 if action == "bootstrap":
     cur["shadow_enabled"] = False
-    cur["shadow_version"] = ""
     if pv:
         cur["primary_version"] = pv
+        cur["shadow_version"] = pv
+    else:
+        cur["shadow_version"] = ""
 elif action == "deploy-shadow":
     cur["shadow_enabled"] = True
     if sv:
@@ -217,9 +292,11 @@ elif action == "deploy-shadow":
         cur["primary_version"] = pv
 elif action == "promote":
     cur["shadow_enabled"] = False
-    cur["shadow_version"] = ""
     if pv:
         cur["primary_version"] = pv
+        cur["shadow_version"] = pv
+    else:
+        cur["shadow_version"] = ""
 elif action == "promote-rollback":
     se = str(os.environ.get("SHADOW_ENABLED", "0")).strip().lower() in ("1", "true", "yes")
     cur["shadow_enabled"] = se
@@ -263,6 +340,7 @@ with open(path, "w", encoding="utf-8") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
     f.write("\n")
 PY
+  sync_platform_fleet_state_from_vehicle_runtime_json "$CAR"
 }
 
 case "$CMD" in
