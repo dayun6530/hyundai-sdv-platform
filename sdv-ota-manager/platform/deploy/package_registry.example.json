@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "comment": "Example entries only. Do NOT treat this file as the live registry used by the UI/server. Copy selected items into package_registry.json when ready.",
+  "packages": [
+    {
+      "package_id": "ADAS_2.0_example",
+      "feature": "ADAS",
+      "version": "2.0",
+      "role": "candidate",
+      "binary": "AdasFeature",
+      "description": "Example ADAS feature Docker image package v2.0",
+      "compatible_models": ["GEN1"],
+      "compatible_regions": ["KR"],
+      "requires_safety_check": true,
+      "install_policy": {
+        "allow_driving_download": false,
+        "install_requires": {
+          "vehicle_mode": "PARKED",
+          "ignition": "OFF",
+          "update_mode": "READY",
+          "gear": "P",
+          "speed": 0,
+          "parking_brake": "ON",
+          "min_battery": 30,
+          "driver_approved": true,
+          "network": "CONNECTED",
+          "target_system_running": false
+        }
+      },
+      "rollback": { "fallback_slot": "A", "fallback_required": true },
+
+      "artifact_type": "docker_image",
+      "docker_image": "sdv/adas-feature:v2.0",
+      "image_digest": "sha256:<filled_after_docker_build>",
+
+      "package_path": "deploy/packages/ADAS/v2.0",
+      "manifest_path": "deploy/packages/ADAS/v2.0/manifest.json",
+      "created_at": "2026-05-06T00:00:00Z"
+    },
+    {
+      "package_id": "Navigation_1.0_example",
+      "feature": "Navigation",
+      "version": "1.0",
+      "role": "stable",
+      "binary": "NavigationFeature",
+      "description": "Example Navigation feature Docker image package v1.0",
+      "compatible_models": ["GEN1"],
+      "compatible_regions": ["KR"],
+      "requires_safety_check": true,
+      "install_policy": {
+        "allow_driving_download": false,
+        "install_requires": {
+          "vehicle_mode": "PARKED",
+          "ignition": "OFF",
+          "update_mode": "READY",
+          "gear": "P",
+          "speed": 0,
+          "parking_brake": "ON",
+          "min_battery": 30,
+          "driver_approved": true,
+          "network": "CONNECTED",
+          "target_system_running": false
+        }
+      },
+      "rollback": { "fallback_slot": "A", "fallback_required": true },
+
+      "artifact_type": "docker_image",
+      "docker_image": "sdv/navigation-feature:v1.0",
+      "image_digest": "sha256:<filled_after_docker_build>",
+
+      "package_path": "deploy/packages/Navigation/v1.0",
+      "manifest_path": "deploy/packages/Navigation/v1.0/manifest.json",
+      "created_at": "2026-05-06T00:00:00Z"
+    }
+  ]
+}
+

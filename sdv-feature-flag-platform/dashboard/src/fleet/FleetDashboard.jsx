@@ -27,13 +27,24 @@ function FeatureStatusBadge({ name, feat }) {
   const kill = Boolean(feat.kill_switch);
   const shadow = Boolean(feat.shadow_enabled);
   const rollout = featureShadowRolloutActive(feat);
-  const slot = feat.active_slot || "—";
-  const ver = feat.active_version || "—";
-  const sSlot = feat.shadow_slot;
-  const sVer = feat.shadow_version;
+  const primarySlot = feat.primary_slot || feat.active_slot || "—";
+  const primaryVer = feat.primary_version || feat.active_version || "—";
+  const primaryImg = feat.primary_image || "";
+
+  const shadowSlot = feat.shadow_slot || "—";
+  const shadowVer = feat.shadow_version || "—";
+  const shadowImg = feat.shadow_image || "";
 
   const lines = [];
-  lines.push({ text: `${slot} / ${ver}`, cls: "fb-line" });
+  // Show Primary/Shadow explicitly (A/B is secondary detail).
+  lines.push({
+    text: `PRIMARY → ${primaryVer}${primaryImg ? ` (${primaryImg})` : ""}  [slot ${primarySlot}]`,
+    cls: "fb-line",
+  });
+  lines.push({
+    text: shadow ? `SHADOW  → ${shadowVer}${shadowImg ? ` (${shadowImg})` : ""}  [slot ${shadowSlot}]` : "SHADOW  → OFF",
+    cls: classNames("fb-line", shadow && "fb-info"),
+  });
   lines.push({
     text: `FLAG ${flag === "ON" ? "ON" : "OFF"}`,
     cls: classNames("fb-line", flag !== "ON" && "fb-warn"),
@@ -43,20 +54,7 @@ function FeatureStatusBadge({ name, feat }) {
     cls: classNames("fb-line", kill && "fb-danger"),
   });
   if (rollout) {
-    lines.push({
-      text: `SHADOW rollout → ${sVer || "—"} (≠ ${ver})`,
-      cls: classNames("fb-line", "fb-info"),
-    });
-  } else if (shadow && (sSlot || sVer)) {
-    lines.push({
-      text: `SHADOW admin ON → ${sSlot || "—"} / ${sVer || "—"}`,
-      cls: classNames("fb-line", "fb-info"),
-    });
-  } else {
-    lines.push({
-      text: shadow ? "SHADOW admin ON" : "SHADOW OFF",
-      cls: classNames("fb-line", shadow && "fb-info"),
-    });
+    lines.push({ text: "SHADOW rollout ACTIVE (Primary ≠ Shadow)", cls: classNames("fb-line", "fb-info") });
   }
 
   if (name === "Navigation") {

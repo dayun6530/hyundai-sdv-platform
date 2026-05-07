@@ -3,7 +3,7 @@
   "features": {
     "ADAS": {
       "A": { "version": "v0.1", "role": "stable",    "binary": "AdasFeature" },
-      "B": { "version": "v0.2", "role": "candidate", "binary": "AdasFeature" }
+      "B": { "version": "v0.4", "role": "candidate", "binary": "AdasFeature" }
     },
     "Navigation": {
       "A": { "version": "v1.0", "role": "stable",    "binary": "NavigationFeature" },

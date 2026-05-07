@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdv-ota-manager/platform/deploy/manifest.schema.json",
+  "title": "SDV Docker Package Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "domain": { "type": "string", "description": "Domain label (e.g. ADAS, Navigation, Energy)" },
+    "feature": { "type": "string", "description": "Build target / executable name (legacy) or feature identifier" },
+    "feature_scope": {
+      "type": "string",
+      "description": "Optional scope of this package. domain=full feature image (ADAS/Navigation/Energy). sub_feature=component inside a domain that may become an independent image/version later.",
+      "enum": ["domain", "sub_feature"]
+    },
+    "sub_feature": {
+      "type": "string",
+      "description": "Optional sub-feature key when feature_scope=sub_feature (e.g. realtime_route | voice_guidance | charging_recommend)."
+    },
+    "version": { "type": "string", "description": "Semantic-ish version token without leading v (e.g. 2.0)" },
+
+    "rollout_stage": { "type": "string", "description": "Optional progressive rollout stage label (e.g. canary|beta|stable). Metadata only in this step." },
+    "rollout_group": { "type": "string", "description": "Optional target group label for rollout planning (e.g. canary). Metadata only in this step." },
+    "rollout_order": { "type": "number", "description": "Optional rollout sequence order (e.g. canary=1, beta=2, stable=3). Metadata only in this step." },
+    "promotion_required": { "type": "boolean", "description": "Optional: requires explicit promotion step after shadow validation (metadata only)." },
+    "rollout_policy": { "type": "object", "description": "Optional free-form rollout policy object (thresholds, limits). Metadata only in this step.", "additionalProperties": true },
+
+    "artifact_type": {
+      "type": "string",
+      "description": "Deployment unit type",
+      "enum": ["docker_image", "executable"]
+    },
+    "docker_image": { "type": "string", "description": "Docker image tag (e.g. sdv/adas-feature:v2.0)" },
+    "image_digest": { "type": "string", "description": "Optional immutable identifier (preferred: repo digest sha256:...; fallback: local image Id sha256:...). Auto-fill best-effort after docker build." },
+    "image_digest_source": { "type": "string", "description": "Optional provenance for image_digest (e.g. repo_digest | image_id)" },
+
+    "checksum_file": { "type": "string", "description": "Checksum file path relative to package dir. NOTE: validates packaged artifact in image build context (e.g. copied executable), not the docker image itself." },
+    "checksum": { "type": "string", "description": "Optional direct checksum value (if stored inline)" },
+
+    "executable_name": { "type": "string", "description": "Legacy: executable file name copied into the image (e.g. AdasFeature)" },
+    "binary_name": { "type": "string", "description": "Legacy alias for executable_name" },
+
+    "default_role": { "type": "string", "description": "Default package role (e.g. candidate/stable)" },
+    "slot_role": { "type": "string", "description": "Legacy role field retained for compatibility" },
+    "supported_targets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Supported deployment targets (e.g. ['docker'])"
+    },
+
+    "created_at": { "type": "string", "description": "UTC timestamp ISO-8601 (e.g. 2026-05-06T00:00:00Z)" },
+    "status": { "type": "string", "description": "Optional lifecycle status for tooling (e.g. registered/built/failed)" },
+    "failure_reason": { "type": "string", "description": "Optional failure reason when status indicates failure" }
+  },
+  "required": ["domain", "feature", "version", "artifact_type", "docker_image", "checksum_file", "created_at", "supported_targets"]
+}
+

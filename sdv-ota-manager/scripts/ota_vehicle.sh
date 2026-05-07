@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # 차량별 OTA 데모: Primary / Shadow 컨테이너를 분리해
-#   (1) bootstrap — 둘 다 동일 버전(예: v1.0)
-#   (2) deploy-shadow — Shadow 만 새 이미지(예: v2.0)로 교체
-#   (3) promote — Primary 를 Shadow 와 동일 버전으로 승격(관측 후 확정 배포)
+#   (1) bootstrap     — 둘 다 동일 버전(예: v1.0)
+#   (2) deploy-shadow — Shadow 만 새 이미지(예: v2.0)로 교체해서 "Candidate" 검증 단계로 사용
+#                      (중요) 이 단계는 Primary(운영)를 바꾸지 않습니다.
+#   (3) promote       — Shadow 검증이 성공했다고 판단되면 Primary 를 새 버전으로 승격(확정 배포)
+#                      Shadow 검증 실패 시에는 promote 대신 차단/격리(blocked/quarantine)로 기록하고
+#                      Primary 는 그대로 유지하는 것이 원칙입니다 (DM 정책과 연동은 후속 단계).
 #
 # 배포 검증: 대상 이미지 존재 확인 → 후보 컨테이너(_deploynext)로 기동·Running 검사 후
 #            기존 컨테이너 제거 및 이름 교체. 실패 시 기존 인스턴스는 유지되거나 Primary 롤백.
@@ -176,8 +179,8 @@ rollback_primary_to_saved_version() {
 }
 
 # Align platform/deploy/state/<car>.json with deploy/vehicle_runtime/<car>.json:
-#   primary_version  -> features.*.active_version
-#   shadow_version   -> features.*.shadow_version
+#   primary_version  -> features.*.active_version  + primary_image
+#   shadow_version   -> features.*.shadow_version  + shadow_image
 #   shadow_enabled   -> features.*.shadow_enabled (or inferred from version mismatch)
 sync_platform_fleet_state_from_vehicle_runtime_json() {
   local cid="${1:-}"
@@ -216,6 +219,18 @@ with open(rt_path, "r", encoding="utf-8") as f:
 with open(fl_path, "r", encoding="utf-8") as f:
     fl = json.load(f)
 
+
+def repo_for(dom: str) -> str:
+    d = (dom or "").strip().lower()
+    if d == "adas":
+        return "sdv/adas-feature"
+    if d == "navigation" or d == "nav":
+        return "sdv/navigation-feature"
+    if d in ("energy", "evenergy", "ev"):
+        return "sdv/evenergy-feature"
+    return f"sdv/{d or 'feature'}-feature"
+
+
 m = {"adas": "ADAS", "navigation": "Navigation", "evenergy": "Energy"}
 features = fl.setdefault("features", {})
 for dom, fk in m.items():
@@ -230,12 +245,16 @@ for dom, fk in m.items():
     pv = vfmt(pv_raw) if pv_raw else ""
     if pv:
         blk["active_version"] = pv
+        repo = repo_for(dom)
+        blk["primary_image"] = f"{repo}:{pv}"
     if sv_raw == "":
         blk["shadow_version"] = ""
     else:
         sv = vfmt(sv_raw)
         if sv:
             blk["shadow_version"] = sv
+            repo = repo_for(dom)
+            blk["shadow_image"] = f"{repo}:{sv}"
     se = cur.get("shadow_enabled")
     if isinstance(se, bool):
         blk["shadow_enabled"] = se
@@ -485,6 +504,10 @@ case "$CMD" in
     else
       echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary updated to v${VERSION#v} (${IMG})."
     fi
+    # NOTE (metadata sync): this script updates deploy/vehicle_runtime/<car>.json and best-effort aligns
+    # platform/deploy/state/<car>.json versions. If you want rollback_stack / primary_image metadata to
+    # reflect this promotion event, call (metadata-only; no container ops):
+    #   DeploymentMgr fleet-promote-shadow vehicle <car_id> <ADAS|Navigation|Energy>
     sleep 1
     echo "Primary 로그:"
     docker logs --tail 8 "$PRIMARY_NAME" 2>/dev/null || true

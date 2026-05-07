@@ -1,3 +1,3 @@
-/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/DeploymentMgr.dir
-/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/edit_cache.dir
-/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/DeploymentMgr.dir
+/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/rebuild_cache.dir

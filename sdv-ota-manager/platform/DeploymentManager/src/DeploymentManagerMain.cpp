@@ -38,9 +38,11 @@ namespace {
             << "                      Optional trailing --sync-config: after successful state deploy, sync config/car/<id>.conf\n"
             << "                      vehicle only: default deferred native rollout (pending_active_*; active unchanged until apply-pending-native-car / restart). --no-defer-native restores immediate OTA-safety-gated active update.\n"
             << "  fleet-set-approval <car_id> <true|false>\n"
-            << "  fleet-rollback vehicle <car_id> <FEATURE> [--sync-config]\n"
+            << "  fleet-rollback vehicle <car_id> <FEATURE> [--target-version <vX.Y>] [--sync-config]\n"
             << "                      FEATURE=ADAS|Navigation|Energy; car_id=car_1..car_10\n"
-            << "                      Restores deploy/state from deploy/rollback/<car>/<FEATURE>.json; optional --sync-config rewrites config/car/<id>.conf from state\n"
+            << "                      Default: restores deploy/state from deploy/rollback/<car>/<FEATURE>.json.\n"
+            << "                      Optional --target-version: restore active_version from feature.rollback_stack (state-based metadata).\n"
+            << "                      Optional --sync-config: rewrite config/car/<id>.conf from state\n"
             << "  fleet-flag vehicle <car_id> <FEATURE> <ON|OFF> [--sync-config]\n"
             << "                      Administrative feature flag in deploy/state only (not Kill Switch / not Shadow).\n"
             << "                      Optional --sync-config: rewrite config/car/<id>.conf from state (active_slot block; flag may not map to a .conf line).\n"
@@ -49,6 +51,15 @@ namespace {
             << "                      reason is a non-empty token (e.g. lane_detection_error). Optional --sync-config syncs .conf from state after kill.\n"
             << "  fleet-shadow vehicle <car_id> <FEATURE> <ON|OFF>\n"
             << "                      Records shadow mode in deploy/state (shadow_slot B + B version from version_map when ON). No config sync (--sync-config not supported).\n"
+            << "  fleet-promote-shadow vehicle <car_id> <FEATURE>\n"
+            << "                      Metadata-only: promote Shadow -> Primary in deploy/state, push previous primary to rollback_stack (cap 3), disable Shadow.\n"
+            << "                      Does NOT execute docker containers (use scripts/ota_vehicle.sh promote for runtime).\n"
+            << "  fleet-ack <car_id> <FEATURE> <ACK_STATUS> <message...> [--version <vX.Y>] [--deploy-id <id>]\n"
+            << "                      Record a vehicle ACK into deploy/state/<car>.json (file-based; no MQTT/HTTP in this step).\n"
+            << "\n"
+            << "Terminology notes (compatibility):\n"
+            << "  - In deploy/state: active_* is legacy alias for primary_* (Docker runtime terminology).\n"
+            << "  - A/B slot is a legacy version_map selector; it is NOT the same concept as Shadow.\n"
             << "\n"
             << "Default config: config/SdvPlatform.conf (override with --config, e.g. config/car/car_1.conf)\n";
     }
@@ -140,6 +151,80 @@ int main(int argc, char* argv[]) {
         std::cout << "[FLEET] set approval OK car_id=" << car_id << " driver_approved=" << (approved ? "true" : "false") << "\n";
         return 0;
     }
+    if (cmd == "fleet-ack") {
+        if (positional.size() < 5) {
+            std::cerr << "Usage: DeploymentMgr fleet-ack <car_id> <FEATURE> <ACK_STATUS> <message...> [--version <vX.Y>] [--deploy-id <id>]\n";
+            return 1;
+        }
+        const std::string car_id = positional[1];
+        const std::string feature = positional[2];
+        const std::string ack_status = positional[3];
+
+        std::string version;
+        std::string deploy_id;
+        std::vector<std::string> msgParts;
+        for (std::size_t i = 4; i < positional.size(); ++i) {
+            const std::string a = positional[i];
+            if (a == "--version" && i + 1 < positional.size()) {
+                version = positional[++i];
+                continue;
+            }
+            if (a == "--deploy-id" && i + 1 < positional.size()) {
+                deploy_id = positional[++i];
+                continue;
+            }
+            if (!a.empty() && a[0] == '-') {
+                std::cerr << "Unknown fleet-ack option: " << a << "\n";
+                return 1;
+            }
+            msgParts.push_back(a);
+        }
+        std::string message;
+        for (std::size_t i = 0; i < msgParts.size(); ++i) {
+            if (i) message.push_back(' ');
+            message += msgParts[i];
+        }
+
+        sdv::platform::deployment::StateManager sm(".");
+        std::string err;
+        const bool ok = sm.recordAck(car_id, feature, ack_status, message, version, deploy_id, err);
+        if (!ok) {
+            std::cerr << "[FLEET] ack FAILED: " << (err.empty() ? "unknown" : err) << "\n";
+        } else {
+            std::cout << "[FLEET] ack OK car_id=" << car_id << " feature=" << feature
+                      << " status=" << ack_status << "\n";
+        }
+
+        // Minimal summary JSON for automation/log scraping (status-server parses [SUMMARY_JSON]).
+        // Keep this local (no DeploymentManager API changes) and backward-compatible.
+        auto jsonEscape = [](const std::string& s) {
+            std::string out;
+            out.reserve(s.size() + 8);
+            for (const char c : s) {
+                switch (c) {
+                case '\\': out += "\\\\"; break;
+                case '"': out += "\\\""; break;
+                case '\n': out += "\\n"; break;
+                case '\r': out += "\\r"; break;
+                case '\t': out += "\\t"; break;
+                default: out.push_back(c); break;
+                }
+            }
+            return out;
+        };
+        std::cout << "[SUMMARY_JSON] {"
+                  << "\"action\":\"fleet-ack\","
+                  << "\"car_id\":\"" << jsonEscape(car_id) << "\","
+                  << "\"feature\":\"" << jsonEscape(feature) << "\","
+                  << "\"ack_status\":\"" << jsonEscape(ack_status) << "\","
+                  << "\"version\":\"" << jsonEscape(version) << "\","
+                  << "\"deploy_id\":\"" << jsonEscape(deploy_id) << "\","
+                  << "\"message\":\"" << jsonEscape(message) << "\","
+                  << "\"result\":\"" << (ok ? "success" : "failed") << "\","
+                  << "\"reason\":\"" << jsonEscape(err) << "\""
+                  << " }\n";
+        return ok ? 0 : 1;
+    }
     if (cmd == "fleet-rollback") {
         std::vector<std::string> fr;
         fr.reserve(positional.size());
@@ -147,19 +232,30 @@ int main(int argc, char* argv[]) {
             fr.emplace_back(positional[i]);
         }
         bool sync_config = false;
-        while (!fr.empty() && fr.back() == "--sync-config") {
-            sync_config = true;
-            fr.pop_back();
+        std::string target_version;
+        while (true) {
+            if (!fr.empty() && fr.back() == "--sync-config") {
+                sync_config = true;
+                fr.pop_back();
+                continue;
+            }
+            if (fr.size() >= 2 && fr[fr.size() - 2] == "--target-version") {
+                target_version = fr.back();
+                fr.pop_back();
+                fr.pop_back();
+                continue;
+            }
+            break;
         }
         for (const auto& a : fr) {
             if (!a.empty() && a[0] == '-') {
                 std::cerr << "Unknown or misplaced fleet-rollback option: " << a
-                          << " (only trailing --sync-config is supported)\n";
+                          << " (supported trailing options: --sync-config, --target-version <vX.Y>)\n";
                 return 1;
             }
         }
         if (fr.empty()) {
-            std::cerr << "Usage: DeploymentMgr fleet-rollback vehicle <car_id> <FEATURE> [--sync-config]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-rollback vehicle <car_id> <FEATURE> [--target-version <vX.Y>] [--sync-config]\n";
             return 1;
         }
         if (fr[0] != "vehicle") {
@@ -173,12 +269,12 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         if (fr.size() != 3) {
-            std::cerr << "Usage: DeploymentMgr fleet-rollback vehicle <car_id> <FEATURE> [--sync-config]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-rollback vehicle <car_id> <FEATURE> [--target-version <vX.Y>] [--sync-config]\n";
             return 1;
         }
         sdv::platform::deployment::DeploymentManager::FleetRollbackSummary sum;
         std::string err;
-        const bool ok = dm.fleetRollbackVehicle(fr[1], fr[2], sync_config, sum, err);
+        const bool ok = dm.fleetRollbackVehicle(fr[1], fr[2], sync_config, sum, err, target_version);
         dm.printFleetRollbackSummary(sum);
         dm.emitSummaryJsonWithFleetHistory(dm.fleetRollbackSummaryToJson(sum));
         return ok ? 0 : 1;
@@ -310,6 +406,24 @@ int main(int argc, char* argv[]) {
         const bool ok = dm.fleetShadowVehicle(sh[1], sh[2], sh[3], sum, err);
         dm.printFleetShadowSummary(sum);
         dm.emitSummaryJsonWithFleetHistory(dm.fleetShadowSummaryToJson(sum));
+        return ok ? 0 : 1;
+    }
+    if (cmd == "fleet-promote-shadow") {
+        std::vector<std::string> fp;
+        fp.reserve(positional.size());
+        for (std::size_t i = 1; i < positional.size(); ++i) {
+            fp.emplace_back(positional[i]);
+        }
+        if (fp.size() != 3 || fp[0] != "vehicle") {
+            std::cerr << "Usage: DeploymentMgr fleet-promote-shadow vehicle <car_id> <FEATURE>\n";
+            return 1;
+        }
+        std::string msg;
+        const bool ok = dm.fleetPromoteShadowVehicle(fp[1], fp[2], msg);
+        std::cout << (ok ? "[fleet-promote-shadow] " : "[fleet-promote-shadow] ERROR: ") << msg << "\n";
+        dm.emitSummaryJsonWithFleetHistory(std::string("{\"action\":\"fleet-promote-shadow\",\"scope\":\"vehicle\",\"car_id\":\"") +
+            fp[1] + "\",\"feature\":\"" + fp[2] + "\",\"ok\":" + (ok ? "true" : "false") +
+            ",\"message\":\"" + msg + "\"}");
         return ok ? 0 : 1;
     }
     if (cmd == "apply-pending-native-car") {

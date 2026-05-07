@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "vehicles": [
+    { "car_id": "car_1", "model": "IONIQ5",  "region": "KR", "group": "canary", "status": "online" },
+    { "car_id": "car_2", "model": "IONIQ5",  "region": "KR", "group": "beta",   "status": "online" },
+    { "car_id": "car_3", "model": "IONIQ6",  "region": "US", "group": "beta",   "status": "online" },
+    { "car_id": "car_4", "model": "KONA_EV", "region": "EU", "group": "stable", "status": "online" },
+    { "car_id": "car_5", "model": "IONIQ5",  "region": "KR", "group": "stable", "status": "online" },
+    { "car_id": "car_6", "model": "IONIQ6",  "region": "US", "group": "stable", "status": "online" },
+    { "car_id": "car_7", "model": "KONA_EV", "region": "EU", "group": "stable", "status": "online" },
+    { "car_id": "car_8", "model": "IONIQ5",  "region": "KR", "group": "stable", "status": "online" },
+    { "car_id": "car_9", "model": "IONIQ6",  "region": "US", "group": "beta",   "status": "online" },
+    { "car_id": "car_10","model": "KONA_EV", "region": "KR", "group": "canary", "status": "online" }
+  ]
+}
+

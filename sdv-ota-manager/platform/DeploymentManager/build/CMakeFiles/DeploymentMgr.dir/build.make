@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager
+CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build
+CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/DeploymentMgr.dir/depend.make
@@ -69,127 +69,127 @@ include CMakeFiles/DeploymentMgr.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/DeploymentMgr.dir/flags.make
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp
-CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp
+CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp
+CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.i
+CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.s
+CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s
 
-CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp
-CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o -MF CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o.d -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp
+CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp
+CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp > CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.i
+CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp > CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.s
+CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/ConfigUpdater.cpp -o CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.i
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.s
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s
 
-CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp
-CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o -MF CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o.d -o CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp
+CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp
+CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp > CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.i
+CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp > CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp -o CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.s
+CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VehicleRegistry.cpp -o CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s
 
-CMakeFiles/DeploymentMgr.dir/src/VersionManager.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/VersionManager.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp
-CMakeFiles/DeploymentMgr.dir/src/VersionManager.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/VersionManager.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/VersionManager.o -MF CMakeFiles/DeploymentMgr.dir/src/VersionManager.o.d -o CMakeFiles/DeploymentMgr.dir/src/VersionManager.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp
+CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp
+CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/VersionManager.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/VersionManager.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp > CMakeFiles/DeploymentMgr.dir/src/VersionManager.i
+CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp > CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/VersionManager.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/VersionManager.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/VersionManager.s
+CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/VersionManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s
 
-CMakeFiles/DeploymentMgr.dir/src/StateManager.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/StateManager.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp
-CMakeFiles/DeploymentMgr.dir/src/StateManager.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/StateManager.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/StateManager.o -MF CMakeFiles/DeploymentMgr.dir/src/StateManager.o.d -o CMakeFiles/DeploymentMgr.dir/src/StateManager.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp
+CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp
+CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/StateManager.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/StateManager.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp > CMakeFiles/DeploymentMgr.dir/src/StateManager.i
+CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp > CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/StateManager.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/StateManager.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/StateManager.s
+CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/StateManager.cpp -o CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o: CMakeFiles/DeploymentMgr.dir/flags.make
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: CMakeFiles/DeploymentMgr.dir/flags.make
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o: CMakeFiles/DeploymentMgr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o -MF CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o.d -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.i
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp > CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i
 
-CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.s
+CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/src/DeploymentManagerMain.cpp -o CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s
 
 # Object files for target DeploymentMgr
 DeploymentMgr_OBJECTS = \
-"CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o" \
-"CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o" \
-"CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o" \
-"CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o" \
-"CMakeFiles/DeploymentMgr.dir/src/VersionManager.o" \
-"CMakeFiles/DeploymentMgr.dir/src/StateManager.o" \
-"CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o"
+"CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o" \
+"CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o"
 
 # External object files for target DeploymentMgr
 DeploymentMgr_EXTERNAL_OBJECTS =
 
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/VersionManager.o
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/StateManager.o
-DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o
+DeploymentMgr: CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o
 DeploymentMgr: CMakeFiles/DeploymentMgr.dir/build.make
 DeploymentMgr: CMakeFiles/DeploymentMgr.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable DeploymentMgr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable DeploymentMgr"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/DeploymentMgr.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -201,6 +201,6 @@ CMakeFiles/DeploymentMgr.dir/clean:
 .PHONY : CMakeFiles/DeploymentMgr.dir/clean
 
 CMakeFiles/DeploymentMgr.dir/depend:
-	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/DeploymentMgr.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/DeploymentMgr.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/DeploymentMgr.dir/depend
 

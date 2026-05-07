@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DSDV_FEATURE_NO_MAIN -DSDV_LIFECYCLE_HAS_NJSON=1
 
-CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Feature/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
+CXX_INCLUDES = -I/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Feature/include -I/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include -I/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
 
 CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic -pthread
 

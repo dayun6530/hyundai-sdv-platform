@@ -75,10 +75,45 @@ function execWslBash(args, options = {}) {
 }
 
 function detectDeploymentMgrPath() {
-  const unleash = path.join(REPO_ROOT, "build_unleash", "DeploymentMgr");
-  const normal = path.join(REPO_ROOT, "build", "DeploymentMgr");
-  if (fs.existsSync(unleash)) return { winPath: unleash, wslPath: toWslPath(unleash) };
-  return { winPath: normal, wslPath: toWslPath(normal) };
+  const envPreferred = process.env.SDV_DEPLOYMENT_MGR_EXE && String(process.env.SDV_DEPLOYMENT_MGR_EXE).trim();
+  const envFallback = process.env.DEPLOYMENT_MGR_EXE && String(process.env.DEPLOYMENT_MGR_EXE).trim();
+
+  // Candidate search list (in priority order). Keep platform build fallbacks for backwards compatibility.
+  const candidates = [
+    envPreferred,
+    envFallback,
+    // Independent module build (preferred when platform does not build DeploymentManager).
+    path.resolve(REPO_ROOT, "..", "sdv-ota-manager", "platform", "DeploymentManager", "build", "DeploymentMgr"),
+    // Legacy platform builds.
+    path.join(REPO_ROOT, "build_unleash", "DeploymentMgr"),
+    path.join(REPO_ROOT, "build", "DeploymentMgr"),
+  ]
+    .filter(Boolean)
+    .map((p) => path.resolve(String(p)));
+
+  const tried = [];
+  for (const p of candidates) {
+    tried.push(p);
+    if (fs.existsSync(p)) {
+      return { winPath: p, wslPath: toWslPath(p), tried };
+    }
+  }
+
+  const msg =
+    "DeploymentMgr executable not found.\n" +
+    "Tried:\n" +
+    tried.map((p) => `  - ${p}`).join("\n") +
+    "\n\n" +
+    "Fix options:\n" +
+    "  - Set SDV_DEPLOYMENT_MGR_EXE to the full Windows path of DeploymentMgr\n" +
+    "    Example: setx SDV_DEPLOYMENT_MGR_EXE \"C:\\path\\to\\DeploymentMgr\"\n" +
+    "  - Or build the independent module:\n" +
+    "    sdv-ota-manager/platform/DeploymentManager/build/DeploymentMgr\n" +
+    "  - Or build the platform targets (legacy):\n" +
+    "    sdv-feature-flag-platform/build_unleash/DeploymentMgr";
+  const err = new Error(msg);
+  err.tried = tried;
+  throw err;
 }
 
 function readJson(filePath) {
@@ -345,6 +380,42 @@ app.get("/api/fleet/version-map", (_req, res) => {
 const PACKAGE_REGISTRY_PATH = path.join(DEPLOY_ROOT, "package_registry.json");
 const PKG_FEATURES = new Set(["ADAS", "Navigation", "Energy"]);
 const PKG_ROLES = new Set(["candidate", "stable", "experimental"]);
+const PKG_ARTIFACT_TYPES = new Set(["docker_image", "executable"]);
+
+function dockerTagVersionFromVersionToken(versionToken) {
+  const v = String(versionToken || "").trim();
+  if (!v) return "";
+  if ((v[0] === "v" || v[0] === "V") && v[1] !== undefined && /[0-9]/.test(v[1])) {
+    return `v${v.slice(1)}`;
+  }
+  return `v${v}`;
+}
+
+function normalizeFeatureKey(raw) {
+  // Make feature comparisons robust across user input styles:
+  // - case-insensitive
+  // - accept EvEnergy / EVENERGY / evenergy / energy variants
+  // - strip separators like "_" and "-"
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+}
+
+function defaultDockerRepoForFeature(feature) {
+  const f = normalizeFeatureKey(feature);
+  if (f === "adas") return "sdv/adas-feature";
+  if (f === "navigation" || f === "nav") return "sdv/navigation-feature";
+  if (f === "energy" || f === "evenergy" || f === "ev") return "sdv/evenergy-feature";
+  return `sdv/${f || "unknown"}-feature`;
+}
+
+function normalizeArtifactType(raw, fallback) {
+  const t = String(raw || "").trim();
+  if (!t) return fallback;
+  if (PKG_ARTIFACT_TYPES.has(t)) return t;
+  return fallback;
+}
 
 function defaultPackageRegistry() {
   return { schema_version: 1, packages: [] };
@@ -520,15 +591,44 @@ app.post("/api/fleet/package-register", (req, res) => {
     package_id_in ||
     `${feature}_${version}_${now.slice(0, 10).replace(/-/g, "")}_${now.slice(11, 19).replace(/:/g, "")}`;
 
-  const package_path = `deploy/packages/${feature}/${version}`;
+  const versionDir = versionRaw[0] === "v" || versionRaw[0] === "V" ? version : `v${version}`;
+  const package_path = `deploy/packages/${feature}/${versionDir}`;
   const manifest_path = `${package_path}/manifest.json`;
 
+  // ---- Docker-oriented metadata (backward-compatible, optional inputs) ----
+  const artifact_type = normalizeArtifactType(body.artifact_type, "docker_image");
+  const docker_image_in = String(body.docker_image || "").trim();
+  const docker_image =
+    docker_image_in ||
+    `${defaultDockerRepoForFeature(feature)}:${dockerTagVersionFromVersionToken(version) || "v0.0"}`;
+  const image_digest = String(body.image_digest || "").trim();
+  const image_digest_source = String(body.image_digest_source || "").trim();
+  const checksum_file = String(body.checksum_file || "").trim() || "checksum.sha256";
+  const checksum = String(body.checksum || "").trim();
+  const supported_targets = Array.isArray(body.supported_targets) && body.supported_targets.length
+    ? body.supported_targets.map((x) => String(x).trim()).filter(Boolean)
+    : ["docker"];
+  const binary_name = String(body.binary_name || "").trim() || binary;
+  const executable_name = String(body.executable_name || "").trim() || binary;
+
   const manifest = {
+    // NOTE: manifest.schema.json uses "domain" to mean the high-level feature domain (ADAS/Navigation/Energy).
+    // For this UI/server, "feature" already carries that domain label; we write both for compatibility.
+    domain: feature,
     package_id,
     feature,
     version,
     role,
     binary,
+    artifact_type,
+    docker_image,
+    image_digest,
+    image_digest_source,
+    checksum_file,
+    checksum,
+    executable_name,
+    binary_name,
+    supported_targets,
     package_path,
     manifest_path,
     description,
@@ -688,7 +788,8 @@ app.post("/api/fleet/version-map/assign", (req, res) => {
   }
 
   const previous = { ...vm.features[feature][slotRaw] };
-  const package_path = String(pkg.package_path || "").trim() || `deploy/packages/${feature}/${version}`;
+  const vDir = version[0] === "v" || version[0] === "V" ? version : `v${version}`;
+  const package_path = String(pkg.package_path || "").trim() || `deploy/packages/${feature}/${vDir}`;
   const assigned = {
     version,
     binary,
@@ -923,7 +1024,13 @@ app.post("/api/fleet/driver-approval", async (req, res) => {
   }
 
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
-  const dm = detectDeploymentMgrPath();
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
   const cmd =
     `cd ${repoWsl} && ` +
     `${dm.wslPath} fleet-set-approval ${car_id} ${approved ? "true" : "false"}`;
@@ -1262,7 +1369,13 @@ app.post("/api/fleet/action", async (req, res) => {
   }
 
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
-  const dm = detectDeploymentMgrPath();
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
   let cmd = `cd ${repoWsl} && ${dm.wslPath} `;
 
   if (action === "rollback") {
@@ -1379,7 +1492,13 @@ app.post("/api/fleet/deploy", async (req, res) => {
   }
 
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
-  const dm = detectDeploymentMgrPath();
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
   let cmd = `cd ${repoWsl} && ${dm.wslPath} fleet-deploy ${scope} `;
   if (scope === "vehicle") {
     if (!car_id) return res.status(400).json({ ok: false, error: "car_id required" });

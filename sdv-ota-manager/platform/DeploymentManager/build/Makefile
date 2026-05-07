@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager
+CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build
+CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -129,110 +129,173 @@ DeploymentMgr/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/build
 .PHONY : DeploymentMgr/fast
 
-# target to build an object file
-src/ConfigUpdater.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.o
+src/ConfigUpdater.o: src/ConfigUpdater.cpp.o
 .PHONY : src/ConfigUpdater.o
 
-# target to preprocess a source file
-src/ConfigUpdater.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.i
+# target to build an object file
+src/ConfigUpdater.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.o
+.PHONY : src/ConfigUpdater.cpp.o
+
+src/ConfigUpdater.i: src/ConfigUpdater.cpp.i
 .PHONY : src/ConfigUpdater.i
 
-# target to generate assembly for a file
-src/ConfigUpdater.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.s
+# target to preprocess a source file
+src/ConfigUpdater.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.i
+.PHONY : src/ConfigUpdater.cpp.i
+
+src/ConfigUpdater.s: src/ConfigUpdater.cpp.s
 .PHONY : src/ConfigUpdater.s
 
-# target to build an object file
-src/DeploymentHistory.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.o
+# target to generate assembly for a file
+src/ConfigUpdater.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/ConfigUpdater.cpp.s
+.PHONY : src/ConfigUpdater.cpp.s
+
+src/DeploymentHistory.o: src/DeploymentHistory.cpp.o
 .PHONY : src/DeploymentHistory.o
 
-# target to preprocess a source file
-src/DeploymentHistory.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.i
+# target to build an object file
+src/DeploymentHistory.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o
+.PHONY : src/DeploymentHistory.cpp.o
+
+src/DeploymentHistory.i: src/DeploymentHistory.cpp.i
 .PHONY : src/DeploymentHistory.i
 
-# target to generate assembly for a file
-src/DeploymentHistory.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.s
+# target to preprocess a source file
+src/DeploymentHistory.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.i
+.PHONY : src/DeploymentHistory.cpp.i
+
+src/DeploymentHistory.s: src/DeploymentHistory.cpp.s
 .PHONY : src/DeploymentHistory.s
 
-# target to build an object file
-src/DeploymentManager.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.o
+# target to generate assembly for a file
+src/DeploymentHistory.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.s
+.PHONY : src/DeploymentHistory.cpp.s
+
+src/DeploymentManager.o: src/DeploymentManager.cpp.o
 .PHONY : src/DeploymentManager.o
 
-# target to preprocess a source file
-src/DeploymentManager.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.i
+# target to build an object file
+src/DeploymentManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.o
+.PHONY : src/DeploymentManager.cpp.o
+
+src/DeploymentManager.i: src/DeploymentManager.cpp.i
 .PHONY : src/DeploymentManager.i
 
-# target to generate assembly for a file
-src/DeploymentManager.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.s
+# target to preprocess a source file
+src/DeploymentManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.i
+.PHONY : src/DeploymentManager.cpp.i
+
+src/DeploymentManager.s: src/DeploymentManager.cpp.s
 .PHONY : src/DeploymentManager.s
 
-# target to build an object file
-src/DeploymentManagerMain.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.o
+# target to generate assembly for a file
+src/DeploymentManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManager.cpp.s
+.PHONY : src/DeploymentManager.cpp.s
+
+src/DeploymentManagerMain.o: src/DeploymentManagerMain.cpp.o
 .PHONY : src/DeploymentManagerMain.o
 
-# target to preprocess a source file
-src/DeploymentManagerMain.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.i
+# target to build an object file
+src/DeploymentManagerMain.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.o
+.PHONY : src/DeploymentManagerMain.cpp.o
+
+src/DeploymentManagerMain.i: src/DeploymentManagerMain.cpp.i
 .PHONY : src/DeploymentManagerMain.i
 
-# target to generate assembly for a file
-src/DeploymentManagerMain.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.s
+# target to preprocess a source file
+src/DeploymentManagerMain.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.i
+.PHONY : src/DeploymentManagerMain.cpp.i
+
+src/DeploymentManagerMain.s: src/DeploymentManagerMain.cpp.s
 .PHONY : src/DeploymentManagerMain.s
 
-# target to build an object file
-src/StateManager.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/StateManager.o
+# target to generate assembly for a file
+src/DeploymentManagerMain.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/DeploymentManagerMain.cpp.s
+.PHONY : src/DeploymentManagerMain.cpp.s
+
+src/StateManager.o: src/StateManager.cpp.o
 .PHONY : src/StateManager.o
 
-# target to preprocess a source file
-src/StateManager.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/StateManager.i
+# target to build an object file
+src/StateManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.o
+.PHONY : src/StateManager.cpp.o
+
+src/StateManager.i: src/StateManager.cpp.i
 .PHONY : src/StateManager.i
 
-# target to generate assembly for a file
-src/StateManager.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/StateManager.s
+# target to preprocess a source file
+src/StateManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.i
+.PHONY : src/StateManager.cpp.i
+
+src/StateManager.s: src/StateManager.cpp.s
 .PHONY : src/StateManager.s
 
-# target to build an object file
-src/VehicleRegistry.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.o
+# target to generate assembly for a file
+src/StateManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/StateManager.cpp.s
+.PHONY : src/StateManager.cpp.s
+
+src/VehicleRegistry.o: src/VehicleRegistry.cpp.o
 .PHONY : src/VehicleRegistry.o
 
-# target to preprocess a source file
-src/VehicleRegistry.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.i
+# target to build an object file
+src/VehicleRegistry.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.o
+.PHONY : src/VehicleRegistry.cpp.o
+
+src/VehicleRegistry.i: src/VehicleRegistry.cpp.i
 .PHONY : src/VehicleRegistry.i
 
-# target to generate assembly for a file
-src/VehicleRegistry.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.s
+# target to preprocess a source file
+src/VehicleRegistry.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.i
+.PHONY : src/VehicleRegistry.cpp.i
+
+src/VehicleRegistry.s: src/VehicleRegistry.cpp.s
 .PHONY : src/VehicleRegistry.s
 
-# target to build an object file
-src/VersionManager.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VersionManager.o
+# target to generate assembly for a file
+src/VehicleRegistry.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VehicleRegistry.cpp.s
+.PHONY : src/VehicleRegistry.cpp.s
+
+src/VersionManager.o: src/VersionManager.cpp.o
 .PHONY : src/VersionManager.o
 
-# target to preprocess a source file
-src/VersionManager.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VersionManager.i
+# target to build an object file
+src/VersionManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.o
+.PHONY : src/VersionManager.cpp.o
+
+src/VersionManager.i: src/VersionManager.cpp.i
 .PHONY : src/VersionManager.i
 
-# target to generate assembly for a file
-src/VersionManager.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VersionManager.s
+# target to preprocess a source file
+src/VersionManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.i
+.PHONY : src/VersionManager.cpp.i
+
+src/VersionManager.s: src/VersionManager.cpp.s
 .PHONY : src/VersionManager.s
+
+# target to generate assembly for a file
+src/VersionManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DeploymentMgr.dir/build.make CMakeFiles/DeploymentMgr.dir/src/VersionManager.cpp.s
+.PHONY : src/VersionManager.cpp.s
 
 # Help Target
 help:

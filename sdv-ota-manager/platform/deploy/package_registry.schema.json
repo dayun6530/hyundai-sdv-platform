@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdv-ota-manager/platform/deploy/package_registry.schema.json",
+  "title": "SDV Package Registry (Index)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "comment": { "type": "string" },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "package_id": { "type": "string" },
+          "feature": { "type": "string", "description": "Feature label (e.g. ADAS, Navigation, Energy)" },
+          "version": { "type": "string" },
+
+          "artifact_type": { "type": "string", "enum": ["docker_image", "executable"] },
+          "docker_image": { "type": "string" },
+          "image_digest": { "type": "string" },
+          "image_digest_source": { "type": "string" },
+
+          "checksum_file": { "type": "string" },
+          "checksum": { "type": "string" },
+
+          "executable_name": { "type": "string" },
+          "binary": { "type": "string", "description": "Legacy binary/executable name used by some tooling" },
+
+          "default_role": { "type": "string" },
+          "role": { "type": "string", "description": "Legacy role field used by the UI/server example code" },
+          "supported_targets": { "type": "array", "items": { "type": "string" } },
+          "created_at": { "type": "string" },
+
+          "status": { "type": "string" },
+          "failure_reason": { "type": "string" },
+
+          "package_path": { "type": "string" },
+          "manifest_path": { "type": "string" }
+        },
+        "required": ["package_id", "feature", "version", "artifact_type"]
+      }
+    }
+  },
+  "required": ["schema_version", "packages"]
+}
+

@@ -1,0 +1,16 @@
+{
+  "feature": "ADAS",
+  "version": "v0.4",
+  "role": "candidate",
+  "binary": "AdasFeature",
+  "description": "ADAS v0.4 Docker package deployment test",
+  "compatible_models": ["IONIQ5"],
+  "compatible_regions": ["KR"],
+  "artifact_type": "docker_image",
+  "docker_image": "sdv/adas-feature:v0.4",
+  "checksum_file": "checksum.sha256",
+  "supported_targets": ["docker"],
+  "executable_name": "AdasFeature",
+  "binary_name": "AdasFeature"
+}
+
