@@ -5,9 +5,9 @@
   "group": "beta",
   "status": "online",
   "features": {
-    "ADAS":     {
+    "ADAS": {
       "active_slot": "A",
-      "active_version": "v1.0",
+      "active_version": "v2.0",
       "primary_slot": "A",
       "primary_version": "v1.0",
       "pending_active_slot": "",
@@ -15,15 +15,16 @@
       "flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
+      "shadow_version": "",
       "shadow_status": "DISABLED",
       "shadow_mode": "inactive",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v0.1"
+      "fallback_version": "v0.1",
+      "primary_image": "sdv/adas-feature:v2.0"
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "A",
       "active_version": "v1.0",
       "primary_slot": "A",
@@ -35,15 +36,16 @@
       "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
+      "shadow_version": "",
       "shadow_status": "DISABLED",
       "shadow_mode": "inactive",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0"
+      "fallback_version": "v1.0",
+      "primary_image": "sdv/navigation-feature:v1.0"
     },
-    "Energy":     {
+    "Energy": {
       "active_slot": "A",
       "active_version": "v1.0",
       "primary_slot": "A",
@@ -55,16 +57,17 @@
       "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v2.0",
+      "shadow_version": "",
       "shadow_status": "DISABLED",
       "shadow_mode": "inactive",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v0.5"
+      "fallback_version": "v0.5",
+      "primary_image": "sdv/evenergy-feature:v1.0"
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "idle",
     "install_status": "not_started",
     "vehicle_mode": "PARKED",

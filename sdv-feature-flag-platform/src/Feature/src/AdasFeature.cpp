@@ -31,7 +31,12 @@ std::string AdasFeature::distributionVersionLabelForLog() const {
 }
 
 void AdasFeature::execute() {
-    log(LogLevel::info, std::string("ADAS v") + kDistributionVersion + " — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
+    const std::string v = !effectiveVersionLabelForLog().empty()
+        ? effectiveVersionLabelForLog()
+        : std::string(kDistributionVersion);
+    log(LogLevel::info, std::string("ADAS v") + v + " — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
+    sendTelemetry("INFO", "ADAS_STARTUP",
+        std::string("{\"version\":\"") + v + "\"}");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -54,6 +59,7 @@ void AdasFeature::execute() {
 
             case EventId::QuitTheSystem:
                 log(LogLevel::info, "종료 신호 수신");
+                sendTelemetry("INFO", "SYSTEM_QUIT", "{\"reason\":\"QuitTheSystem\"}");
                 return;
 
             default:
@@ -97,18 +103,23 @@ void AdasFeature::runAdasMainLoop() {
 
 void AdasFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신: " + message);
+    sendTelemetry("INFO", "ADAS_LOCATION_RX",
+        std::string("{\"location\":\"") + message + "\"}");
     if (flag_.isSubFeatureEnabled("FCA")) {
         log(LogLevel::info, "FCA: 전방 객체 감지 및 충돌 위험 평가");
+        sendTelemetry("INFO", "ADAS_FCA_ENABLED", "{\"subfeature\":\"FCA\"}");
     } else {
         log(LogLevel::info, "FCA: OFF (전방충돌방지 비활성)");
     }
     if (flag_.isSubFeatureEnabled("LKA")) {
         log(LogLevel::info, "LKA: 차선 유지 보조 활성");
+        sendTelemetry("INFO", "ADAS_LKA_ENABLED", "{\"subfeature\":\"LKA\"}");
     } else {
         log(LogLevel::info, "LKA: OFF (차선유지 비활성)");
     }
     if (flag_.isSubFeatureEnabled("SCC")) {
         log(LogLevel::info, "SCC: 스마트 크루즈 제어 추종");
+        sendTelemetry("INFO", "ADAS_SCC_ENABLED", "{\"subfeature\":\"SCC\"}");
     } else {
         log(LogLevel::info, "SCC: OFF (어댑티브 크루즈 비활성)");
     }
@@ -119,6 +130,8 @@ void AdasFeature::processVehicleLocation(const std::string& message) {
 
 void AdasFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
+    sendTelemetry("INFO", "ADAS_ROAD_RX",
+        std::string("{\"road_info\":\"") + message + "\"}");
     log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
     if (flag_.isSubFeatureEnabled("FCA")) {
         log(LogLevel::info, "FCA: 위험 상황 예측 및 감속 권고 평가");

@@ -47,27 +47,27 @@ bool Flag::isShadowMirrorEnabled() const {
 }
 
 // ----- [A/B Test Mode] -----
-void Flag::setAbVariant(char variant) {
-    // develop 브랜치의 안전한 방어 로직 채택
-    if (variant == 'A' || variant == 'B') {
-        abVariant_ = variant;
+void Flag::setAbVariant(const std::string& variant) {
+    if (variant.empty()) {
+        return;
     }
+    abVariant_ = variant;
 }
 
 void Flag::clearAbVariant() {
     abVariant_.reset();
 }
 
-std::optional<char> Flag::getAbVariant() const {
+std::optional<std::string> Flag::getAbVariant() const {
     return abVariant_;
 }
 
 bool Flag::isAbModeA() const {
-    return abVariant_.has_value() && *abVariant_ == 'A';
+    return abVariant_.has_value() && *abVariant_ == "A";
 }
 
 bool Flag::isAbModeB() const {
-    return abVariant_.has_value() && *abVariant_ == 'B';
+    return abVariant_.has_value() && *abVariant_ == "B";
 }
 
 // ----- [LifeCycle] -----

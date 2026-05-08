@@ -27,7 +27,12 @@ std::string EvEnergyFeature::distributionVersionLabelForLog() const {
 }
 
 void EvEnergyFeature::execute() {
-    log(LogLevel::info, std::string("EV Energy v") + kDistributionVersion + " — FLAG_ON 수신 시 활성화");
+    const std::string v = !effectiveVersionLabelForLog().empty()
+        ? effectiveVersionLabelForLog()
+        : std::string(kDistributionVersion);
+    log(LogLevel::info, std::string("EV Energy v") + v + " — FLAG_ON 수신 시 활성화");
+    sendTelemetry("INFO", "EV_STARTUP",
+        std::string("{\"version\":\"") + v + "\",\"battery_init\":" + std::to_string(battery_) + "}");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -51,6 +56,8 @@ void EvEnergyFeature::execute() {
             case EventId::QuitTheSystem:
                 log(LogLevel::info, "종료 신호 수신");
                 log(LogLevel::info, "최종 배터리 잔량: " + std::to_string(battery_) + "%");
+                sendTelemetry("INFO", "SYSTEM_QUIT",
+                    std::string("{\"reason\":\"QuitTheSystem\",\"battery_final\":") + std::to_string(battery_) + "}");
                 return;
 
             default:
@@ -63,6 +70,8 @@ void EvEnergyFeature::execute() {
 void EvEnergyFeature::runEvEnergyMainLoop() {
     log(LogLevel::info, "초기 배터리 잔량: " + std::to_string(battery_) + "%");
     log(LogLevel::info, "에너지 모니터링 대기 중...");
+    sendTelemetry("INFO", "EV_MONITOR_READY",
+        std::string("{\"battery\":") + std::to_string(battery_) + "}");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -96,6 +105,8 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
 void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "차량 위치 수신: " + message);
     battery_ -= 3;
+    sendTelemetry("INFO", "EV_LOCATION_RX",
+        std::string("{\"location\":\"") + message + "\",\"battery\":" + std::to_string(battery_) + "}");
     if (flag_.isSubFeatureEnabled("RANGE")) {
         log(LogLevel::info, "RANGE: 예상 주행거리 산출 — 배터리 " + std::to_string(battery_) +
             "% | " + std::to_string(battery_ * 4) + "km");
@@ -122,6 +133,8 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     if (message.find("오르막") != std::string::npos) {
         if (flag_.isSubFeatureEnabled("ECO")) {
             log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
+            sendTelemetry("WARN", "EV_UPHILL_WARNING",
+                std::string("{\"road_info\":\"") + message + "\",\"battery\":" + std::to_string(battery_) + "}");
         } else {
             log(LogLevel::info, "오르막 감지 (ECO OFF — 일반 경고만)");
         }
@@ -130,6 +143,8 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
             log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
             battery_ += 1;
             log(LogLevel::info, "회생제동으로 배터리 회수: " + std::to_string(battery_) + "%");
+            sendTelemetry("INFO", "EV_REGEN_APPLIED",
+                std::string("{\"road_info\":\"") + message + "\",\"battery\":" + std::to_string(battery_) + "}");
         } else {
             log(LogLevel::info, "REGEN: OFF — 회생제동 보정 생략");
         }

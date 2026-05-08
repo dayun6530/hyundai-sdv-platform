@@ -151,4 +151,8 @@ add_sqa_unit_test(
     unit_data_collector
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/centercommunication/DataCollectorTest.cpp
 )
-target_link_libraries(unit_data_collector PRIVATE CenterCommunicationLib)
+target_sources(unit_data_collector PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/Platform/CenterCommunication/src/DataCollector.cpp
+)
+target_compile_definitions(unit_data_collector PRIVATE SDV_CENTERCOMM_NO_MAIN=1)
+target_link_libraries(unit_data_collector PRIVATE CenterCommunicationLib EventBus)

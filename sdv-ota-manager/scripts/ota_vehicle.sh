@@ -267,6 +267,21 @@ with open(fl_path, "w", encoding="utf-8") as f:
 PY
 }
 
+sync_fleet_feature_versions_from_vehicle_runtime_json() {
+  local cid="${1:-}"
+  if [[ -z "$cid" || -z "${OTA_ROOT:-}" ]]; then
+    return 0
+  fi
+  local pybin="python3"
+  command -v "$pybin" >/dev/null 2>&1 || pybin="python"
+  local sync_py="${OTA_ROOT}/scripts/sync_fleet_feature_versions_from_vehicle_runtime.py"
+  if [[ ! -f "$sync_py" ]]; then
+    return 0
+  fi
+  # Best-effort: never fail vehicle ops if fleet sync fails.
+  "$pybin" "$sync_py" --update-missing >/dev/null 2>&1 || true
+}
+
 update_state_json() {
   export STATE_FILE="$STATE_DIR/${CAR}.json"
   export CAR_ID="$CAR"
@@ -313,9 +328,8 @@ elif action == "promote":
     cur["shadow_enabled"] = False
     if pv:
         cur["primary_version"] = pv
-        cur["shadow_version"] = pv
-    else:
-        cur["shadow_version"] = ""
+    # After promotion, discard Shadow lane (stop running + clear version).
+    cur["shadow_version"] = ""
 elif action == "promote-rollback":
     se = str(os.environ.get("SHADOW_ENABLED", "0")).strip().lower() in ("1", "true", "yes")
     cur["shadow_enabled"] = se
@@ -360,6 +374,7 @@ with open(path, "w", encoding="utf-8") as f:
     f.write("\n")
 PY
   sync_platform_fleet_state_from_vehicle_runtime_json "$CAR"
+  sync_fleet_feature_versions_from_vehicle_runtime_json "$CAR"
 }
 
 case "$CMD" in
@@ -465,45 +480,13 @@ case "$CMD" in
       exit 1
     fi
 
-    if [[ "$SYNC_SHADOW" == "1" ]]; then
-      echo "(옵션) Shadow 도 동일 이미지로 재기동 (검증 후 전환)"
-      NEXT_SS="${SHADOW_NAME}_deploynext"
-      docker rm -f "$NEXT_SS" >/dev/null 2>&1 || true
-      if ! docker_run_and_verify "$NEXT_SS" "$IMG" "shadow" "$VERSION"; then
-        echo "[DEPLOY-ROLLBACK] Shadow 후보 실패 — Primary 를 이전 버전으로 되돌립니다 (가능한 경우)." >&2
-        if rollback_primary_to_saved_version "$OLD_PV"; then
-          LAST_MSG_KO="${BINARY_NAME}: Shadow 재기동 실패로 Primary 를 이전 버전(v${OLD_PV#v})으로 롤백했습니다."
-          if [[ -n "$OLD_SV" && "$OLD_PV" != "$OLD_SV" ]]; then export SHADOW_ENABLED=1; else export SHADOW_ENABLED=0; fi
-          PRIMARY_VER="$OLD_PV" SHADOW_VER="$OLD_SV" LAST_ACTION="promote-rollback" update_state_json
-          echo "[OTA-DEMO] ${LAST_MSG_KO}"
-          exit 1
-        fi
-        echo "[DEPLOY-ROLLBACK] Primary 롤백도 실패했습니다. docker 및 $STATE_DIR/${CAR}.json 을 수동 확인하세요." >&2
-        exit 1
-      fi
-      docker rm -f "$SHADOW_NAME" >/dev/null 2>&1 || true
-      docker rename "$NEXT_SS" "$SHADOW_NAME"
-      sleep 0.2
-      if [[ "$(docker inspect -f '{{.State.Status}}' "$SHADOW_NAME" 2>/dev/null)" != "running" ]]; then
-        echo "[DEPLOY-ROLLBACK] Shadow 교체 후 비정상 — Primary 롤백 시도" >&2
-        if rollback_primary_to_saved_version "$OLD_PV"; then
-          LAST_MSG_KO="${BINARY_NAME}: Shadow 전환 후 비정상으로 Primary 를 이전 버전으로 롤백했습니다."
-          if [[ -n "$OLD_SV" && "$OLD_PV" != "$OLD_SV" ]]; then export SHADOW_ENABLED=1; else export SHADOW_ENABLED=0; fi
-          PRIMARY_VER="$OLD_PV" SHADOW_VER="$OLD_SV" LAST_ACTION="promote-rollback" update_state_json
-        fi
-        exit 1
-      fi
-      LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었고, Shadow도 동일 버전으로 맞췄습니다."
-    else
-      LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었습니다."
-    fi
-    PRIMARY_VER="$VERSION" LAST_ACTION="promote" update_state_json
+    # After promotion, Shadow lane should be discarded (stop container + clear version) unless explicitly testing.
+    docker rm -f "$SHADOW_NAME" >/dev/null 2>&1 || true
+
+    LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었습니다."
+    PRIMARY_VER="$VERSION" SHADOW_VER="" LAST_ACTION="promote" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
-    if [[ "$SYNC_SHADOW" == "1" ]]; then
-      echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary and Shadow updated to v${VERSION#v} (${IMG})."
-    else
-      echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary updated to v${VERSION#v} (${IMG})."
-    fi
+    echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary updated to v${VERSION#v} (${IMG}); Shadow lane inactive."
     # NOTE (metadata sync): this script updates deploy/vehicle_runtime/<car>.json and best-effort aligns
     # platform/deploy/state/<car>.json versions. If you want rollback_stack / primary_image metadata to
     # reflect this promotion event, call (metadata-only; no container ops):
@@ -511,8 +494,7 @@ case "$CMD" in
     sleep 1
     echo "Primary 로그:"
     docker logs --tail 8 "$PRIMARY_NAME" 2>/dev/null || true
-    echo "Shadow 로그:"
-    docker logs --tail 4 "$SHADOW_NAME" 2>/dev/null || true
+    echo "Shadow 로그: (inactive)"
     echo "상태 파일: $STATE_DIR/${CAR}.json"
     ;;
 

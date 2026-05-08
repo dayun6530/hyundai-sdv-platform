@@ -1,7 +1,7 @@
 tests/unit/CMakeFiles/unit_log_data.dir/Platform/lifecyclemgr/LogDataTest.cpp.o: \
- /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/Platform/lifecyclemgr/LogDataTest.cpp \
+ /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit/Platform/lifecyclemgr/LogDataTest.cpp \
  /usr/include/stdc-predef.h \
- /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include/LifeCycleManager/LogData.h \
+ /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include/LifeCycleManager/LogData.h \
  /usr/include/c++/13/string /usr/include/c++/13/bits/requires_hosted.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
@@ -131,7 +131,7 @@ tests/unit/CMakeFiles/unit_log_data.dir/Platform/lifecyclemgr/LogDataTest.cpp.o:
  /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
  /usr/include/c++/13/bits/parse_numbers.h \
- /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/TestAssert.h \
+ /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit/TestAssert.h \
  /usr/include/c++/13/iostream /usr/include/c++/13/ostream \
  /usr/include/c++/13/ios /usr/include/c++/13/exception \
  /usr/include/c++/13/bits/exception_ptr.h \

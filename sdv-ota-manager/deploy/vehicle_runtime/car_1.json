@@ -2,19 +2,19 @@
   "car_id": "car_1",
   "domains": {
     "adas": {
-      "primary_version": "0.4",
-      "shadow_version": "0.4",
+      "primary_version": "1.0",
+      "shadow_version": "",
       "binary": "AdasFeature",
       "primary_container": "car_1_agent_adas",
       "shadow_container": "car_1_agent_adas_shadow",
       "last_action": "promote",
-      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v0.4으로 승격되었고, Shadow도 동일 버전으로 맞췄습니다.",
+      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v1.0으로 승격되었습니다.",
       "shadow_enabled": false,
       "shadow_mode": "inactive"
     },
     "navigation": {
       "primary_version": "1.0",
-      "shadow_version": "1.0",
+      "shadow_version": "",
       "binary": "NavigationFeature",
       "primary_container": "car_1_agent_navigation",
       "shadow_container": "car_1_agent_navigation_shadow",
@@ -22,13 +22,15 @@
       "last_message_ko": "NavigationFeature: Primary·Shadow 모두 실행 버전 v1.0으로 기동했습니다 (bootstrap)."
     },
     "evenergy": {
-      "primary_version": "1.0",
-      "shadow_version": "1.0",
+      "primary_version": "2.0",
+      "shadow_version": "",
       "binary": "EvEnergyFeature",
       "primary_container": "car_1_agent_evenergy",
       "shadow_container": "car_1_agent_evenergy_shadow",
-      "last_action": "bootstrap",
-      "last_message_ko": "EvEnergyFeature: Primary·Shadow 모두 실행 버전 v1.0으로 기동했습니다 (bootstrap)."
+      "last_action": "promote",
+      "last_message_ko": "EvEnergyFeature: Primary(운영) 실행 버전이 v2.0으로 승격되었습니다.",
+      "shadow_enabled": false,
+      "shadow_mode": "inactive"
     }
   }
 }

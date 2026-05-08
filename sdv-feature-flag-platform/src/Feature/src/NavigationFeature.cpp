@@ -46,7 +46,14 @@ std::string NavigationFeature::distributionVersionLabelForLog() const {
 }
 
 void NavigationFeature::execute() {
-    log(LogLevel::info, std::string("Navigation v") + kDistributionVersion + " — 연속 데모 브로드캐스트 (FLAG_OFF 시 일시 중단)");
+    const std::string v = !effectiveVersionLabelForLog().empty()
+        ? effectiveVersionLabelForLog()
+        : std::string(kDistributionVersion);
+    log(LogLevel::info,
+        std::string("Navigation v") + v +
+        " — 연속 데모 브로드캐스트 (FLAG_OFF 시 일시 중단)");
+    sendTelemetry("INFO", "NAV_STARTUP",
+        std::string("{\"version\":\"") + v + "\"}");
 
     while (!isStopRequested()) {
         pollEvents();
@@ -57,12 +64,14 @@ void NavigationFeature::execute() {
         }
 
         log(LogLevel::info, "FLAG ON — 브로드캐스트 시작");
+        sendTelemetry("INFO", "NAV_FLAG_ON", "{\"flag\":\"enabled\"}");
         while (flag_.isEnabled() && !isStopRequested()) {
             runNavigationMainLoop();
             if (!flag_.isEnabled() || isStopRequested()) {
                 break;
             }
             log(LogLevel::info, "내비 라운드 완료 — 연속 데모 재개");
+            sendTelemetry("INFO", "NAV_ROUND_COMPLETE", "{\"status\":\"complete\"}");
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
@@ -84,8 +93,12 @@ void NavigationFeature::runNavigationMainLoop() {
 
         if (flag_.isSubFeatureEnabled("LOCATION")) {
             log(LogLevel::info, std::string("차량 위치 전송: ") + navDemoLocation(r));
+            sendTelemetry("INFO", "NAV_LOCATION_TX",
+                std::string("{\"location\":\"") + navDemoLocation(r) + "\"}");
             if (!sendDomainEvent(EventId::VehicleLocationUpdate, navDemoLocation(r))) {
                 log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
+                sendTelemetry("WARN", "NAV_LOCATION_TX_FAIL",
+                    std::string("{\"location\":\"") + navDemoLocation(r) + "\"}");
             }
         } else {
             log(LogLevel::info, "LOCATION: OFF — 위치 이벤트 생략");
@@ -93,8 +106,12 @@ void NavigationFeature::runNavigationMainLoop() {
 
         if (flag_.isSubFeatureEnabled("ROAD")) {
             log(LogLevel::info, std::string("도로 정보 전송: ") + navDemoRoad(r));
+            sendTelemetry("INFO", "NAV_ROAD_TX",
+                std::string("{\"road_info\":\"") + navDemoRoad(r) + "\"}");
             if (!sendDomainEvent(EventId::RoadInfoUpdate, navDemoRoad(r))) {
                 log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
+                sendTelemetry("WARN", "NAV_ROAD_TX_FAIL",
+                    std::string("{\"road_info\":\"") + navDemoRoad(r) + "\"}");
             }
         } else {
             log(LogLevel::info, "ROAD: OFF — 도로 이벤트 생략");
@@ -104,6 +121,8 @@ void NavigationFeature::runNavigationMainLoop() {
             const std::string guidance = navGuidanceForIteration(i + 1);
             if (!sendDomainEvent(EventId::NavigationGuidanceUpdate, guidance)) {
                 log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
+                sendTelemetry("WARN", "NAV_GUIDANCE_TX_FAIL",
+                    std::string("{\"guidance\":\"") + guidance + "\"}");
             }
         } else {
             log(LogLevel::info, "GUIDANCE: OFF — 안내 이벤트 생략");

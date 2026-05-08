@@ -7,12 +7,12 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS":     {
+    "ADAS": {
       "active_slot": "B",
-      "active_version": "v0.4",
+      "active_version": "v1.0",
       "primary_slot": "B",
       "primary_version": "v0.4",
-      "primary_image": "sdv/adas-feature:v0.4",
+      "primary_image": "sdv/adas-feature:v1.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "OFF",
@@ -43,9 +43,10 @@
           "reason": "rollback invoked",
           "source": "primary_runtime_failed"
         }
-      ]
+      ],
+      "shadow_image": "sdv/adas-feature:v2.0"
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "A",
       "active_version": "v1.0",
       "primary_slot": "A",
@@ -58,7 +59,7 @@
       "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
+      "shadow_version": "",
       "shadow_image": "sdv/navigation-feature:v1.0",
       "shadow_status": "DISABLED",
       "shadow_mode": "inactive",
@@ -67,12 +68,12 @@
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     },
-    "Energy":     {
+    "Energy": {
       "active_slot": "A",
-      "active_version": "v1.0",
+      "active_version": "v2.0",
       "primary_slot": "A",
       "primary_version": "v1.0",
-      "primary_image": "sdv/evenergy-feature:v1.0",
+      "primary_image": "sdv/evenergy-feature:v2.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
@@ -80,8 +81,8 @@
       "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
-      "shadow_image": "sdv/evenergy-feature:v1.0",
+      "shadow_version": "",
+      "shadow_image": "sdv/evenergy-feature:v2.0",
       "shadow_status": "DISABLED",
       "shadow_mode": "inactive",
       "kill_switch": false,
@@ -90,7 +91,7 @@
       "fallback_version": "v0.5"
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "failed",
     "install_status": "failed",
     "vehicle_mode": "PARKED",
@@ -106,7 +107,7 @@
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack":   {
+  "last_ack": {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",

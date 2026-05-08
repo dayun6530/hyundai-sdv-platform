@@ -15,9 +15,9 @@ EvEnergyFeature_B::EvEnergyFeature_B(EventBusInterface& eventBus)
     , Car(eventBus) {}
 
 void EvEnergyFeature_B::execute() {
-    const char line = getAbVariant().value_or('B');
+    const std::string line = getAbVariant().value_or("B");
     log(LogLevel::info,
-        std::string("Car platform — EvEnergyFeature_B (B-line / Flag A|B=") + line + ")");
+        std::string("Car platform — EvEnergyFeature_B (B-line / Variant=") + line + ")");
     log(LogLevel::info, "[ENERGY-B] battery state: 82%");
     log(LogLevel::info, "[ENERGY-B] regenerative braking: optimized");
     log(LogLevel::info, "[ENERGY-B] eco range prediction enabled");

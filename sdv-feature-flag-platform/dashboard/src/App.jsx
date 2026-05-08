@@ -10,6 +10,13 @@ import {
   setDriverApproval,
 } from "./api/fleet";
 import {
+  deployGlobalVersion,
+  deployGroupVersion,
+  deployModelVersions,
+  deployRatioVersions,
+  deployRegionVersions,
+} from "./api/unleash";
+import {
   filterCanaryVehicles,
   loadFleetHistoryNormalized,
   loadPackageRegistryNormalized,
@@ -313,6 +320,78 @@ export default function App() {
   const fleetFirstSuccess = useRef(false);
   const [selectedCarId, setSelectedCarId] = useState("");
 
+  // ---- Region -> Version rollout controller (Option 1 UI requested by user) ----
+  const [unleashProjectId, setUnleashProjectId] = useState("default");
+  const [unleashEnv, setUnleashEnv] = useState("development");
+  const [unleashFeature, setUnleashFeature] = useState("NavigationFeature");
+  const [regionVersions, setRegionVersions] = useState({ KR: "1.0", US: "2.0", EU: "" });
+  const [modelVersions, setModelVersions] = useState({});
+  const [globalVersion, setGlobalVersion] = useState("");
+  const [canaryVersion, setCanaryVersion] = useState("2.0");
+  const [ratioSplits, setRatioSplits] = useState([
+    { percent: 50, version: "2.0" },
+    { percent: 50, version: "3.0" },
+  ]);
+  const [deployUiStatus, setDeployUiStatus] = useState({
+    region: { state: "idle", text: "" },
+    model: { state: "idle", text: "" },
+    ratio: { state: "idle", text: "" },
+    global: { state: "idle", text: "" },
+    group: {
+      canary: { state: "idle", text: "" },
+      beta: { state: "idle", text: "" },
+      stable: { state: "idle", text: "" },
+    },
+  });
+  const [unleashBusy, setUnleashBusy] = useState(false);
+  const [unleashError, setUnleashError] = useState("");
+  const [unleashResult, setUnleashResult] = useState(null);
+
+  const setStatus = useCallback((key, state, text) => {
+    setDeployUiStatus((prev) => ({
+      ...(prev || {}),
+      [key]: { state, text },
+    }));
+  }, []);
+
+  const setGroupStatus = useCallback((group, state, text) => {
+    setDeployUiStatus((prev) => ({
+      ...(prev || {}),
+      group: {
+        ...(prev?.group || {}),
+        [group]: { state, text },
+      },
+    }));
+  }, []);
+
+  const modelOptions = useMemo(() => {
+    return [...new Set((fleetVehicles || []).map((v) => String(v?.model || "").trim()).filter(Boolean))].sort();
+  }, [fleetVehicles]);
+
+  const groupCounts = useMemo(() => {
+    const counts = { canary: 0, beta: 0, stable: 0 };
+    for (const v of fleetVehicles || []) {
+      const g = String(v?.group || "").trim();
+      if (g && counts[g] !== undefined) counts[g] += 1;
+    }
+    return counts;
+  }, [fleetVehicles]);
+
+  useEffect(() => {
+    if (!modelOptions.length) return;
+    setModelVersions((prev) => {
+      const next = { ...(prev || {}) };
+      for (const m of modelOptions) {
+        if (next[m] === undefined) next[m] = "";
+      }
+      // Drop keys that no longer exist
+      for (const k of Object.keys(next)) {
+        if (!modelOptions.includes(k)) delete next[k];
+      }
+      return next;
+    });
+  }, [modelOptions]);
+
   const reloadFleetData = useCallback(async () => {
     try {
       const [v, s, m, h] = await Promise.all([
@@ -398,6 +477,154 @@ export default function App() {
     }
   };
 
+  const runRegionVersionsDeploy = async () => {
+    try {
+      setUnleashError("");
+      setUnleashResult(null);
+      setStatus("region", "deploying", "배포중…");
+      setUnleashBusy(true);
+      const payload = {
+        projectId: unleashProjectId,
+        environment: unleashEnv,
+        featureName: unleashFeature,
+        versionsByRegion: regionVersions,
+      };
+      const r = await deployRegionVersions(payload);
+      setUnleashResult(r);
+      setStatus("region", "success", "배포가 완료되었습니다.");
+      await refreshAllFleetAndStatus();
+    } catch (err) {
+      setUnleashError(err.message || "Region version deploy failed");
+      setStatus("region", "error", "배포가 실패되었습니다.");
+    } finally {
+      setUnleashBusy(false);
+    }
+  };
+
+  const runGlobalDeploy = async () => {
+    try {
+      setUnleashError("");
+      setUnleashResult(null);
+      setStatus("global", "deploying", "배포중…");
+      setUnleashBusy(true);
+      const payload = {
+        projectId: unleashProjectId,
+        environment: unleashEnv,
+        featureName: unleashFeature,
+        version: String(globalVersion || "").trim(),
+      };
+      const r = await deployGlobalVersion(payload);
+      setUnleashResult(r);
+      setStatus("global", "success", "배포가 완료되었습니다.");
+      await refreshAllFleetAndStatus();
+    } catch (err) {
+      setUnleashError(err.message || "Global deploy failed");
+      setStatus("global", "error", "배포가 실패되었습니다.");
+    } finally {
+      setUnleashBusy(false);
+    }
+  };
+
+  const runModelVersionsDeploy = async () => {
+    try {
+      setUnleashError("");
+      setUnleashResult(null);
+      setStatus("model", "deploying", "배포중…");
+      setUnleashBusy(true);
+      const payload = {
+        projectId: unleashProjectId,
+        environment: unleashEnv,
+        featureName: unleashFeature,
+        versionsByModel: modelVersions,
+      };
+      const r = await deployModelVersions(payload);
+      setUnleashResult(r);
+      setStatus("model", "success", "배포가 완료되었습니다.");
+      await refreshAllFleetAndStatus();
+    } catch (err) {
+      setUnleashError(err.message || "Model version deploy failed");
+      setStatus("model", "error", "배포가 실패되었습니다.");
+    } finally {
+      setUnleashBusy(false);
+    }
+  };
+
+  const ratioSum = useMemo(() => {
+    return (ratioSplits || []).reduce((acc, s) => acc + (Number(s?.percent) || 0), 0);
+  }, [ratioSplits]);
+
+  const runRatioDeploy = async () => {
+    try {
+      setUnleashError("");
+      setUnleashResult(null);
+      setStatus("ratio", "idle", "");
+      const splits = (ratioSplits || [])
+        .map((s) => ({ percent: Number(s?.percent) || 0, version: String(s?.version || "").trim() }))
+        .filter((s) => s.percent > 0 || s.version);
+
+      const sum = splits.reduce((a, b) => a + (Number(b.percent) || 0), 0);
+      if (sum !== 100) {
+        setUnleashError(`비율 합계가 100%여야 합니다. (현재 ${sum}%)`);
+        setStatus("ratio", "error", "배포가 실패되었습니다.");
+        return;
+      }
+      if (!splits.length || splits.some((s) => !s.version || s.percent <= 0)) {
+        setUnleashError("각 칸은 percent>0, version이 모두 필요합니다.");
+        setStatus("ratio", "error", "배포가 실패되었습니다.");
+        return;
+      }
+
+      setStatus("ratio", "deploying", "배포중…");
+      setUnleashBusy(true);
+      const payload = {
+        projectId: unleashProjectId,
+        environment: unleashEnv,
+        featureName: unleashFeature,
+        splits,
+      };
+      const r = await deployRatioVersions(payload);
+      setUnleashResult(r);
+      setStatus("ratio", "success", "배포가 완료되었습니다.");
+      await refreshAllFleetAndStatus();
+    } catch (err) {
+      setUnleashError(err.message || "Ratio deploy failed");
+      setStatus("ratio", "error", "배포가 실패되었습니다.");
+    } finally {
+      setUnleashBusy(false);
+    }
+  };
+
+  const runCanaryStep = async (group) => {
+    try {
+      setUnleashError("");
+      setUnleashResult(null);
+      setGroupStatus(group, "deploying", "배포중…");
+      const version = String(canaryVersion || "").trim();
+      if (!version) {
+        setUnleashError("버전을 입력해 주세요. (예: v2.0)");
+        setGroupStatus(group, "error", "배포가 실패되었습니다.");
+        return;
+      }
+      setUnleashBusy(true);
+      const payload = {
+        projectId: unleashProjectId,
+        environment: unleashEnv,
+        featureName: unleashFeature,
+        group,
+        version,
+      };
+      const r = await deployGroupVersion(payload);
+      setUnleashResult(r);
+      setGroupStatus(group, "success", "배포가 완료되었습니다.");
+      await refreshAllFleetAndStatus();
+    } catch (err) {
+      setUnleashError(err.message || "Canary deploy failed");
+      setGroupStatus(group, "error", "배포가 실패되었습니다.");
+    } finally {
+      setUnleashBusy(false);
+    }
+  };
+
   return (
     <main className="app-shell">
       <Header
@@ -408,30 +635,6 @@ export default function App() {
       />
 
       <LoadingBanner loading={fleetBootLoading && !fleetReachable} />
-
-      <section className="card intro-card">
-        <div className="legend-title">Fleet (car_1 ~ car_10)</div>
-        <div className="legend-text">
-          <span>
-            <strong>Per vehicle</strong>: pick a car below — state comes from `deploy/state/car_*.json` (A/B{" "}
-            <em>slots</em> for DeploymentMgr rollouts, flags, shadow flags, OTA). All demo cars use the same stable slot
-            baseline unless you change JSON or run <code className="mono">fleet-deploy</code>.
-          </span>
-          <span>
-            <strong>Fleet-wide</strong>: `deploy/version_map.json` A/B and package registry drive rollout targets; history
-            is `deploy/history/fleet_history.jsonl`.
-          </span>
-          <span>
-            <strong>API</strong>: `GET /api/fleet/*` via Vite proxy to status-server. Deploy runs `DeploymentMgr
-            fleet-deploy …` (summary below).
-          </span>
-          <span>
-            <strong>Docker OTA</strong>: `POST /api/vehicle-runtime/*` runs `sdv-ota-manager/scripts/ota_vehicle.sh`
-            in WSL (Primary/Shadow + `deploy/vehicle_runtime/*.json`). Use the same <strong>Package Upload / Version
-            Registry</strong> card: Feature, Version, and Car drive both manifest registration and Docker commands.
-          </span>
-        </div>
-      </section>
 
       {fleetError ? <section className="error-banner">Fleet API error: {fleetError}</section> : null}
       <WarningBanner warnings={fleetApiWarnings} />
@@ -444,6 +647,348 @@ export default function App() {
         selectedCarId={selectedCarId}
         onSelectCarId={setSelectedCarId}
       />
+
+      <section className="card" style={{ marginTop: 12 }}>
+        <div className="card-header">
+          <div>
+            <h2>SDV Version Rollout Controller</h2>
+            <p className="tiny subtle">
+              원하는 기능을 고른 뒤, KR/US/EU별로 배포할 버전을 입력하고 <strong>배포</strong>를 누르면 해당 국가 차량들만 각각 promote 됩니다.
+              빈칸은 이번 배포에서 제외됩니다. 마지막에 “전체 배포”로 전 차량을 특정 버전으로 맞출 수 있습니다.
+            </p>
+          </div>
+          <span className="subtle">status-server → Unleash Admin API</span>
+        </div>
+
+        {unleashError ? <div className="error-banner">Unleash control error: {unleashError}</div> : null}
+
+        <div style={{ padding: "0 16px 16px" }}>
+          <div className="kv" style={{ marginTop: 8 }}>
+            <div className="k">feature</div>
+            <div className="v">
+              <select className="select mono" value={unleashFeature} onChange={(e) => setUnleashFeature(e.target.value)}>
+                <option value="NavigationFeature">NavigationFeature</option>
+                <option value="AdasFeature">AdasFeature</option>
+                <option value="EvEnergyFeature">EvEnergyFeature</option>
+              </select>
+            </div>
+          </div>
+
+          <details style={{ marginTop: 10 }}>
+            <summary className="tiny subtle" style={{ cursor: "pointer" }}>
+              Advanced: project/environment (기본값: default / development)
+            </summary>
+            <div className="kv" style={{ marginTop: 8 }}>
+              <div className="k">project</div>
+              <div className="v">
+                <input
+                  className="input mono"
+                  value={unleashProjectId}
+                  onChange={(e) => setUnleashProjectId(e.target.value)}
+                />
+              </div>
+              <div className="k">environment</div>
+              <div className="v">
+                <input className="input mono" value={unleashEnv} onChange={(e) => setUnleashEnv(e.target.value)} />
+              </div>
+            </div>
+          </details>
+
+          <div className="two-col-grid" style={{ marginTop: 14, alignItems: "start" }}>
+            <section>
+              <div className="label">Region versions (empty = skip)</div>
+              <div className="table-wrap" style={{ marginTop: 8 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Region</th>
+                      <th>Version (e.g. 1.0 or v1.0)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {["KR", "US", "EU"].map((r) => (
+                      <tr key={r}>
+                        <td className="mono">
+                          <strong>{r}</strong>
+                        </td>
+                        <td>
+                          <input
+                            className="input mono"
+                            value={regionVersions?.[r] ?? ""}
+                            onChange={(e) => setRegionVersions((prev) => ({ ...(prev || {}), [r]: e.target.value }))}
+                            placeholder={r === "EU" ? "(skip)" : "e.g. v2.0"}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={runRegionVersionsDeploy}
+                  disabled={unleashBusy}
+                >
+                  {unleashBusy ? "Deploying…" : "국가별 버전 배포"}
+                </button>
+                {deployUiStatus.region?.text ? (
+                  <div className={`tiny subtle ${deployUiStatus.region.state === "error" ? "text-error" : ""}`} style={{ marginTop: 6 }}>
+                    {deployUiStatus.region.text}
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section>
+              <div className="label">Model versions (empty = skip)</div>
+              <div className="tiny subtle">차종별로 버전을 지정해서 한 번에 배포합니다.</div>
+              <div className="table-wrap" style={{ marginTop: 8 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Model</th>
+                      <th>Version (e.g. 1.0 or v1.0)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(modelOptions || []).length ? (
+                      modelOptions.map((m) => (
+                        <tr key={m}>
+                          <td className="mono">
+                            <strong>{m}</strong>
+                          </td>
+                          <td>
+                            <input
+                              className="input mono"
+                              value={modelVersions?.[m] ?? ""}
+                              onChange={(e) => setModelVersions((prev) => ({ ...(prev || {}), [m]: e.target.value }))}
+                              placeholder="(skip)"
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="mono" colSpan={2}>
+                          (loading…)
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={runModelVersionsDeploy}
+                  disabled={unleashBusy}
+                >
+                  {unleashBusy ? "Deploying…" : "차종별 버전 배포"}
+                </button>
+                {deployUiStatus.model?.text ? (
+                  <div className={`tiny subtle ${deployUiStatus.model.state === "error" ? "text-error" : ""}`} style={{ marginTop: 6 }}>
+                    {deployUiStatus.model.text}
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          </div>
+
+          <div className="two-col-grid" style={{ marginTop: 18, alignItems: "start" }}>
+            <section>
+              <div className="label">Ratio rollout (random)</div>
+              <div className="tiny subtle">
+                비율(%) 합계가 <strong>100%</strong>일 때만 배포됩니다. 배포 시 차량에 버전이 무작위로 할당되어 promote 됩니다.
+              </div>
+
+              <div className="table-wrap" style={{ marginTop: 8 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 120 }}>Percent</th>
+                      <th>Version</th>
+                      <th style={{ width: 90 }}> </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ratioSplits || []).map((row, idx) => (
+                      <tr key={idx}>
+                        <td>
+                          <input
+                            className="input mono"
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={row?.percent ?? 0}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              setRatioSplits((prev) =>
+                                (prev || []).map((r, i) =>
+                                  i === idx ? { ...r, percent: Number.isFinite(v) ? v : 0 } : r,
+                                ),
+                              );
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="input mono"
+                            value={row?.version ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setRatioSplits((prev) =>
+                                (prev || []).map((r, i) => (i === idx ? { ...r, version: v } : r)),
+                              );
+                            }}
+                            placeholder="e.g. v2.0"
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => setRatioSplits((prev) => (prev || []).filter((_, i) => i !== idx))}
+                            disabled={(ratioSplits || []).length <= 2 || unleashBusy}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="tiny subtle" style={{ marginTop: 6 }}>
+                합계: <span className="mono">{ratioSum}%</span> {ratioSum === 100 ? "(OK)" : "(must be 100)"}
+              </div>
+
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setRatioSplits((prev) => [...(prev || []), { percent: 0, version: "" }])}
+                  disabled={unleashBusy}
+                >
+                  + Add split
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={runRatioDeploy}
+                  disabled={unleashBusy || ratioSum !== 100}
+                >
+                  {unleashBusy ? "Deploying…" : "비율 랜덤 배포"}
+                </button>
+              </div>
+              {deployUiStatus.ratio?.text ? (
+                <div className={`tiny subtle ${deployUiStatus.ratio.state === "error" ? "text-error" : ""}`} style={{ marginTop: 6 }}>
+                  {deployUiStatus.ratio.text}
+                </div>
+              ) : null}
+            </section>
+
+            <section>
+              <div className="label">Canary rollout (group → staged)</div>
+              <div className="tiny subtle">
+                먼저 canary에 배포 후 확인하고, 문제가 없으면 beta → stable 순으로 승급 배포합니다. (group은{" "}
+                <code className="mono">vehicles.json</code> 기준)
+              </div>
+              <div className="kv" style={{ marginTop: 8 }}>
+                <div className="k">version</div>
+                <div className="v">
+                  <input
+                    className="input mono"
+                    value={canaryVersion}
+                    onChange={(e) => setCanaryVersion(e.target.value)}
+                    placeholder="e.g. v2.0"
+                  />
+                </div>
+              </div>
+              <div className="tiny subtle" style={{ marginTop: 6 }}>
+                groups: canary=<span className="mono">{groupCounts.canary}</span>, beta=
+                <span className="mono">{groupCounts.beta}</span>, stable=<span className="mono">{groupCounts.stable}</span>
+              </div>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => runCanaryStep("canary")}
+                  disabled={unleashBusy}
+                >
+                  {unleashBusy ? "Deploying…" : "canary에 배포"}
+                </button>
+                <button type="button" className="btn btn-primary" onClick={() => runCanaryStep("beta")} disabled={unleashBusy}>
+                  {unleashBusy ? "Deploying…" : "beta에 배포"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => runCanaryStep("stable")}
+                  disabled={unleashBusy}
+                >
+                  {unleashBusy ? "Deploying…" : "stable에 배포"}
+                </button>
+              </div>
+              <div style={{ marginTop: 6 }}>
+                {["canary", "beta", "stable"].map((g) =>
+                  deployUiStatus.group?.[g]?.text ? (
+                    <div
+                      key={g}
+                      className={`tiny subtle ${deployUiStatus.group?.[g]?.state === "error" ? "text-error" : ""}`}
+                      style={{ marginTop: 2 }}
+                    >
+                      {g}: {deployUiStatus.group?.[g]?.text}
+                    </div>
+                  ) : null,
+                )}
+              </div>
+            </section>
+          </div>
+
+          <div style={{ marginTop: 18 }}>
+            <div className="label">Global rollout (all cars)</div>
+            <div className="tiny subtle">전 차량을 한 버전으로 맞춥니다.</div>
+            <div className="kv" style={{ marginTop: 8 }}>
+              <div className="k">version</div>
+              <div className="v">
+                <input
+                  className="input mono"
+                  value={globalVersion}
+                  onChange={(e) => setGlobalVersion(e.target.value)}
+                  placeholder="e.g. v3.0"
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={runGlobalDeploy}
+                disabled={unleashBusy || !String(globalVersion || "").trim()}
+              >
+                {unleashBusy ? "Deploying…" : "전체 배포"}
+              </button>
+              {deployUiStatus.global?.text ? (
+                <div className={`tiny subtle ${deployUiStatus.global.state === "error" ? "text-error" : ""}`} style={{ marginTop: 6 }}>
+                  {deployUiStatus.global.text}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        {unleashResult ? (
+          <div style={{ padding: "0 16px 16px" }}>
+            <div className="label">Result</div>
+            <div className="json-box mono">{JSON.stringify(unleashResult, null, 2)}</div>
+          </div>
+        ) : null}
+      </section>
 
       <VehicleDetailPanel
         carId={selectedCarId}

@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash
 
 # Include any dependencies generated for this target.
 include tests/unit/CMakeFiles/unit_data_collector.dir/depend.make
@@ -70,48 +70,121 @@ include tests/unit/CMakeFiles/unit_data_collector.dir/progress.make
 include tests/unit/CMakeFiles/unit_data_collector.dir/flags.make
 
 tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o: tests/unit/CMakeFiles/unit_data_collector.dir/flags.make
-tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o: /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp
+tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o: /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp
 tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o: tests/unit/CMakeFiles/unit_data_collector.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o"
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o -MF CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o.d -o CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o -c /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o -MF CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o.d -o CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o -c /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp
 
 tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.i"
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp > CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.i
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp > CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.i
 
 tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.s"
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp -o CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.s
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp -o CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.s
+
+tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o: tests/unit/CMakeFiles/unit_data_collector.dir/flags.make
+tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o: /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp
+tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o: tests/unit/CMakeFiles/unit_data_collector.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o -MF CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o.d -o CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o -c /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp
+
+tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.i"
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp > CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.i
+
+tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.s"
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp -o CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.s
 
 # Object files for target unit_data_collector
 unit_data_collector_OBJECTS = \
-"CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o"
+"CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o" \
+"CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o"
 
 # External object files for target unit_data_collector
 unit_data_collector_EXTERNAL_OBJECTS =
 
 tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o
+tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o
 tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/build.make
 tests/unit/unit_data_collector: src/Platform/CenterCommunication/libCenterCommunicationLib.a
+tests/unit/unit_data_collector: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libssl.so
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libcrypto.so
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
+tests/unit/unit_data_collector: src/Platform/FeatureCommunication/EventBus/libeventbus_proto.a
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libgrpc++.so.1.51.1
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libprotobuf.so
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libgrpc.so.29.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libz.so
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libcares.so.2.12.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libaddress_sorting.so.29.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libupb.so.29.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_raw_hash_set.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_hashtablez_sampler.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_hash.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_city.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_low_level_hash.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_statusor.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libgpr.so.29.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_bad_variant_access.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_status.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_strerror.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_distributions.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_seed_sequences.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_pool_urbg.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_randen.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_randen_hwaes.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_randen_hwaes_impl.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_randen_slow.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_platform.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_internal_seed_material.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_random_seed_gen_exception.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_cord.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_bad_optional_access.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_cordz_info.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_cord_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_cordz_functions.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_exponential_biased.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_cordz_handle.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_str_format_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_synchronization.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_stacktrace.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_symbolize.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_debugging_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_demangle_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_graphcycles_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_malloc_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_time.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_strings.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_throw_delegate.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_int128.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_strings_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_base.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_spinlock_wait.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_raw_logging_internal.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_log_severity.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_civil_time.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libssl.so
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libcrypto.so
 tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable unit_data_collector"
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_data_collector.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable unit_data_collector"
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_data_collector.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 tests/unit/CMakeFiles/unit_data_collector.dir/build: tests/unit/unit_data_collector
 .PHONY : tests/unit/CMakeFiles/unit_data_collector.dir/build
 
 tests/unit/CMakeFiles/unit_data_collector.dir/clean:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -P CMakeFiles/unit_data_collector.dir/cmake_clean.cmake
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -P CMakeFiles/unit_data_collector.dir/cmake_clean.cmake
 .PHONY : tests/unit/CMakeFiles/unit_data_collector.dir/clean
 
 tests/unit/CMakeFiles/unit_data_collector.dir/depend:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/tests/unit /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit /mnt/c/Users/USER/Desktop/feature-flag-platform/sdv-feature-flag-platform/build_unleash/tests/unit/CMakeFiles/unit_data_collector.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/tests/unit /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/build_unleash/tests/unit/CMakeFiles/unit_data_collector.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : tests/unit/CMakeFiles/unit_data_collector.dir/depend
 

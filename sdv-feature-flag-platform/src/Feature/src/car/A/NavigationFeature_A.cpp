@@ -14,9 +14,9 @@ NavigationFeature_A::NavigationFeature_A(EventBusInterface& eventBus)
     , Car(eventBus) {}
 
 void NavigationFeature_A::execute() {
-    const char line = getAbVariant().value_or('A');
+    const std::string line = getAbVariant().value_or("A");
     log(LogLevel::info,
-        std::string("Car platform — NavigationFeature_A (A-line / Flag A|B=") + line + ")");
+        std::string("Car platform — NavigationFeature_A (A-line / Variant=") + line + ")");
     log(LogLevel::info, "[NAV-A] current location updated");
     log(LogLevel::info, "[NAV-A] route guidance started");
     // Use base loop: FLAG_OFF pauses broadcast; FLAG_ON resumes; process stays alive for ADAS/EV feeds.

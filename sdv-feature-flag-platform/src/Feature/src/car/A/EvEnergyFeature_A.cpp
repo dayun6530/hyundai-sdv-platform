@@ -14,9 +14,9 @@ EvEnergyFeature_A::EvEnergyFeature_A(EventBusInterface& eventBus)
     , Car(eventBus) {}
 
 void EvEnergyFeature_A::execute() {
-    const char line = getAbVariant().value_or('A');
+    const std::string line = getAbVariant().value_or("A");
     log(LogLevel::info,
-        std::string("Car platform — EvEnergyFeature_A (A-line / Flag A|B=") + line + ")");
+        std::string("Car platform — EvEnergyFeature_A (A-line / Variant=") + line + ")");
     log(LogLevel::info, "[ENERGY-A] battery state: 82%");
     log(LogLevel::info, "[ENERGY-A] regenerative braking: normal");
     runEvEnergyMainLoop();

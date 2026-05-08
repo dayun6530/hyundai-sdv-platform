@@ -32,7 +32,7 @@ private:
     bool sendShadowOn(const std::string& primaryName);
     bool sendShadowOff(const std::string& primaryName);
     bool sendShadowPromotionRequest(const std::string& primaryLogicalName);
-    bool sendAbSet(const std::string& featureName, char variant);
+    bool sendAbSet(const std::string& featureName, const std::string& variant);
     void sendWarning(const std::string& target, const std::string& message);
 
     std::string inboundPath_;

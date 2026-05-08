@@ -26,6 +26,9 @@ enum class EventId : int32_t {
     /// Orchestrator / FeatureEvaluator: request Shadow→Primary handover (see Feature::tryConsumeAsPlatformControl).
     ShadowPromotionRequest = 24,
 
+    /// Telemetry payload (JSON). Intended for DataCollector / exporters (not control-plane).
+    TelemetryData = 30,
+
     QuitTheSystem = 99
 };
 

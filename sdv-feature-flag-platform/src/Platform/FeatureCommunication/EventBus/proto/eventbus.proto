@@ -37,6 +37,10 @@ message EventMessage {
     string message = 2;
 }
 
+// NOTE: Event IDs are defined in C++ `EventId.h` as an enum class.
+// This proto keeps event_id as int32 for compatibility, and does not duplicate
+// the enum to avoid regeneration churn in this demo repo.
+
 message GetEventQueueResponse {
     int64 component_id = 1;
     repeated EventMessage events = 2;
