@@ -62,6 +62,8 @@ protected:
     virtual void execute() = 0;
     /// Optional distribution line for startup logs (e.g. `"1.0"`). Empty = omit the extra suffix.
     virtual std::string distributionVersionLabelForLog() const { return ""; }
+    /// Effective version label for logs (prefers `vehicle_runtime` JSON when available).
+    const std::string& effectiveVersionLabelForLog() const { return effectiveVersionLabelForLog_; }
     bool isStopRequested() const;
     void log(LogLevel level, const std::string& message);
     std::vector<Event> pollEvents();
@@ -78,10 +80,16 @@ protected:
     /// Domain output to EventBus. Blocked when \ref isShadowMode() (observer must not take control path).
     bool sendDomainEvent(EventId id, const std::string& message);
 
+    /// Telemetry output to EventBus (JSON payload). Does NOT replace file logging.
+    /// This is for DataCollector/export pipelines (dual-write pattern).
+    bool sendTelemetry(const std::string& level,
+                       const std::string& eventType,
+                       const std::string& jsonPayload);
+
     bool isAbPathAEnabled() const { return abAEnabled_; }
     bool isAbPathBEnabled() const { return abBEnabled_; }
 
-    std::optional<char> getAbVariant() const { return flag_.getAbVariant(); }
+    std::optional<std::string> getAbVariant() const { return flag_.getAbVariant(); }
 
     /// Short tag for unified logs: `[PRIMARY][ADAS] ...` / `[SHADOW][ADAS] ...`. Override for custom domains.
     virtual std::string featureDomainTagForLogging() const;
@@ -117,6 +125,8 @@ private:
     bool isShadowMode_ = false;
     std::string navMirrorPendingLoc_;
     std::string navMirrorPendingRoad_;
+    std::string effectiveVersionLabelForLog_;
+    std::string carId_;
 };
 
 }  // namespace sdv::platform::lifecyclemgr

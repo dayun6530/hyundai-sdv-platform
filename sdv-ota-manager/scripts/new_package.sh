@@ -71,16 +71,26 @@ export DOMAIN FEATURE VERSION DOCKER_IMAGE PKG_DIR="$PKG_DIR"
 PYBIN="python3"
 command -v "$PYBIN" >/dev/null 2>&1 || PYBIN="python"
 "$PYBIN" - <<'PY'
-import json, os
+import json, os, time
 pkg = os.environ["PKG_DIR"]
+now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 doc = {
     "domain": os.environ["DOMAIN"],
     "feature": os.environ["FEATURE"],
     "version": os.environ["VERSION"],
+    # ---- packaging intent (Docker image is the long-term deployment unit) ----
+    "artifact_type": "docker_image",
+    # Keep the legacy key for backward compatibility with existing notes/tools.
     "slot_role": "candidate",
+    "default_role": "candidate",
     "docker_image": os.environ["DOCKER_IMAGE"],
+    # build_artifacts / packages store checksum for the packaged executable that is copied into the image.
+    # The Docker image digest is available only after `docker build` (see build_package_image.sh / README).
     "checksum_file": "checksum.sha256",
+    "executable_name": os.environ["FEATURE"],
     "binary_name": os.environ["FEATURE"],
+    "created_at": now,
+    "supported_targets": ["docker"],
 }
 with open(os.path.join(pkg, "manifest.json"), "w", encoding="utf-8") as f:
     json.dump(doc, f, indent=2, ensure_ascii=False)

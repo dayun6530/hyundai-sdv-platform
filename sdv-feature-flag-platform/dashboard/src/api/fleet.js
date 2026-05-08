@@ -1,23 +1,36 @@
+function fetchNoStore(url, options = {}) {
+  // Avoid any browser/proxy caching for rapidly-changing fleet metrics (polling UI).
+  return fetch(url, {
+    cache: "no-store",
+    ...options,
+    headers: {
+      "cache-control": "no-cache",
+      pragma: "no-cache",
+      ...(options.headers || {}),
+    },
+  });
+}
+
 export async function fetchFleetVehicles() {
-  const res = await fetch("/api/fleet/vehicles");
+  const res = await fetchNoStore("/api/fleet/vehicles");
   if (!res.ok) throw new Error(`Failed to fetch fleet vehicles: ${res.status}`);
   return res.json();
 }
 
 export async function fetchFleetStates() {
-  const res = await fetch("/api/fleet/state");
+  const res = await fetchNoStore("/api/fleet/state");
   if (!res.ok) throw new Error(`Failed to fetch fleet state: ${res.status}`);
   return res.json();
 }
 
 export async function fetchPackageRegistry() {
-  const res = await fetch("/api/fleet/package-registry");
+  const res = await fetchNoStore("/api/fleet/package-registry");
   if (!res.ok) throw new Error(`Failed to fetch package registry: ${res.status}`);
   return res.json();
 }
 
 export async function assignVersionMapSlot(body) {
-  const res = await fetch("/api/fleet/version-map/assign", {
+  const res = await fetchNoStore("/api/fleet/version-map/assign", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -30,7 +43,7 @@ export async function assignVersionMapSlot(body) {
 }
 
 export async function registerPackage(body) {
-  const res = await fetch("/api/fleet/package-register", {
+  const res = await fetchNoStore("/api/fleet/package-register", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -43,14 +56,14 @@ export async function registerPackage(body) {
 }
 
 export async function fetchVersionMap() {
-  const res = await fetch("/api/fleet/version-map");
+  const res = await fetchNoStore("/api/fleet/version-map");
   if (!res.ok) throw new Error(`Failed to fetch version map: ${res.status}`);
   return res.json();
 }
 
 export async function fetchRollbackStatus(carId) {
   const q = new URLSearchParams({ car_id: String(carId || "") });
-  const res = await fetch(`/api/fleet/rollback-status?${q.toString()}`);
+  const res = await fetchNoStore(`/api/fleet/rollback-status?${q.toString()}`);
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(data?.error || `Failed to fetch rollback status: ${res.status}`);
@@ -60,13 +73,13 @@ export async function fetchRollbackStatus(carId) {
 
 export async function fetchFleetHistory(limit = 200) {
   const q = new URLSearchParams({ limit: String(limit) });
-  const res = await fetch(`/api/fleet/fleet-history?${q.toString()}`);
+  const res = await fetchNoStore(`/api/fleet/fleet-history?${q.toString()}`);
   if (!res.ok) throw new Error(`Failed to fetch fleet history: ${res.status}`);
   return res.json();
 }
 
 export async function setDriverApproval(car_id, approved) {
-  const res = await fetch("/api/fleet/driver-approval", {
+  const res = await fetchNoStore("/api/fleet/driver-approval", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ car_id, approved }),

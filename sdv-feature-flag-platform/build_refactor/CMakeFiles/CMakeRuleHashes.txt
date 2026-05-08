@@ -1,3 +1,0 @@
-# Hashes of file build rules.
-4eb8efc115da57d9807a93074265775e src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h
-dbb4f04ee535d7c0730ad507e3ae896b src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h

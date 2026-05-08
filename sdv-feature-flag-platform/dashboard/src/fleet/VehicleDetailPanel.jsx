@@ -33,7 +33,10 @@ function FeatureDetailCard({ name, feat }) {
   const kill = Boolean(feat.kill_switch);
   const shadow = Boolean(feat.shadow_enabled);
   const rollout = featureShadowRolloutActive(feat);
-  const activeSlot = feat.active_slot || "—";
+  const primarySlot = feat.primary_slot || feat.active_slot || "—";
+  const primaryVer = feat.primary_version || feat.active_version || "—";
+  const shadowSlot = feat.shadow_slot || "—";
+  const shadowVer = feat.shadow_version || "—";
 
   return (
     <article className="vd-feature-card">
@@ -45,7 +48,10 @@ function FeatureDetailCard({ name, feat }) {
           <span className={`vd-mini-badge ${rollout ? "info" : shadow ? "info" : "ok"}`}>
             SHADOW {rollout ? "ROLLOUT" : shadow ? "ADMIN" : "OFF"}
           </span>
-          <span className="vd-mini-badge neutral">ACTIVE {activeSlot}</span>
+          <span className="vd-mini-badge neutral">PRIMARY {primaryVer} (slot {primarySlot})</span>
+          <span className="vd-mini-badge neutral">
+            SHADOW {shadow ? `${shadowVer} (slot ${shadowSlot})` : "OFF"}
+          </span>
           {(feat.fallback_slot || feat.fallback_version) && (
             <span className="vd-mini-badge neutral">
               FALLBACK {feat.fallback_slot || "—"} / {feat.fallback_version || "—"}
@@ -54,6 +60,10 @@ function FeatureDetailCard({ name, feat }) {
         </div>
       </div>
       <div className="vd-feature-grid">
+        {kv("primary_slot", feat.primary_slot ?? "—")}
+        {kv("primary_version", feat.primary_version ?? "—")}
+        {kv("primary_image", feat.primary_image ?? "—")}
+        {kv("shadow_image", feat.shadow_image ?? "—")}
         {kv("active_slot", feat.active_slot)}
         {kv("active_version", feat.active_version)}
         {kv("flag", feat.flag)}

@@ -19,7 +19,10 @@ export function normalizeFleetVersionToken(v) {
 export function featureShadowRolloutActive(feat) {
   if (!feat || typeof feat !== "object") return false;
   if (!Boolean(feat.shadow_enabled)) return false;
-  const a = normalizeFleetVersionToken(feat.active_version);
+  // Prefer Primary vs Shadow comparison (Docker + refactored state fields).
+  // Fallback to active_version for older state files.
+  const base = feat.primary_version || feat.active_version;
+  const a = normalizeFleetVersionToken(base);
   const b = normalizeFleetVersionToken(feat.shadow_version);
   return Boolean(a && b && a !== b);
 }
@@ -159,7 +162,10 @@ export function getOtaSafetyChecklist(state) {
 export function getEffectiveVehicleStatus(state, vehicle) {
   if (!state || state.missing) return "missing";
   if (typeof state.runtime?.car_process_running === "boolean") {
-    return state.runtime.car_process_running ? "online" : "offline";
+    // `wsl_pgrep` only detects the native car process (/build*/car_N).
+    // In the Docker-only demo path, containers can be running while this probe is false.
+    // So we only force "online" when true; when false, fall back to deploy/state + registry status.
+    if (state.runtime.car_process_running) return "online";
   }
   return state.status || vehicle?.status || "unknown";
 }
@@ -208,7 +214,10 @@ export function computeFleetSummaryCards(vehicles, stateByCar) {
       const ota = s.ota || {};
       if (ota.driver_approved === false) waitingApproval += 1;
       const inst = String(ota.install_status || "").toLowerCase();
-      if (inst.includes("completed") || inst.includes("installed")) installCompleted += 1;
+      const ack = String(s.last_ack?.status || "").toUpperCase();
+      if (inst.includes("completed") || inst.includes("installed") || ack === "INSTALL_COMPLETED") {
+        installCompleted += 1;
+      }
       if (computeOtaSafetyFleet(s).level === "READY") safetyReady += 1;
       if (anyFeatureKillSwitch(s)) killActive += 1;
       if (anyFeatureShadowRollout(s)) shadowActive += 1;

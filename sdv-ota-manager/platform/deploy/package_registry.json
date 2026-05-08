@@ -1,4 +1,81 @@
 {
   "schema_version": 1,
-  "packages": []
+  "packages": [
+    {
+      "package_id": "ADAS_v0.4_20260507_090035",
+      "feature": "ADAS",
+      "version": "v0.4",
+      "role": "candidate",
+      "binary": "AdasFeature",
+      "package_path": "deploy/packages/ADAS/v0.4",
+      "manifest_path": "deploy/packages/ADAS/v0.4/manifest.json",
+      "description": "ADAS v0.4 Docker package deployment test",
+      "created_at": "2026-05-07T09:00:35.175Z",
+      "registered_at": "2026-05-07T09:00:35.175Z",
+      "compatible_models": [
+        "IONIQ5"
+      ],
+      "compatible_regions": [
+        "KR"
+      ],
+      "requires_safety_check": false,
+      "install_policy": {
+        "allow_driving_download": false,
+        "install_requires": {
+          "vehicle_mode": "PARKED",
+          "ignition": "OFF",
+          "update_mode": "READY",
+          "gear": "P",
+          "speed": 0,
+          "parking_brake": "ON",
+          "min_battery": 30,
+          "driver_approved": true,
+          "network": "CONNECTED",
+          "target_system_running": false
+        }
+      },
+      "rollback": {
+        "fallback_slot": "A",
+        "fallback_required": true
+      }
+    },
+    {
+      "package_id": "ADAS_v0.5_20260507_103016",
+      "feature": "ADAS",
+      "version": "v0.5",
+      "role": "candidate",
+      "binary": "AdasFeature",
+      "package_path": "deploy/packages/ADAS/v0.5",
+      "manifest_path": "deploy/packages/ADAS/v0.5/manifest.json",
+      "description": "ADAS v0.5 Docker package deployment demo",
+      "created_at": "2026-05-07T10:30:16.359Z",
+      "registered_at": "2026-05-07T10:30:16.359Z",
+      "compatible_models": [
+        "IONIQ5"
+      ],
+      "compatible_regions": [
+        "KR"
+      ],
+      "requires_safety_check": false,
+      "install_policy": {
+        "allow_driving_download": false,
+        "install_requires": {
+          "vehicle_mode": "PARKED",
+          "ignition": "OFF",
+          "update_mode": "READY",
+          "gear": "P",
+          "speed": 0,
+          "parking_brake": "ON",
+          "min_battery": 30,
+          "driver_approved": true,
+          "network": "CONNECTED",
+          "target_system_running": false
+        }
+      },
+      "rollback": {
+        "fallback_slot": "A",
+        "fallback_required": true
+      }
+    }
+  ]
 }

@@ -112,7 +112,12 @@ std::string AdasFeature::distributionVersionLabelForLog() const {
 }
 
 void AdasFeature::execute() {
-    log(LogLevel::info, std::string("ADAS v") + kDistributionVersion + " — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
+    const std::string v = !effectiveVersionLabelForLog().empty()
+        ? effectiveVersionLabelForLog()
+        : std::string(kDistributionVersion);
+    log(LogLevel::info, std::string("ADAS v") + v + " — 메인 FLAG 및 서브(FCA/LKA/SCC)에 따라 처리");
+    sendTelemetry("INFO", "ADAS_STARTUP",
+        std::string("{\"version\":\"") + v + "\"}");
 
     while (!isStopRequested()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -135,6 +140,7 @@ void AdasFeature::execute() {
 
             case EventId::QuitTheSystem:
                 log(LogLevel::info, "종료 신호 수신");
+                sendTelemetry("INFO", "SYSTEM_QUIT", "{\"reason\":\"QuitTheSystem\"}");
                 return;
 
             default:
@@ -178,10 +184,36 @@ void AdasFeature::runAdasMainLoop() {
 
 void AdasFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "현재 위치 수신: " + message);
+    
+    // 팀원 브랜치 반영: 위치 수신 Telemetry 전송
+    sendTelemetry("INFO", "ADAS_LOCATION_RX",
+        std::string("{\"location\":\"") + message + "\"}");
+
+    // 내 브랜치 반영: 리팩토링된 subTree_ 호출 구조 유지
     const auto enabled = [this](const char* k) { return flag_.isSubFeatureEnabled(k); };
     if (subTree_) {
         subTree_->OnVehicleLocation(enabled, message);
     }
+
+    // 팀원 브랜치 반영: 각 서브 기능별 Telemetry 및 OFF 상태 로그 전송
+    if (flag_.isSubFeatureEnabled("FCA")) {
+        sendTelemetry("INFO", "ADAS_FCA_ENABLED", "{\"subfeature\":\"FCA\"}");
+    } else {
+        log(LogLevel::info, "FCA: OFF (전방충돌방지 비활성)");
+    }
+    
+    if (flag_.isSubFeatureEnabled("LKA")) {
+        sendTelemetry("INFO", "ADAS_LKA_ENABLED", "{\"subfeature\":\"LKA\"}");
+    } else {
+        log(LogLevel::info, "LKA: OFF (차선유지 비활성)");
+    }
+    
+    if (flag_.isSubFeatureEnabled("SCC")) {
+        sendTelemetry("INFO", "ADAS_SCC_ENABLED", "{\"subfeature\":\"SCC\"}");
+    } else {
+        log(LogLevel::info, "SCC: OFF (어댑티브 크루즈 비활성)");
+    }
+
     log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
     sendDomainEvent(EventId::AdasDecisionUpdate,
         std::string("ADAS_DECISION source=location status=tracking|") + message);
@@ -189,6 +221,8 @@ void AdasFeature::processVehicleLocation(const std::string& message) {
 
 void AdasFeature::processRoadInfo(const std::string& message) {
     log(LogLevel::info, "도로 정보 수신: " + message);
+    sendTelemetry("INFO", "ADAS_ROAD_RX",
+        std::string("{\"road_info\":\"") + message + "\"}");
     log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
     const auto enabled = [this](const char* k) { return flag_.isSubFeatureEnabled(k); };
     if (subTree_) {

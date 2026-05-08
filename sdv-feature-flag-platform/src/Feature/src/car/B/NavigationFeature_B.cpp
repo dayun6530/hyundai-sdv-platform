@@ -37,9 +37,9 @@ NavigationFeature_B::NavigationFeature_B(EventBusInterface& eventBus)
     , Car(eventBus) {}
 
 void NavigationFeature_B::execute() {
-    const char line = getAbVariant().value_or('B');
+    const std::string line = getAbVariant().value_or("B");
     log(LogLevel::info,
-        std::string("Car platform — NavigationFeature_B (B-line / Flag A|B=") + line + ")");
+        std::string("Car platform — NavigationFeature_B (B-line / Variant=") + line + ")");
     log(LogLevel::info, "[NAV-B] current location updated");
     log(LogLevel::info, "[NAV-B] route guidance started");
     log(LogLevel::info, "[NAV-B] real-time traffic rerouting enabled");

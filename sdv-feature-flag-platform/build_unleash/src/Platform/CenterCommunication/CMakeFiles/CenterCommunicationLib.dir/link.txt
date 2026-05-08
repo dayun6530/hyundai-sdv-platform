@@ -1,2 +1,0 @@
-/usr/bin/ar qc libCenterCommunicationLib.a CMakeFiles/CenterCommunicationLib.dir/src/Signal.cpp.o CMakeFiles/CenterCommunicationLib.dir/src/MqttVehicleAgent.cpp.o
-/usr/bin/ranlib libCenterCommunicationLib.a

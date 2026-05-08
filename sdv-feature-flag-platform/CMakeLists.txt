@@ -62,7 +62,7 @@ add_executable(FeatureEvaluator src/Platform/LifeCycleManager/src/FeatureEvaluat
 target_link_libraries(FeatureEvaluator PRIVATE LifeCycleManagerLib)
 
 add_executable(DataCollector src/Platform/CenterCommunication/src/DataCollector.cpp)
-target_link_libraries(DataCollector PRIVATE CenterCommunicationLib)
+target_link_libraries(DataCollector PRIVATE CenterCommunicationLib EventBus)
 
 add_executable(SignalReceiver src/Platform/CenterCommunication/src/SignalReceiver.cpp)
 target_link_libraries(SignalReceiver PRIVATE CenterCommunicationLib EventBus)

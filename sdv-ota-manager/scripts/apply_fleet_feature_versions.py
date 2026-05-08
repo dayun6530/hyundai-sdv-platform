@@ -3,10 +3,10 @@
 Apply per-car, per-feature-line Docker versions using ota_vehicle.sh bootstrap.
 
 Config: deploy/vehicle_runtime/fleet_feature_versions.json
-  - defaults: ADAS, Navigation, Energy (tag suffix, e.g. 1.0 or v1.0)
+  - defaults: ADAS, Navigation, EvEnergy (tag suffix, e.g. 1.0 or v1.0)
   - cars: optional overrides per car_id; missing keys fall back to defaults.
 
-Energy maps to ota_vehicle --domain EvEnergy (image sdv/evenergy-feature:v*).
+Legacy compatibility: the config may still use the key "Energy"; it is treated as "EvEnergy".
 """
 from __future__ import annotations
 
@@ -24,9 +24,16 @@ DEFAULT_CONFIG = os.path.join(
 )
 
 ALL_CARS = [f"car_{i}" for i in range(1, 11)]
-FEATURE_KEYS = ("ADAS", "Navigation", "Energy")
+FEATURE_KEYS = ("ADAS", "Navigation", "EvEnergy")
 # ota_vehicle.sh --domain values
-OTA_DOMAIN = {"ADAS": "ADAS", "Navigation": "Navigation", "Energy": "EvEnergy"}
+OTA_DOMAIN = {"ADAS": "ADAS", "Navigation": "Navigation", "EvEnergy": "EvEnergy"}
+
+
+def normalize_feature_key(k: str) -> str:
+    kk = (k or "").strip()
+    if kk == "Energy":
+        return "EvEnergy"
+    return kk
 
 
 def normalize_version(v: Any) -> str:
@@ -43,8 +50,17 @@ def load_config(path: str) -> Dict[str, Any]:
         data = json.load(f)
     if not isinstance(data.get("defaults"), dict):
         data["defaults"] = {}
+    # Backward-compat: Energy -> EvEnergy
+    if "Energy" in data["defaults"] and "EvEnergy" not in data["defaults"]:
+        data["defaults"]["EvEnergy"] = data["defaults"].get("Energy")
     if not isinstance(data.get("cars"), dict):
         data["cars"] = {}
+    else:
+        for car_id, feats in list(data["cars"].items()):
+            if not isinstance(feats, dict):
+                continue
+            if "Energy" in feats and "EvEnergy" not in feats:
+                feats["EvEnergy"] = feats.get("Energy")
     return data
 
 
@@ -78,7 +94,7 @@ def validate_config(data: Dict[str, Any]) -> str:
         if not isinstance(feats, dict):
             return f"cars.{car} must be an object"
         for fk in feats:
-            if fk not in FEATURE_KEYS:
+            if normalize_feature_key(fk) not in FEATURE_KEYS:
                 return f"cars.{car} unknown feature key: {fk}"
     return ""
 

@@ -17,6 +17,24 @@
 
 namespace sdv::platform::deployment {
 
+// -----------------------------------------------------------------------------
+// DeploymentManager (module boundary note)
+//
+// This module is responsible for preparing on-vehicle deployment artifacts and
+// writing deployment state/history under `deploy/`:
+//   - package intake/register (under deploy/packages)
+//   - validation (demo-level checks)
+//   - placement (packages → staging → active + backup)
+//   - state update (deploy/state/*.json + selection/config sync)
+//   - rollback metadata (deploy/rollback/*)
+//   - history/audit (deploy/history/*, deploy/manifest.txt)
+//
+// Non-responsibility:
+//   - It does NOT start/stop/exec feature processes. The platform runtime
+//     (LifeCycleManager or vehicle runtime) reads the prepared files/state and
+//     performs actual process lifecycle decisions.
+// -----------------------------------------------------------------------------
+
 namespace {
 
 std::string trim(const std::string& s) {
@@ -173,6 +191,47 @@ std::string buildFleetRollbackMetadataPrettyJson(const std::string& rollback_id,
     os << "  \"config_file\": \"" << jsonEscLocal(config_file_rel) << "\"\n";
     os << "}\n";
     return os.str();
+}
+
+std::string readFileTextBestEffortLocal(const std::string& path) {
+    std::ifstream in(path);
+    if (!in) {
+        return {};
+    }
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
+
+std::optional<std::string> parseJsonStringFieldLooseLocal(const std::string& json, const std::string& key) {
+    // Demo-only JSON string field extractor (tolerant, not a full JSON parser).
+    // Expected pattern: "key": "value"
+    try {
+        const std::regex re("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
+        std::smatch m;
+        if (std::regex_search(json, m, re) && m.size() >= 2) {
+            return m[1].str();
+        }
+    } catch (...) {
+        // Best-effort: treat as missing
+    }
+    return std::nullopt;
+}
+
+std::string stripLeadingVTokenLocal(std::string v) {
+    v = trim(v);
+    if (v.size() >= 2 && (v[0] == 'v' || v[0] == 'V') && std::isdigit(static_cast<unsigned char>(v[1]))) {
+        return v.substr(1);
+    }
+    return v;
+}
+
+std::string dockerRepoForFleetFeatureLocal(const std::string& feature) {
+    const std::string f = toLower(trim(feature));
+    if (f == "adas") return "sdv/adas-feature";
+    if (f == "navigation" || f == "nav") return "sdv/navigation-feature";
+    if (f == "energy" || f == "evenergy" || f == "ev") return "sdv/evenergy-feature";
+    return "sdv/" + (f.empty() ? std::string("feature") : f) + "-feature";
 }
 
 }  // namespace
@@ -355,6 +414,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
             const std::string failedMode = "FAILED";
             const bool notRunning = false;
             (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+            (void)sm.updateOtaPhase(car_id, "CHECKSUM_FAILED", versionReasonDefer, err);
             std::cout << "[OTA] target=" << car_id << " mode=FAILED (defer-native validation)\n";
             return fail(versionReasonDefer);
         }
@@ -422,6 +482,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         const std::string failedMode = "FAILED";
         const bool notRunning = false;
         (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+        (void)sm.updateOtaPhase(car_id, "CHECKSUM_FAILED", versionReason, err);
         std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
         return fail(versionReason);
     }
@@ -467,10 +528,13 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
     std::cout << "[FLEET] note: fleet deploy updates deploy/state only (config/car/*.conf is not modified)\n";
 
     // OTA state flow (no sleeps; just state transitions).
-    // Demo note: this is an intentionally integrated "download+install" progression for fleet demos.
-    // A production SDV/OTA manager would typically separate phases, re-check safety between phases,
-    // and persist richer job metadata than this prototype.
-    std::cout << "[FLEET] note: demo integrated OTA progression (download/install not split across separate commands)\n";
+    // Keep legacy ota fields (download_status / install_status / update_mode) for compatibility,
+    // but also write an explicit `ota_phase` to make phase separation visible in state JSON.
+    //
+    // ACK vs OTA phase:
+    // - `ota.ota_phase`: deployment-manager tracked progress (this function writes it)
+    // - `last_ack`: vehicle-reported acknowledgement (written via fleet-ack CLI; transport TBD)
+    std::cout << "[FLEET] note: demo integrated OTA progression (download/verify/install are recorded as phases)\n";
     const std::string downloading = "downloading";
     const std::string notStarted = "not_started";
     const std::string downMode = "DOWNLOADING";
@@ -478,6 +542,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
     if (!sm.updateOtaProgressForDeploy(car_id, &downloading, &notStarted, &downMode, &notRunning, err)) {
         return fail(err.empty() ? "deploy failed: unable to update OTA (DOWNLOADING)" : err);
     }
+    (void)sm.updateOtaPhase(car_id, "DOWNLOAD_STARTED", "", err);
     std::cout << "[OTA] target=" << car_id << " mode=DOWNLOADING download_status=downloading\n";
 
     const std::string downloaded = "downloaded";
@@ -486,9 +551,92 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         const std::string failed = "failed";
         const std::string failedMode = "FAILED";
         (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+        (void)sm.updateOtaPhase(car_id, "DOWNLOAD_FAILED", "unable to update READY_TO_INSTALL", err);
         std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed\n";
         return fail(err.empty() ? "deploy failed: unable to update OTA (READY_TO_INSTALL)" : err);
     }
+    (void)sm.updateOtaPhase(car_id, "DOWNLOAD_COMPLETED", "", err);
+    (void)sm.updateOtaPhase(car_id, "VERIFYING", "", err);
+    // Verification stage (metadata-level):
+    // - For legacy/executable packages: validatePackageFile() does local file checks + a lightweight hash.
+    // - For docker_image packages: verify presence of manifest/docker_image/checksum_file and optionally image_digest.
+    //   This step does NOT contact a remote registry; digest verification against registry is a follow-up feature.
+    auto verifyFail = [&](const std::string& reason) {
+        const std::string failed = "failed";
+        const std::string failedMode = "FAILED";
+        (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+        (void)sm.updateOtaPhase(car_id, "CHECKSUM_FAILED", reason, err);
+        return fail(reason);
+    };
+    auto verifyDockerMetadataIfDetected = [&]() -> bool {
+        // Apply docker manifest checks ONLY when a manifest is present under deploy/packages/<FEATURE>/... .
+        // This avoids breaking legacy A/B slot deploy flows (no docker manifest expected there).
+        const std::string tvRaw = trim(target_version);
+        const std::string tvNoV = stripLeadingVTokenLocal(tvRaw);
+        const std::vector<std::string> candidates = {
+            packagesDir_ + "/" + feature + "/" + tvRaw + "/manifest.json",
+            packagesDir_ + "/" + feature + "/v" + tvNoV + "/manifest.json",
+            packagesDir_ + "/" + feature + "/" + tvNoV + "/manifest.json",
+        };
+        std::string manifestAbs;
+        for (const auto& p : candidates) {
+            std::error_code ec;
+            if (std::filesystem::exists(p, ec) && !ec) {
+                manifestAbs = p;
+                break;
+            }
+        }
+        if (manifestAbs.empty()) {
+            return true;  // treat as legacy/executable package
+        }
+
+        const std::string manifestJson = readFileTextBestEffortLocal(manifestAbs);
+        if (manifestJson.empty()) {
+            return false;
+        }
+
+        const std::string artifactType =
+            parseJsonStringFieldLooseLocal(manifestJson, "artifact_type")
+                .value_or(parseJsonStringFieldLooseLocal(manifestJson, "package_type").value_or(std::string()));
+        if (!artifactType.empty() && artifactType != "docker_image") {
+            return false;
+        }
+
+        const std::string dockerImage = parseJsonStringFieldLooseLocal(manifestJson, "docker_image").value_or("");
+        const std::string checksumFile = parseJsonStringFieldLooseLocal(manifestJson, "checksum_file").value_or("");
+        const std::string imageDigest = parseJsonStringFieldLooseLocal(manifestJson, "image_digest").value_or("");
+
+        if (dockerImage.empty()) {
+            return false;
+        }
+
+        // Prefer having checksum_file or image_digest (or both).
+        if (checksumFile.empty() && imageDigest.empty()) {
+            return false;
+        }
+
+        if (!checksumFile.empty()) {
+            const auto baseDir = std::filesystem::path(manifestAbs).parent_path();
+            const auto checksumAbs = (baseDir / checksumFile).generic_string();
+            std::error_code ec;
+            const bool checksumExists = std::filesystem::exists(checksumAbs, ec) && !ec;
+            if (!checksumExists && imageDigest.empty()) {
+                return false;
+            }
+        }
+
+        if (imageDigest.empty() && !checksumFile.empty()) {
+            std::cout << "[VERIFY] warning: image_digest missing (metadata-only); checksum_file present, continue\n";
+        }
+        return true;
+    };
+
+    if (!verifyDockerMetadataIfDetected()) {
+        return verifyFail("docker metadata verification failed (missing manifest/docker_image/checksum/digest)");
+    }
+
+    (void)sm.updateOtaPhase(car_id, "VERIFIED", "", err);
+    (void)sm.updateOtaPhase(car_id, "READY_TO_INSTALL", "", err);
     std::cout << "[OTA] target=" << car_id << " mode=READY_TO_INSTALL download_status=downloaded\n";
 
     const std::string installing = "installing";
@@ -498,18 +646,51 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         const std::string failed = "failed";
         const std::string failedMode = "FAILED";
         (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+        (void)sm.updateOtaPhase(car_id, "INSTALL_FAILED", "unable to update INSTALLING", err);
         std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
         return fail(err.empty() ? "deploy failed: unable to update OTA (INSTALLING)" : err);
     }
+    (void)sm.updateOtaPhase(car_id, "INSTALL_STARTED", "", err);
     std::cout << "[OTA] target=" << car_id << " mode=INSTALLING install_status=installing target_system_running=true\n";
+
+    // Capture previous primary selection for rollback_stack recording (best-effort).
+    // NOTE: This is metadata only; it does not change rollback behavior yet.
+    std::string prev_slot;
+    std::string prev_version;
+    {
+        auto stPrev = sm.loadState(car_id, err);
+        if (stPrev) {
+            const auto* fsPrev = StateManager::featureRef(*stPrev, feature);
+            if (fsPrev) {
+                prev_slot = fsPrev->active_slot;
+                prev_version = fsPrev->active_version;
+            }
+        }
+        err.clear();
+    }
 
     // Update state: active_slot/active_version only. Keep flag/fallback/kill/shadow unchanged.
     if (!sm.updateFeatureSlot(car_id, feature, target_slot, target_version, err)) {
         const std::string failed = "failed";
         const std::string failedMode = "FAILED";
         (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+        (void)sm.updateOtaPhase(car_id, "INSTALL_FAILED", "unable to update feature slot", err);
         std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
         return fail(err.empty() ? "deploy failed: unable to update feature slot" : err);
+    }
+
+    // Record the previous stable primary into rollback_stack (most-recent-first), capped to 3.
+    if (!prev_version.empty() && prev_version != target_version) {
+        StateManager::RollbackStackEntry e{};
+        e.slot = prev_slot;
+        e.version = prev_version;
+        e.docker_image = "";  // unknown in this step (docker metadata is tracked elsewhere)
+        e.previous_role = "primary";
+        e.recorded_at = nowTimestampIso();
+        e.reason = "promoted_to_primary";
+        e.status = "stable";
+        std::string rberr;
+        (void)sm.pushRollbackStackEntry(car_id, feature, e, 3, rberr);
     }
 
     const std::string installed = "installed";
@@ -518,6 +699,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         std::cerr << "[OTA] target=" << car_id << " warning: unable to mark COMPLETED: "
                   << (err.empty() ? "unknown" : err) << "\n";
     } else {
+        (void)sm.updateOtaPhase(car_id, "INSTALL_COMPLETED", "", err);
         std::cout << "[OTA] target=" << car_id << " mode=COMPLETED install_status=installed target_system_running=false\n";
     }
 
@@ -1455,7 +1637,15 @@ bool DeploymentManager::validatePackageFile(const std::string& path, ValidationI
         return false;
     }
 
-    // Lightweight checksum: FNV-1a 64-bit over file bytes (no external deps).
+    // Legacy / executable-artifact validation (prototype):
+    // - This validates a local file (e.g. packaged executable copied into deploy/staging).
+    // - It is NOT a Docker image digest verification.
+    //
+    // Docker-image based packaging (team direction):
+    // - Preferred integrity pin is `image_digest` (sha256) from `docker image inspect` / registry.
+    // - `checksum_file` is a *secondary* signal for artifacts in the image build context.
+    //
+    // We keep this lightweight FNV-1a 64-bit hash for demo portability (no external deps).
     std::ifstream in(path, std::ios::binary);
     if (!in) {
         out.reason = "unable to open file";
@@ -2137,55 +2327,58 @@ struct FleetRollbackPrevFields {
 };
 
 bool extractJsonStringKey(const std::string& json, const std::string& key, std::string& out) {
-    try {
-        // Delimiter )" must not appear inside the pattern; use R"json(...)json" for the tail segment.
-        const std::regex re(std::string(R"(")") + key + R"json(\s*:\s*"([^"]*)")json");
-        std::smatch m;
-        if (!std::regex_search(json, m, re)) {
-            return false;
-        }
-        out = m[1].str();
-        return true;
-    } catch (...) {
+    const auto v = parseJsonStringFieldLooseLocal(json, key);
+    if (!v.has_value()) {
         return false;
     }
+    out = *v;
+    return true;
 }
 
 bool extractJsonBoolKey(const std::string& json, const std::string& key, bool& out) {
-    try {
-        const std::regex re(std::string(R"(")") + key + R"json(\s*:\s*(true|false))json");
-        std::smatch m;
-        if (!std::regex_search(json, m, re)) {
-            return false;
-        }
-        out = (m[1].str() == "true");
-        return true;
-    } catch (...) {
+    // Best-effort boolean field extractor. Expected pattern: "key": true|false
+    const std::string needle = "\"" + key + "\"";
+    const std::size_t kpos = json.find(needle);
+    if (kpos == std::string::npos) {
         return false;
     }
+    std::size_t pos = json.find(':', kpos + needle.size());
+    if (pos == std::string::npos) {
+        return false;
+    }
+    pos++;
+    while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\r' || json[pos] == '\n')) {
+        pos++;
+    }
+    if (json.compare(pos, 4, "true") == 0) {
+        out = true;
+        return true;
+    }
+    if (json.compare(pos, 5, "false") == 0) {
+        out = false;
+        return true;
+    }
+    return false;
 }
 
 bool parseFleetRollbackMetadataFromJson(const std::string& json, FleetRollbackPrevFields& m, std::string& err) {
     err.clear();
+    // Required minimal keys (legacy rollback files may omit newer fields).
     if (!extractJsonStringKey(json, "previous_slot", m.previous_slot) ||
-        !extractJsonStringKey(json, "previous_version", m.previous_version) ||
-        !extractJsonStringKey(json, "previous_flag", m.previous_flag) ||
-        !extractJsonStringKey(json, "previous_shadow_slot", m.previous_shadow_slot) ||
-        !extractJsonStringKey(json, "previous_shadow_version", m.previous_shadow_version) ||
-        !extractJsonStringKey(json, "previous_kill_reason", m.previous_kill_reason) ||
-        !extractJsonStringKey(json, "previous_fallback_slot", m.previous_fallback_slot) ||
-        !extractJsonStringKey(json, "previous_fallback_version", m.previous_fallback_version)) {
-        err = "rollback metadata parse failed: missing required string field(s)";
+        !extractJsonStringKey(json, "previous_version", m.previous_version)) {
+        err = "rollback metadata parse failed: missing previous_slot/previous_version";
         return false;
     }
-    if (!extractJsonBoolKey(json, "previous_shadow_enabled", m.previous_shadow_enabled)) {
-        err = "rollback metadata parse failed: missing or invalid previous_shadow_enabled";
-        return false;
-    }
-    if (!extractJsonBoolKey(json, "previous_kill_switch", m.previous_kill_switch)) {
-        err = "rollback metadata parse failed: missing or invalid previous_kill_switch";
-        return false;
-    }
+
+    // Best-effort optional keys.
+    (void)extractJsonStringKey(json, "previous_flag", m.previous_flag);
+    (void)extractJsonStringKey(json, "previous_shadow_slot", m.previous_shadow_slot);
+    (void)extractJsonStringKey(json, "previous_shadow_version", m.previous_shadow_version);
+    (void)extractJsonStringKey(json, "previous_kill_reason", m.previous_kill_reason);
+    (void)extractJsonStringKey(json, "previous_fallback_slot", m.previous_fallback_slot);
+    (void)extractJsonStringKey(json, "previous_fallback_version", m.previous_fallback_version);
+    (void)extractJsonBoolKey(json, "previous_shadow_enabled", m.previous_shadow_enabled);
+    (void)extractJsonBoolKey(json, "previous_kill_switch", m.previous_kill_switch);
     (void)extractJsonStringKey(json, "previous_realtime_route_flag", m.previous_realtime_route_flag);
     (void)extractJsonStringKey(json, "previous_charging_recommend_flag", m.previous_charging_recommend_flag);
     (void)extractJsonStringKey(json, "previous_advanced_range_flag", m.previous_advanced_range_flag);
@@ -2220,6 +2413,14 @@ bool applyFleetRollbackPrevToFeature(StateManager::FeatureState& fs,
 
     fs.active_slot = m.previous_slot;
     fs.active_version = m.previous_version;
+    fs.primary_slot = m.previous_slot;
+    fs.primary_version = m.previous_version;
+    {
+        const std::string vNoV = stripLeadingVTokenLocal(m.previous_version);
+        if (!vNoV.empty()) {
+            fs.primary_image = dockerRepoForFleetFeatureLocal(feature) + ":v" + vNoV;
+        }
+    }
     fs.flag = m.previous_flag;
     fs.shadow_enabled = m.previous_shadow_enabled;
     fs.shadow_slot = m.previous_shadow_slot;
@@ -2299,7 +2500,8 @@ bool DeploymentManager::fleetRollbackVehicle(const std::string& car_id,
     const std::string& feature,
     bool sync_config,
     FleetRollbackSummary& summary,
-    std::string& errorMessage) {
+    std::string& errorMessage,
+    const std::string& target_version) {
     errorMessage.clear();
     summary = FleetRollbackSummary{};
     summary.car_id = car_id;
@@ -2322,34 +2524,6 @@ bool DeploymentManager::fleetRollbackVehicle(const std::string& car_id,
         return false;
     }
 
-    const std::filesystem::path metaAbs = std::filesystem::path(workDir_) / "deploy" / "rollback" / car_id / (feature + ".json");
-    std::error_code fsec;
-    if (!std::filesystem::exists(metaAbs, fsec)) {
-        summary.result = "failed";
-        summary.reason = "rollback metadata not found: " + summary.metadata_path;
-        errorMessage = summary.reason;
-        return false;
-    }
-
-    std::ifstream in(metaAbs);
-    if (!in) {
-        summary.result = "failed";
-        summary.reason = "rollback metadata not found: " + summary.metadata_path;
-        errorMessage = summary.reason;
-        return false;
-    }
-    std::ostringstream buf;
-    buf << in.rdbuf();
-    const std::string content = buf.str();
-
-    FleetRollbackPrevFields meta;
-    if (!parseFleetRollbackMetadataFromJson(content, meta, errorMessage)) {
-        summary.result = "failed";
-        summary.reason = errorMessage.empty() ? "rollback metadata parse failed" : errorMessage;
-        errorMessage = summary.reason;
-        return false;
-    }
-
     StateManager sm(workDir_);
     std::string err;
     auto stOpt = sm.loadState(car_id, err);
@@ -2368,11 +2542,98 @@ bool DeploymentManager::fleetRollbackVehicle(const std::string& car_id,
         return false;
     }
 
-    if (!applyFleetRollbackPrevToFeature(*fs, meta, feature, err)) {
-        summary.result = "failed";
-        summary.reason = err;
-        errorMessage = summary.reason;
-        return false;
+    // Distinguish:
+    // - Shadow validation failure: primary was never promoted; should go to blocked/quarantine (future wiring).
+    // - Primary runtime failure after promote: this is a real rollback; we block the current primary and restore an older stable.
+    //
+    // In this step we keep the existing rollback behavior (rollback metadata file) as default for compatibility,
+    // and add an optional selection path via `--target-version` that reads from feature.rollback_stack.
+
+    // Record blocked current (best-effort; rollback should still proceed if this fails).
+    {
+        StateManager::BlockedVersionEntry b{};
+        b.slot = fs->active_slot;
+        b.version = fs->active_version;
+        b.docker_image = "";
+        b.blocked_at = nowTimestampIso();
+        b.reason = "rollback invoked";
+        b.source = "primary_runtime_failed";
+        std::string berr;
+        (void)sm.addBlockedVersion(car_id, feature, b, berr);
+        // Reload state after potential modification so subsequent operations use current data.
+        stOpt = sm.loadState(car_id, err);
+        if (!stOpt) {
+            summary.result = "failed";
+            summary.reason = err.empty() ? ("failed to load " + summary.state_file) : err;
+            errorMessage = summary.reason;
+            return false;
+        }
+        fs = StateManager::featureRef(*stOpt, feature);
+        if (!fs) {
+            summary.result = "failed";
+            summary.reason = "internal: unknown feature: " + feature;
+            errorMessage = summary.reason;
+            return false;
+        }
+    }
+
+    bool restoredViaStack = false;
+    if (!target_version.empty()) {
+        // Choose a specific rollback target from rollback_stack.
+        const auto it = std::find_if(fs->rollback_stack.begin(), fs->rollback_stack.end(),
+            [&](const StateManager::RollbackStackEntry& e) { return e.version == target_version; });
+        if (it == fs->rollback_stack.end()) {
+            summary.result = "failed";
+            summary.reason = "target version not found in rollback_stack: " + target_version;
+            errorMessage = summary.reason;
+            return false;
+        }
+        fs->active_slot = it->slot.empty() ? fs->active_slot : it->slot;
+        fs->active_version = it->version;
+        // Align Primary metadata to the restored active selection for consistency.
+        fs->primary_slot = fs->active_slot;
+        fs->primary_version = fs->active_version;
+        if (!it->docker_image.empty()) {
+            fs->primary_image = it->docker_image;
+        }
+        // Keep flag/kill/shadow/fallback/pending as-is in this step (metadata-only rollback selection).
+        restoredViaStack = true;
+    } else {
+        // Default: preserve legacy behavior using deploy/rollback/<car>/<Feature>.json
+        const std::filesystem::path metaAbs = std::filesystem::path(workDir_) / "deploy" / "rollback" / car_id / (feature + ".json");
+        std::error_code fsec;
+        if (!std::filesystem::exists(metaAbs, fsec)) {
+            summary.result = "failed";
+            summary.reason = "rollback metadata not found: " + summary.metadata_path;
+            errorMessage = summary.reason;
+            return false;
+        }
+
+        std::ifstream in(metaAbs);
+        if (!in) {
+            summary.result = "failed";
+            summary.reason = "rollback metadata not found: " + summary.metadata_path;
+            errorMessage = summary.reason;
+            return false;
+        }
+        std::ostringstream buf;
+        buf << in.rdbuf();
+        const std::string content = buf.str();
+
+        FleetRollbackPrevFields meta;
+        if (!parseFleetRollbackMetadataFromJson(content, meta, errorMessage)) {
+            summary.result = "failed";
+            summary.reason = errorMessage.empty() ? "rollback metadata parse failed" : errorMessage;
+            errorMessage = summary.reason;
+            return false;
+        }
+
+        if (!applyFleetRollbackPrevToFeature(*fs, meta, feature, err)) {
+            summary.result = "failed";
+            summary.reason = err;
+            errorMessage = summary.reason;
+            return false;
+        }
     }
 
     if (!sm.saveState(car_id, *stOpt, err)) {
@@ -2382,8 +2643,11 @@ bool DeploymentManager::fleetRollbackVehicle(const std::string& car_id,
         return false;
     }
 
-    summary.restored_slot = meta.previous_slot;
-    summary.restored_version = meta.previous_version;
+    summary.restored_slot = fs->active_slot;
+    summary.restored_version = fs->active_version;
+    if (restoredViaStack) {
+        summary.reason = "restored from rollback_stack target_version=" + target_version;
+    }
 
     if (sync_config) {
         std::string msg;
@@ -2925,6 +3189,102 @@ std::string DeploymentManager::fleetShadowSummaryToJson(const FleetShadowSummary
     return os.str();
 }
 
+bool DeploymentManager::fleetPromoteShadowVehicle(const std::string& car_id, const std::string& feature, std::string& outMessage) {
+    outMessage.clear();
+    if (!isSyncConfigCarId(car_id)) {
+        outMessage = "invalid car_id (allowed: car_1 .. car_10): " + car_id;
+        return false;
+    }
+    if (!isValidFleetFeature(feature)) {
+        outMessage = "invalid feature (expected ADAS|Navigation|Energy): " + feature;
+        return false;
+    }
+
+    StateManager sm(workDir_);
+    std::string err;
+    auto stOpt = sm.loadState(car_id, err);
+    if (!stOpt) {
+        outMessage = err.empty() ? "failed to load deploy/state/" + car_id + ".json" : err;
+        return false;
+    }
+    auto* fs = StateManager::featureRef(*stOpt, feature);
+    if (!fs) {
+        outMessage = "internal: unknown feature: " + feature;
+        return false;
+    }
+
+    const std::string prev_slot = fs->active_slot;
+    const std::string prev_ver = fs->active_version;
+    const std::string prev_img = fs->primary_image;
+
+    const std::string next_ver = fs->shadow_version;
+    const std::string next_slot = fs->shadow_slot;
+    std::string next_img = fs->shadow_image;
+    if (next_ver.empty()) {
+        outMessage = "no shadow_version recorded; run fleet-shadow ON or docker deploy-shadow first";
+        return false;
+    }
+
+    if (next_img.empty()) {
+        const std::string vNoV = stripLeadingVTokenLocal(next_ver);
+        if (!vNoV.empty()) {
+            const std::string repo = dockerRepoForFleetFeatureLocal(feature);
+            next_img = repo + ":v" + vNoV;
+        }
+    }
+
+    // Promote Shadow -> Primary (metadata only; runtime container actions are external).
+    if (!next_slot.empty()) {
+        fs->active_slot = next_slot;
+        fs->primary_slot = next_slot;
+    }
+    fs->active_version = next_ver;
+    fs->primary_version = next_ver;
+    if (!next_img.empty()) {
+        fs->primary_image = next_img;
+    }
+
+    // Disable shadow lane after promotion.
+    fs->shadow_enabled = false;
+    fs->shadow_slot.clear();
+    fs->shadow_version.clear();
+    fs->shadow_image.clear();
+    fs->shadow_status = "DISABLED";
+    fs->shadow_started_at.clear();
+
+    // Record previous primary selection into rollback_stack (cap 3).
+    if (!prev_ver.empty() && prev_ver != next_ver) {
+        StateManager::RollbackStackEntry e{};
+        e.slot = prev_slot;
+        e.version = prev_ver;
+        e.docker_image = prev_img;
+        e.previous_role = "primary";
+        e.recorded_at = nowTimestampIso();
+        e.reason = "promoted_from_shadow";
+        e.status = "stable";
+
+        // Update in-memory state, then save once below.
+        fs->rollback_stack.erase(
+            std::remove_if(fs->rollback_stack.begin(), fs->rollback_stack.end(),
+                [&](const StateManager::RollbackStackEntry& x) {
+                    return x.version == e.version && x.docker_image == e.docker_image;
+                }),
+            fs->rollback_stack.end());
+        fs->rollback_stack.insert(fs->rollback_stack.begin(), e);
+        if (fs->rollback_stack.size() > 3) {
+            fs->rollback_stack.resize(3);
+        }
+    }
+
+    if (!sm.saveState(car_id, *stOpt, err)) {
+        outMessage = err.empty() ? "failed to save state after promote" : err;
+        return false;
+    }
+
+    outMessage = "promoted shadow->primary (metadata only) for " + car_id + " " + feature + " to " + next_ver;
+    return true;
+}
+
 void DeploymentManager::printStatus(const std::string& platformConfigPath) const {
     std::cout << "=== STATUS PATHS ===\n";
     std::cout << "Working directory: " << workDir_ << "\n";
@@ -3062,9 +3422,51 @@ bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std:
     }
 
     for (const std::string& feat : featuresWithPending) {
+        // Pending apply is the real "active/primary changes" point for deferred native rollout.
+        // Record rollback_stack here (not at fleet-deploy scheduling time).
+        std::string prev_slot;
+        std::string prev_version;
+        std::string prev_image;
+        {
+            auto stPrev = sm.loadState(car_id, err);
+            if (stPrev) {
+                const auto* fsPrev = StateManager::featureRef(*stPrev, feat);
+                if (fsPrev) {
+                    prev_slot = fsPrev->active_slot;
+                    prev_version = fsPrev->active_version;
+                    prev_image = fsPrev->primary_image;
+                }
+            }
+            err.clear();
+        }
         if (!sm.promotePendingToActive(car_id, feat, err)) {
             outMessage = err.empty() ? "promotePendingToActive failed" : err;
             return false;
+        }
+
+        // Push previous primary into rollback_stack only when the active version actually changed.
+        std::string new_version;
+        {
+            auto stAfter = sm.loadState(car_id, err);
+            if (stAfter) {
+                const auto* fsAfter = StateManager::featureRef(*stAfter, feat);
+                if (fsAfter) {
+                    new_version = fsAfter->active_version;
+                }
+            }
+            err.clear();
+        }
+        if (!prev_version.empty() && !new_version.empty() && prev_version != new_version) {
+            StateManager::RollbackStackEntry e{};
+            e.slot = prev_slot;
+            e.version = prev_version;
+            e.docker_image = prev_image;
+            e.previous_role = "primary";
+            e.recorded_at = nowTimestampIso();
+            e.reason = "applied_pending";
+            e.status = "stable";
+            std::string rberr;
+            (void)sm.pushRollbackStackEntry(car_id, feat, e, 3, rberr);
         }
     }
 

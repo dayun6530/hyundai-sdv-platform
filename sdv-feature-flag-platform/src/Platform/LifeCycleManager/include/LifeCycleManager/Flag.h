@@ -39,10 +39,10 @@ public:
     bool isShadowMirroringEnabled() const { return isShadowMirrorEnabled(); }
 
     // ----- [A/B Test Mode] -----
-    // A/B variant (CONVENTIONS 10.2).
-    void setAbVariant(char variant);
+    // Unleash variant token (e.g. "A", "B", "2.0", "v3.1.4").
+    void setAbVariant(const std::string& variant);
     void clearAbVariant();
-    std::optional<char> getAbVariant() const;
+    std::optional<std::string> getAbVariant() const;
 
     /// True when variant is explicitly A (vehicle line / A|B mode).
     bool isAbModeA() const;
@@ -65,7 +65,7 @@ private:
     std::atomic<bool> killed_;
     std::atomic<bool> shadowMirrorEnabled_;
     
-    std::optional<char> abVariant_;
+    std::optional<std::string> abVariant_;
 
     mutable std::mutex subMutex_;
     /// Only stores keys explicitly turned OFF (false). Absent key => enabled.

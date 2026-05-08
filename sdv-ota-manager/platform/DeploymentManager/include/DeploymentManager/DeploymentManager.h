@@ -14,9 +14,23 @@
 namespace sdv::platform::deployment {
 
 /// File-based Deployment Manager (prototype).
-/// - Deployment: package intake / validation / placement (packages → staging → active)
-/// - Release: version selection / config sync / activation health check / rollback
-///   - Note: staging artifacts are intentionally retained (pre-validation / approval expansion).
+///
+/// ## Responsibility (what this module DOES)
+/// - **Package intake / register**: accept package artifacts under `deploy/packages/` and record what is available.
+/// - **Validation**: lightweight checks on package file names and contents (demo-level; no PKI/OTA transport in this step).
+/// - **Placement**: prepare the on-vehicle artifact layout (packages → staging → active), backup previous active.
+/// - **State update**: write fleet/vehicle deployment state under `deploy/state/*.json` (and selection/config files).
+/// - **Rollback metadata**: write/maintain rollback metadata under `deploy/rollback/`.
+/// - **History**: append audit/history records under `deploy/history/` and `deploy/manifest.txt`.
+///
+/// ## Non-responsibility (what this module does NOT do)
+/// - **Does not spawn/exec Feature processes** and does not own runtime lifecycle.
+///   The **platform runtime / LifeCycleManager** reads `deploy/active/*` + state/config and decides what to execute.
+///
+/// Notes:
+/// - "Release" helpers (select/rollback/sync-config/health-check) operate on files + state only; they do not
+///   start/stop feature processes. Any "activation" effect requires the runtime to (re)load config / restart.
+/// - Staging artifacts are intentionally retained (pre-validation / approval expansion).
 class DeploymentManager {
 public:
     struct DeployResult {
@@ -68,10 +82,19 @@ public:
     /// \p workingDirectory Repository root (contains deploy/, config/). Usually current working directory.
     explicit DeploymentManager(std::string workingDirectory);
 
+    // -------------------------------------------------------------------------
+    // Package intake / validation / placement (artifacts only; no process exec)
+    // -------------------------------------------------------------------------
+
     /// Deploy pipeline: packages → staging → active. Previous active is backed up.
     bool deployExecutable(const std::string& execBasename);
 
-    /// Set which A|B line runs for ADAS | NAV | ENERGY, update selection file and platform config.
+    // -------------------------------------------------------------------------
+    // Release helpers (selection/config sync/rollback) — file/state operations only
+    // The runtime (LifeCycleManager) is responsible for actually executing binaries.
+    // -------------------------------------------------------------------------
+
+    /// Set which A|B line should be considered active for ADAS | NAV | ENERGY and update selection + config files.
     bool selectVersion(const std::string& domain, const std::string& ab,
         const std::string& platformConfigPath);
 
@@ -90,6 +113,11 @@ public:
     void printInventory() const;
 
     const std::string& workDir() const { return workDir_; }
+
+    // -------------------------------------------------------------------------
+    // Fleet state operations (deploy/state JSON + optional config sync)
+    // These APIs write deployment state and metadata; they still do not execute features.
+    // -------------------------------------------------------------------------
 
     // Fleet-based deploy helpers (default: vehicle state only). Optional \c --sync-config on \c fleet-deploy
     // may sync \c config/car/*.conf for successful targets via \c syncCarConfigFromState.
@@ -116,6 +144,11 @@ public:
     /// For \p car_id: for each feature with non-empty pending version, \c deployExecutable from \c version_map,
     /// then promote pending → active in \c deploy/state. No-op when nothing pending. CWD must be platform root.
     bool applyPendingNativeForCar(const std::string& car_id, std::string& outMessage);
+
+    /// Metadata-only promote: treat current Shadow as validated and promote it to Primary in deploy/state.
+    /// This does NOT execute/rename docker containers; it only synchronizes state fields:
+    /// - primary/active version (+ optional image), rollback_stack, and shadow disabled.
+    bool fleetPromoteShadowVehicle(const std::string& car_id, const std::string& feature, std::string& outMessage);
 
     // Fleet deploy reporting helpers (kept separate so UI/API can reuse the exact format).
     void printFleetDeploySummary(const DeploySummary& summary) const;
@@ -145,8 +178,12 @@ public:
     /// Restore one feature in \c deploy/state from \c deploy/rollback metadata (vehicle scope only).
     /// Fills \p summary for every outcome. Returns \c true only when state is restored and optional \c --sync-config
     /// sync succeeds; returns \c false on any failure or \c partial_success (state restored, config sync failed).
-    bool fleetRollbackVehicle(const std::string& car_id, const std::string& feature, bool sync_config,
-        FleetRollbackSummary& summary, std::string& errorMessage);
+    bool fleetRollbackVehicle(const std::string& car_id,
+        const std::string& feature,
+        bool sync_config,
+        FleetRollbackSummary& summary,
+        std::string& errorMessage,
+        const std::string& target_version = std::string{});
 
     void printFleetRollbackSummary(const FleetRollbackSummary& summary) const;
     std::string fleetRollbackSummaryToJson(const FleetRollbackSummary& summary) const;

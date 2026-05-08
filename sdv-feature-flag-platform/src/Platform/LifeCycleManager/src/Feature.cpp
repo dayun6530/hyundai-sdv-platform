@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <ctime>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -189,6 +190,29 @@ static std::string vehicleRuntimeJsonPathForCar(const std::string& statePath, co
     if (pos != std::string::npos) {
         return statePath.substr(0, pos) + "/deploy/vehicle_runtime/" + car + ".json";
     }
+    // Fallback: when running from `sdv-feature-flag-platform` with a relative state path,
+    // the docker/OTA runtime JSON lives in the sibling repo `sdv-ota-manager`.
+    if (statePath.rfind("deploy/state/", 0) == 0 || statePath == "deploy/state" ||
+        statePath.find("/deploy/state/") != std::string::npos) {
+        char cwd[PATH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+            return std::string("../sdv-ota-manager/deploy/vehicle_runtime/") + car + ".json";
+        }
+        const std::string rel = std::string("/sdv-ota-manager/deploy/vehicle_runtime/") + car + ".json";
+        const std::string base(cwd);
+        const std::string cands[] = {
+            base + "/.." + rel,
+            base + "/../.." + rel,
+            base + "/../../.." + rel,
+            base + "/../../../.." + rel,
+        };
+        for (const auto& p : cands) {
+            if (access(p.c_str(), R_OK) == 0) {
+                return p;
+            }
+        }
+        return std::string("../sdv-ota-manager/deploy/vehicle_runtime/") + car + ".json";
+    }
     return {};
 }
 
@@ -213,9 +237,111 @@ static std::string normalizeVersionForDeployBanner(std::string s) {
     return s;
 }
 
+static std::optional<std::string> readRuntimeVersionForStartedLine(const std::string& statePath,
+    const std::string& car,
+    const std::string& processName,
+    bool shadowObserver) {
+    struct Row {
+        const char* processName;
+        const char* runtimeDomainKey;
+        const char* runtimeVersionFieldPrimary;
+        const char* runtimeVersionFieldShadow;
+    };
+    static const Row kRows[] = {
+        {"AdasFeature", "adas", "primary_version", "shadow_version"},
+        {"AdasFeatureShadow", "adas", "primary_version", "shadow_version"},
+        {"NavigationFeature", "navigation", "primary_version", "shadow_version"},
+        {"NavigationFeatureShadow", "navigation", "primary_version", "shadow_version"},
+        {"EvEnergyFeature", "evenergy", "primary_version", "shadow_version"},
+        {"EvEnergyFeatureShadow", "evenergy", "primary_version", "shadow_version"},
+    };
+    const Row* row = nullptr;
+    for (const auto& r : kRows) {
+        if (processName == r.processName) {
+            row = &r;
+            break;
+        }
+    }
+    if (row == nullptr) {
+        return std::nullopt;
+    }
+
+    const char* field = shadowObserver ? row->runtimeVersionFieldShadow : row->runtimeVersionFieldPrimary;
+    const std::string rtPath = vehicleRuntimeJsonPathForCar(statePath, car);
+    if (rtPath.empty()) {
+        return std::nullopt;
+    }
+    std::ifstream rt(rtPath);
+    if (!rt) {
+        return std::nullopt;
+    }
+    std::ostringstream rtbuf;
+    rtbuf << rt.rdbuf();
+    auto ver = readQuotedFieldInDomainBlock(rtbuf.str(), row->runtimeDomainKey, field);
+    if (!ver || ver->empty()) {
+        return std::nullopt;
+    }
+    // For started-line we want plain numeric tokens ("2.0"), not "v2.0".
+    std::string v = *ver;
+    while (!v.empty() && (v.front() == ' ' || v.front() == '\t')) v.erase(v.begin());
+    while (!v.empty() && (v.back() == ' ' || v.back() == '\t')) v.pop_back();
+    if (!v.empty() && (v[0] == 'v' || v[0] == 'V')) {
+        if (v.size() >= 2 && std::isdigit(static_cast<unsigned char>(v[1]))) {
+            v.erase(0, 1);
+        }
+    }
+    if (v.empty()) {
+        return std::nullopt;
+    }
+    return v;
+}
+
 }  // namespace
 
 std::atomic<bool> Feature::stopRequested_(false);
+
+namespace {
+
+static std::string jsonEscapeString(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (const char c : s) {
+        switch (c) {
+        case '\\': out += "\\\\"; break;
+        case '"': out += "\\\""; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        default: out.push_back(c); break;
+        }
+    }
+    return out;
+}
+
+static std::string nowUtcIso8601Z() {
+    using clock = std::chrono::system_clock;
+    const auto t = clock::to_time_t(clock::now());
+    std::tm tm{};
+#if defined(_WIN32)
+    gmtime_s(&tm, &t);
+#else
+    gmtime_r(&t, &tm);
+#endif
+    std::ostringstream os;
+    os << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+    return os.str();
+}
+
+static bool looksLikeJsonValue(const std::string& s) {
+    std::size_t i = 0;
+    while (i < s.size() && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r')) ++i;
+    if (i >= s.size()) return false;
+    const char c = s[i];
+    return (c == '{' || c == '[' || c == '"' || c == 't' || c == 'f' || c == 'n' ||
+            (c >= '0' && c <= '9') || c == '-');
+}
+
+}  // namespace
 
 std::string Feature::normalizeFileName(const std::string& name) {
     std::string result;
@@ -355,7 +481,26 @@ int Feature::run() {
         log(LogLevel::error, "EventBus registration failed. Terminating.");
         return 1;
     }
-    const std::string distVer = distributionVersionLabelForLog();
+    std::string distVer = distributionVersionLabelForLog();
+    // Prefer runtime JSON version for logs (docker/OTA demo truth source):
+    // deploy/vehicle_runtime/<car>.json domains.*.primary_version|shadow_version
+    const char* car = std::getenv("SDV_CAR_INSTANCE");
+    if (car != nullptr && car[0] != '\0') {
+        carId_ = std::string(car);
+        std::string statePath;
+        if (const char* envRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
+            if (envRoot[0] != '\0') {
+                statePath = std::string(envRoot) + "/state/" + car + ".json";
+            }
+        }
+        if (statePath.empty()) {
+            statePath = std::string("deploy/state/") + car + ".json";
+        }
+        if (auto v = readRuntimeVersionForStartedLine(statePath, car, name_, isShadowMode_)) {
+            distVer = *v;
+        }
+    }
+    effectiveVersionLabelForLog_ = distVer;
     const std::string verSuffix =
         distVer.empty() ? std::string() : (std::string(" — ") + name_ + " v" + distVer + " is running");
 
@@ -381,6 +526,35 @@ int Feature::run() {
     eventBus_.unRegister(componentId_);
     log(LogLevel::info, "stopped");
     return 0;
+}
+
+bool Feature::sendTelemetry(const std::string& level,
+                            const std::string& eventType,
+                            const std::string& jsonPayload) {
+    // Telemetry is allowed for both Primary and Shadow observer processes.
+    // It is a passive data stream and must not control the vehicle.
+    const std::string ts = nowUtcIso8601Z();
+    const std::string carId = !carId_.empty()
+        ? carId_
+        : (std::getenv("SDV_CAR_INSTANCE") ? std::string(std::getenv("SDV_CAR_INSTANCE")) : std::string(""));
+
+    std::ostringstream os;
+    os << "{";
+    os << "\"timestamp\":\"" << jsonEscapeString(ts) << "\",";
+    os << "\"car_id\":\"" << jsonEscapeString(carId) << "\",";
+    os << "\"feature\":\"" << jsonEscapeString(name_) << "\",";
+    os << "\"role\":\"" << (isShadowMode_ ? "SHADOW" : "PRIMARY") << "\",";
+    os << "\"level\":\"" << jsonEscapeString(level) << "\",";
+    os << "\"event_type\":\"" << jsonEscapeString(eventType) << "\",";
+    os << "\"payload\":";
+    if (looksLikeJsonValue(jsonPayload)) {
+        os << jsonPayload;
+    } else {
+        os << "\"" << jsonEscapeString(jsonPayload) << "\"";
+    }
+    os << "}";
+
+    return eventBus_.sendEvent(Event(EventId::TelemetryData, os.str()));
 }
 
 void Feature::log(LogLevel level, const std::string& message) {
@@ -539,11 +713,11 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
     if (event.getEventId() == EventId::AbVariantAssign) {
         const std::string& msg = event.getMessage();
         const std::string prefix = name_ + "|";
-        if (msg.rfind(prefix, 0) == 0 && msg.size() == prefix.size() + 1) {
-            const char v = msg.back();
-            if (v == 'A' || v == 'B') {
-                flag_.setAbVariant(v);
-                log(LogLevel::info, std::string("A/B variant set to ") + v);
+        if (msg.rfind(prefix, 0) == 0 && msg.size() > prefix.size()) {
+            const std::string variant = msg.substr(prefix.size());
+            if (!variant.empty()) {
+                flag_.setAbVariant(variant);
+                log(LogLevel::info, std::string("Variant set to ") + variant);
                 return true;
             }
         }
@@ -646,7 +820,7 @@ void Feature::applyLaunchAbVariantFromArgv(int argc, char** argv, Flag& flag) {
     }
     std::string m(argv[2]);
     if (m == "A" || m == "B") {
-        flag.setAbVariant(m[0]);
+        flag.setAbVariant(m);
     }
 }
 

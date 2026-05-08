@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <filesystem>
 #include <unordered_set>
 #include <vector>
 
@@ -18,6 +19,8 @@
 #include "unleash/Configuration/clientConfig.hpp"
 #include "unleash/Domain/context.hpp"
 #endif
+
+#include <nlohmann/json.hpp>
 
 namespace sdv::platform::lifecyclemgr {
 
@@ -68,6 +71,99 @@ std::string shadowLogicalNameForPrimaryBase(const std::string& base) {
     return base + "Shadow";
 }
 
+#ifdef SDV_WITH_UNLEASH
+struct VehicleMeta {
+    std::string model;
+    std::string region;
+    std::string group;
+};
+
+static std::string getenvOr(const char* key, const std::string& fallback) {
+    const char* v = std::getenv(key);
+    if (v == nullptr || *v == '\0') return fallback;
+    return std::string(v);
+}
+
+static std::filesystem::path resolveVehiclesJsonPath() {
+    namespace fs = std::filesystem;
+    const fs::path rel = fs::path("config") / "fleet" / "vehicles.json";
+    std::error_code ec;
+    if (fs::is_regular_file(rel, ec)) {
+        return rel;
+    }
+    const char* cfg = std::getenv("SDV_LIFECYCLE_CONFIG");
+    if (cfg && *cfg) {
+        // SDV_LIFECYCLE_CONFIG: <repo>/config/car/car_<n>.conf
+        // repo root is the parent of "config".
+        fs::path p(cfg);
+        fs::path dir = p.parent_path();          // .../config/car
+        fs::path cfgRoot = dir.parent_path();    // .../config
+        fs::path repoRoot = cfgRoot.parent_path(); // .../<repo>
+        fs::path cand = repoRoot / rel;
+        if (fs::is_regular_file(cand, ec)) {
+            return cand;
+        }
+    }
+    return rel;
+}
+
+static std::optional<VehicleMeta> loadVehicleMetaForCar(const std::string& carId) {
+    namespace fs = std::filesystem;
+    const fs::path p = resolveVehiclesJsonPath();
+    std::ifstream in(p);
+    if (!in.is_open()) {
+        return std::nullopt;
+    }
+    nlohmann::json j;
+    try {
+        in >> j;
+    } catch (...) {
+        return std::nullopt;
+    }
+    if (!j.is_object()) {
+        return std::nullopt;
+    }
+    if (!j.contains("vehicles") || !j["vehicles"].is_array()) {
+        return std::nullopt;
+    }
+    for (const auto& v : j["vehicles"]) {
+        if (!v.is_object()) continue;
+        const std::string id = v.value("car_id", "");
+        if (id != carId) continue;
+        VehicleMeta m;
+        m.model = v.value("model", "");
+        m.region = v.value("region", "");
+        m.group = v.value("group", "");
+        return m;
+    }
+    return std::nullopt;
+}
+
+static void setVehicleContext(unleash::Context& ctx, const std::string& carId) {
+    ctx.setUserId(carId);
+    if (const auto meta = loadVehicleMetaForCar(carId)) {
+        if (!meta->model.empty()) ctx.setProperty("model", meta->model);
+        if (!meta->region.empty()) ctx.setProperty("region", meta->region);
+        if (!meta->group.empty()) ctx.setProperty("group", meta->group);
+    }
+}
+
+static std::string abVariantFromUnleashVariant(const unleash::Variant& v) {
+    if (!v.enabled()) return {};
+    const std::string& name = v.name();
+    if (!name.empty()) {
+        return name;
+    }
+    if (v.hasPayload() && v.payload().has_value()) {
+        const auto& p = *v.payload();
+        if (!p.value().empty()) {
+            return p.value();
+        }
+    }
+    return {};
+}
+#endif
+
 }  // namespace
 
 FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
@@ -107,9 +203,11 @@ static bool endsWith(const std::string& s, const std::string& suffix) {
 
 // Convenience: when running a single-car platform (car_<n>),
 // allow signals like "KILL:AdasFeature" and map them to configured exec names (logical AdasFeature, or legacy *_A/*_B).
-static std::string normalizeCarLineTarget(const std::string& raw, std::optional<char> variantOpt) {
+static std::string normalizeCarLineTarget(const std::string& raw, std::optional<std::string> variantOpt) {
     if (!variantOpt.has_value()) return raw;
-    const char v = *variantOpt;
+    const std::string& vs = *variantOpt;
+    if (vs.size() != 1) return raw;
+    const char v = vs[0];
     if (v != 'A' && v != 'B') return raw;
     if (raw.empty() || containsCarLineSuffix(raw)) return raw;
 
@@ -328,7 +426,9 @@ void FeatureEvaluator::execute() {
                   .setRefreshInterval(seconds(3))
                   .setMetricsInterval(seconds(15))
                   .setMetricsIntervalInitial(seconds(5));
-            unleash::Context ctx;
+            const std::string carId = getenvOr("SDV_CAR_INSTANCE", "car_1");
+            unleash::Context ctx(unleashApp);
+            setVehicleContext(ctx, carId);
             unleashClient = std::make_unique<unleash::UnleashClient>(config, ctx);
             unleashClient->onError([this](const unleash::EventHandler::ClientError& e) {
                 log(LogLevel::warn, std::string("Unleash error: ") + e.message + " | " + e.details);
@@ -350,6 +450,9 @@ void FeatureEvaluator::execute() {
     auto lastNav = std::optional<bool>();
     auto lastAdas = std::optional<bool>();
     auto lastEnergy = std::optional<bool>();
+    auto lastNavVariant = std::optional<std::string>();
+    auto lastAdasVariant = std::optional<std::string>();
+    auto lastEnergyVariant = std::optional<std::string>();
 #endif
 
     while (!isStopRequested()) {
@@ -382,6 +485,26 @@ void FeatureEvaluator::execute() {
             syncOne("NavigationFeature", nav, lastNav);
             syncOne("AdasFeature", adas, lastAdas);
             syncOne("EvEnergyFeature", energy, lastEnergy);
+
+            auto syncVariant = [this](
+                unleash::UnleashClient& c,
+                const char* flagName,
+                std::optional<std::string>& lastVar) {
+                const unleash::Variant v = c.getVariant(flagName);
+                const std::string var = abVariantFromUnleashVariant(v);
+                if (var.empty()) {
+                    return;
+                }
+                if (lastVar.has_value() && *lastVar == var) {
+                    return;
+                }
+                lastVar = var;
+                (void)sendAbSet(flagName, var);
+            };
+
+            syncVariant(*unleashClient, "NavigationFeature", lastNavVariant);
+            syncVariant(*unleashClient, "AdasFeature", lastAdasVariant);
+            syncVariant(*unleashClient, "EvEnergyFeature", lastEnergyVariant);
         }
 #endif
 
@@ -464,12 +587,15 @@ bool FeatureEvaluator::sendShadowPromotionRequest(const std::string& primaryLogi
     return ok;
 }
 
-bool FeatureEvaluator::sendAbSet(const std::string& featureName, char variant) {
-    const std::string msg = featureName + "|" + std::string(1, variant);
-    log(LogLevel::info, std::string("AB_SET -> ") + msg);
+bool FeatureEvaluator::sendAbSet(const std::string& featureName, const std::string& variant) {
+    if (variant.empty()) {
+        return false;
+    }
+    const std::string msg = featureName + "|" + variant;
+    log(LogLevel::info, std::string("VARIANT_SET -> ") + msg);
     const bool ok = eventBus_.sendEvent(Event(EventId::AbVariantAssign, msg));
     if (!ok) {
-        log(LogLevel::warn, "AB_SET EventBus sendEvent failed for " + msg);
+        log(LogLevel::warn, "VARIANT_SET EventBus sendEvent failed for " + msg);
     }
     return ok;
 }

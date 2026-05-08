@@ -11,11 +11,12 @@
       "flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
+      "shadow_version": "",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v0.1"
+      "fallback_version": "v0.1",
+      "primary_image": "sdv/adas-feature:v1.0"
     },
     "Navigation": {
       "active_slot": "A",
@@ -25,11 +26,12 @@
       "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
+      "shadow_version": "",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0"
+      "fallback_version": "v1.0",
+      "primary_image": "sdv/navigation-feature:v1.0"
     },
     "Energy": {
       "active_slot": "A",
@@ -39,11 +41,12 @@
       "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v1.0",
+      "shadow_version": "",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v0.5"
+      "fallback_version": "v0.5",
+      "primary_image": "sdv/evenergy-feature:v1.0"
     }
   },
   "ota": {

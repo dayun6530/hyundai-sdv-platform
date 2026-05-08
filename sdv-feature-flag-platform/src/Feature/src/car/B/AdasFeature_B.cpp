@@ -15,9 +15,9 @@ AdasFeature_B::AdasFeature_B(EventBusInterface& eventBus)
     , Car(eventBus) {}
 
 void AdasFeature_B::execute() {
-    const char line = getAbVariant().value_or('B');
+    const std::string line = getAbVariant().value_or("B");
     log(LogLevel::info,
-        std::string("Car platform — AdasFeature_B (B-line / Flag A|B=") + line + ")");
+        std::string("Car platform — AdasFeature_B (B-line / Variant=") + line + ")");
     log(LogLevel::info, "[ADAS-B] lane keeping assist active");
     log(LogLevel::info, "[ADAS-B] forward collision warning sensitivity: high");
     log(LogLevel::info, "[ADAS-B] enhanced object detection enabled");

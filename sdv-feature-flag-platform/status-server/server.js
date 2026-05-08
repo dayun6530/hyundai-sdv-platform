@@ -3,6 +3,8 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
+const http = require("http");
+const https = require("https");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -29,6 +31,1052 @@ app.use((err, _req, res, next) => {
     return;
   }
   next(err);
+});
+
+// ---- Unleash Admin API proxy (Token auth) ----
+//
+// The dashboard (5173) calls these endpoints via Vite proxy -> status-server (8080).
+// status-server then calls Unleash Admin API (default http://127.0.0.1:4242) with an API token.
+//
+// Env:
+//   - UNLEASH_ADMIN_URL: base URL of Unleash (default http://127.0.0.1:4242)
+//   - UNLEASH_API_TOKEN: admin/project token (sent as Authorization header)
+//
+const UNLEASH_ADMIN_URL = String(process.env.UNLEASH_ADMIN_URL || "http://127.0.0.1:4242").trim();
+const UNLEASH_API_TOKEN = String(process.env.UNLEASH_API_TOKEN || "").trim();
+
+function requireUnleashToken(res) {
+  if (!UNLEASH_API_TOKEN) {
+    res.status(503).json({
+      ok: false,
+      error: "UNLEASH_API_TOKEN is not set (status-server cannot call Unleash Admin API).",
+    });
+    return false;
+  }
+  return true;
+}
+
+function unleashUrlFor(pathname) {
+  const base = new URL(UNLEASH_ADMIN_URL);
+  const p = String(pathname || "");
+  // Preserve base path if any, and avoid double slashes.
+  base.pathname = `${base.pathname.replace(/\/$/, "")}/${p.replace(/^\//, "")}`;
+  return base;
+}
+
+function readJsonSafe(text) {
+  try {
+    return JSON.parse(String(text || ""));
+  } catch {
+    return null;
+  }
+}
+
+function unleashRequest(method, pathname, body) {
+  return new Promise((resolve, reject) => {
+    const url = unleashUrlFor(pathname);
+    const lib = url.protocol === "https:" ? https : http;
+    const payload = body == null ? "" : JSON.stringify(body);
+    const req = lib.request(
+      {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port || (url.protocol === "https:" ? 443 : 80),
+        path: `${url.pathname}${url.search || ""}`,
+        method: String(method || "GET").toUpperCase(),
+        headers: {
+          Authorization: UNLEASH_API_TOKEN,
+          "content-type": "application/json",
+          "user-agent": "sdv-status-server/unleash-proxy",
+        },
+        timeout: 10_000,
+      },
+      (resp) => {
+        let buf = "";
+        resp.setEncoding("utf8");
+        resp.on("data", (chunk) => {
+          buf += chunk;
+        });
+        resp.on("end", () => {
+          const json = readJsonSafe(buf);
+          resolve({
+            status: resp.statusCode || 0,
+            ok: resp.statusCode >= 200 && resp.statusCode < 300,
+            json,
+            text: buf,
+          });
+        });
+      },
+    );
+    req.on("error", reject);
+    if (payload) {
+      req.write(payload);
+    }
+    req.end();
+  });
+}
+
+function normalizeProjectId(v) {
+  const s = String(v || "").trim();
+  return s || "default";
+}
+
+function normalizeEnvironment(v) {
+  const s = String(v || "").trim();
+  // Unleash default env is often "development"; keep a sensible default.
+  return s || "development";
+}
+
+function normalizeFeatureName(v) {
+  const s = String(v || "").trim();
+  return s;
+}
+
+function asStringArray(v) {
+  if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+  if (typeof v === "string") {
+    return v
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function clampInt(n, lo, hi, fallback) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return fallback;
+  return Math.max(lo, Math.min(hi, Math.round(x)));
+}
+
+function makeConstraint(contextName, values) {
+  return {
+    contextName: String(contextName || "").trim(),
+    operator: "IN",
+    values: (values || []).map(String),
+  };
+}
+
+function makeFlexibleRolloutStrategy({ title, contextName, values, rollout, stickiness, groupId }) {
+  return {
+    name: "flexibleRollout",
+    title: title || null,
+    constraints: [makeConstraint(contextName, values)],
+    parameters: {
+      rollout: String(clampInt(rollout, 0, 100, 100)),
+      stickiness: String(stickiness || "userId"),
+      groupId: String(groupId || ""),
+    },
+  };
+}
+
+async function getStrategies(projectId, featureName, environment) {
+  return unleashRequest(
+    "GET",
+    `/api/admin/projects/${encodeURIComponent(projectId)}/features/${encodeURIComponent(featureName)}/environments/${encodeURIComponent(environment)}/strategies`,
+  );
+}
+
+async function addStrategy(projectId, featureName, environment, body) {
+  return unleashRequest(
+    "POST",
+    `/api/admin/projects/${encodeURIComponent(projectId)}/features/${encodeURIComponent(featureName)}/environments/${encodeURIComponent(environment)}/strategies`,
+    body,
+  );
+}
+
+async function updateStrategy(projectId, featureName, environment, strategyId, body) {
+  return unleashRequest(
+    "PUT",
+    `/api/admin/projects/${encodeURIComponent(projectId)}/features/${encodeURIComponent(featureName)}/environments/${encodeURIComponent(environment)}/strategies/${encodeURIComponent(strategyId)}`,
+    body,
+  );
+}
+
+async function overwriteVariants(projectId, featureName, environment, variants) {
+  return unleashRequest(
+    "PUT",
+    `/api/admin/projects/${encodeURIComponent(projectId)}/features/${encodeURIComponent(featureName)}/environments/${encodeURIComponent(environment)}/variants`,
+    variants,
+  );
+}
+
+function pickExistingTargetStrategy(strategies, contextName) {
+  const list = Array.isArray(strategies) ? strategies : [];
+  const want = String(contextName || "").trim();
+  for (const s of list) {
+    if (!s || typeof s !== "object") continue;
+    if (String(s.name || "") !== "flexibleRollout") continue;
+    const cs = Array.isArray(s.constraints) ? s.constraints : [];
+    if (cs.some((c) => c && String(c.contextName || "") === want && String(c.operator || "") === "IN")) {
+      return s;
+    }
+  }
+  return null;
+}
+
+function pickExistingStrategyByGroupId(strategies, groupId) {
+  const list = Array.isArray(strategies) ? strategies : [];
+  const gid = String(groupId || "").trim();
+  if (!gid) return null;
+  for (const s of list) {
+    if (!s || typeof s !== "object") continue;
+    const p = s.parameters || {};
+    if (p && typeof p === "object" && String(p.groupId || "") === gid) {
+      return s;
+    }
+  }
+  return null;
+}
+
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function allocateCountsByPercent(total, percents) {
+  // Largest remainder method to ensure integer counts sum to total.
+  const raw = percents.map((p) => (total * p) / 100);
+  const base = raw.map((x) => Math.floor(x));
+  let used = base.reduce((a, b) => a + b, 0);
+  const remainders = raw.map((x, i) => ({ i, r: x - Math.floor(x) }));
+  remainders.sort((a, b) => b.r - a.r);
+  let left = total - used;
+  let k = 0;
+  while (left > 0 && k < remainders.length * 2) {
+    const idx = remainders[k % remainders.length].i;
+    base[idx] += 1;
+    left -= 1;
+    k += 1;
+  }
+  return base;
+}
+
+// 1) Targeting rollout by region/model via strategy constraints (flexibleRollout).
+app.post("/api/unleash/strategy/target", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const contextName = String(body.contextName || body.targetKey || "").trim(); // "region" | "model"
+  const values = asStringArray(body.values || body.value || body.targets);
+  const rollout = clampInt(body.rollout ?? body.percentage ?? 100, 0, 100, 100);
+  const stickiness = String(body.stickiness || "userId").trim() || "userId";
+
+  if (!featureName) {
+    res.status(400).json({ ok: false, error: "featureName is required" });
+    return;
+  }
+  if (!contextName || (contextName !== "region" && contextName !== "model" && contextName !== "group")) {
+    res.status(400).json({ ok: false, error: 'contextName must be "region", "model", or "group"' });
+    return;
+  }
+  if (!values.length) {
+    res.status(400).json({ ok: false, error: "values must be a non-empty list" });
+    return;
+  }
+
+  try {
+    const st = await getStrategies(projectId, featureName, environment);
+    if (!st.ok) {
+      const upstreamMsg =
+        (st.json && (st.json.message || st.json.error || st.json.name)) ||
+        (typeof st.text === "string" && st.text.trim()) ||
+        "";
+      res.status(st.status || 500).json({
+        ok: false,
+        error: `Unleash get strategies failed (${st.status})${upstreamMsg ? `: ${upstreamMsg}` : ""}`,
+        upstream: st.json || st.text,
+      });
+      return;
+    }
+
+    const strategies = Array.isArray(st.json) ? st.json : [];
+    const existing = pickExistingTargetStrategy(strategies, contextName);
+    const title = `SDV target: ${contextName} IN [${values.join(", ")}] rollout=${rollout}%`;
+    const groupId = `sdv-${featureName}-${contextName}`;
+    const strategyBody = makeFlexibleRolloutStrategy({
+      title,
+      contextName,
+      values,
+      rollout,
+      stickiness,
+      groupId,
+    });
+
+    let out;
+    if (existing && existing.id) {
+      out = await updateStrategy(projectId, featureName, environment, existing.id, strategyBody);
+    } else {
+      out = await addStrategy(projectId, featureName, environment, strategyBody);
+    }
+
+    res.status(out.ok ? 200 : out.status || 500).json({
+      ok: out.ok,
+      projectId,
+      environment,
+      featureName,
+      mode: existing ? "updated" : "created",
+      upstream_status: out.status,
+      upstream: out.json || out.text,
+      error: out.ok
+        ? undefined
+        : `Unleash strategy write failed (${out.status})` +
+          (((out.json && (out.json.message || out.json.error)) || (out.text && String(out.text).trim()))
+            ? `: ${(out.json && (out.json.message || out.json.error)) || String(out.text).trim()}`
+            : ""),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
+});
+
+// 2) A/B ratio settings: overwrite feature variants for an environment.
+app.post("/api/unleash/strategy/variants", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const stickiness = String(body.stickiness || "userId").trim() || "userId";
+
+  if (!featureName) {
+    res.status(400).json({ ok: false, error: "featureName is required" });
+    return;
+  }
+
+  // Accept either { variants: [{name, weight}], ... } with weights in 0..1000
+  // or { ratioA: 50, ratioB: 50 } (percentage).
+  let variants = [];
+  if (Array.isArray(body.variants) && body.variants.length) {
+    variants = body.variants
+      .map((v) => ({
+        name: String(v?.name || "").trim(),
+        weight: clampInt(v?.weight, 0, 1000, 0),
+        stickiness,
+      }))
+      .filter((v) => v.name && v.weight >= 0);
+  } else {
+    const a = clampInt(body.ratioA ?? body.a ?? 50, 0, 100, 50);
+    const b = clampInt(body.ratioB ?? body.b ?? 50, 0, 100, 50);
+    const sum = Math.max(1, a + b);
+    const wA = clampInt((a / sum) * 1000, 0, 1000, 500);
+    const wB = clampInt(1000 - wA, 0, 1000, 500);
+    variants = [
+      { name: String(body.nameA || "A"), weight: wA, stickiness },
+      { name: String(body.nameB || "B"), weight: wB, stickiness },
+    ];
+  }
+
+  if (!variants.length) {
+    res.status(400).json({ ok: false, error: "variants must be provided (or ratioA/ratioB)" });
+    return;
+  }
+
+  try {
+    const out = await overwriteVariants(projectId, featureName, environment, variants);
+    res.status(out.ok ? 200 : out.status || 500).json({
+      ok: out.ok,
+      projectId,
+      environment,
+      featureName,
+      upstream_status: out.status,
+      upstream: out.json || out.text,
+      error: out.ok
+        ? undefined
+        : `Unleash variants overwrite failed (${out.status})` +
+          (((out.json && (out.json.message || out.json.error)) || (out.text && String(out.text).trim()))
+            ? `: ${(out.json && (out.json.message || out.json.error)) || String(out.text).trim()}`
+            : ""),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
+});
+
+// 3) Promote: force one variant to 100% (weight=1000).
+app.post("/api/unleash/promote", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const winner = String(body.winner || body.variant || "").trim();
+  const stickiness = String(body.stickiness || "userId").trim() || "userId";
+
+  if (!featureName) {
+    res.status(400).json({ ok: false, error: "featureName is required" });
+    return;
+  }
+  if (!winner) {
+    res.status(400).json({ ok: false, error: "winner (variant name) is required" });
+    return;
+  }
+
+  try {
+    const out = await overwriteVariants(projectId, featureName, environment, [
+      { name: winner, weight: 1000, stickiness },
+    ]);
+    res.status(out.ok ? 200 : out.status || 500).json({
+      ok: out.ok,
+      projectId,
+      environment,
+      featureName,
+      winner,
+      upstream_status: out.status,
+      upstream: out.json || out.text,
+      error: out.ok
+        ? undefined
+        : `Unleash promote failed (${out.status})` +
+          (((out.json && (out.json.message || out.json.error)) || (out.text && String(out.text).trim()))
+            ? `: ${(out.json && (out.json.message || out.json.error)) || String(out.text).trim()}`
+            : ""),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
+});
+
+// Option 2: target-by-context and deploy a concrete version to matching cars.
+// - Writes a flexibleRollout strategy with a single strategy-level variant (name=version token)
+// - Executes Docker OTA promote (ota_vehicle.sh promote) per matched car
+app.post("/api/unleash/deploy/target-version", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const contextName = String(body.contextName || body.targetKey || "").trim();
+  const values = asStringArray(body.values || body.value || body.targets);
+  const versionRaw = String(body.version || "").trim();
+  const version = versionRaw.replace(/^v(?=\d)/i, "");
+
+  if (!featureName) return res.status(400).json({ ok: false, error: "featureName is required" });
+  if (!contextName || (contextName !== "region" && contextName !== "model" && contextName !== "group")) {
+    return res.status(400).json({ ok: false, error: 'contextName must be "region", "model", or "group"' });
+  }
+  if (!values.length) return res.status(400).json({ ok: false, error: "values must be a non-empty list" });
+  if (!version) return res.status(400).json({ ok: false, error: "version is required (e.g. 2.0)" });
+
+  const domainMap = {
+    NavigationFeature: "Navigation",
+    AdasFeature: "ADAS",
+    EvEnergyFeature: "EvEnergy",
+  };
+  const domain = domainMap[featureName];
+  if (!domain) {
+    return res.status(400).json({
+      ok: false,
+      error: 'featureName must be one of "NavigationFeature", "AdasFeature", "EvEnergyFeature"',
+    });
+  }
+
+  const vehiclesPath = path.join(REPO_ROOT, "config", "fleet", "vehicles.json");
+  let vehicles;
+  try {
+    const raw = readJson(vehiclesPath);
+    vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: `failed to read config/fleet/vehicles.json: ${err.message}` });
+  }
+
+  const matched = vehicles
+    .filter((v) => v && typeof v === "object")
+    .filter((v) => {
+      const key = String(contextName);
+      const val = String(v[key] || "").trim();
+      return val && values.includes(val);
+    })
+    .map((v) => String(v.car_id || "").trim())
+    .filter((id) => /^car_(10|[1-9])$/.test(id));
+
+  if (!matched.length) {
+    return res.status(400).json({ ok: false, error: `no cars matched ${contextName} IN [${values.join(", ")}]` });
+  }
+
+  // 1) Upsert Unleash strategy with a single strategy-level variant = desired version token (observability).
+  let unleashWrite = null;
+  try {
+    const st = await getStrategies(projectId, featureName, environment);
+    if (!st.ok) {
+      unleashWrite = { ok: false, status: st.status, upstream: st.json || st.text };
+    } else {
+      const strategies = Array.isArray(st.json) ? st.json : [];
+      const gid = `sdv-${featureName}-${contextName}-ver-${values.join("_")}`;
+      const existing = pickExistingStrategyByGroupId(strategies, gid) || pickExistingTargetStrategy(strategies, contextName);
+      const title = `SDV version target: ${contextName} IN [${values.join(", ")}] -> v${version}`;
+      const strategyBody = makeFlexibleRolloutStrategy({
+        title,
+        contextName,
+        values,
+        rollout: 100,
+        stickiness: "userId",
+        groupId: gid,
+      });
+      // Strategy-level variants take precedence over environment variants.
+      strategyBody.variants = [
+        { name: version, weight: 1000, weightType: "fix", stickiness: "userId" },
+      ];
+
+      let out;
+      if (existing && existing.id) {
+        out = await updateStrategy(projectId, featureName, environment, existing.id, strategyBody);
+        unleashWrite = { ok: out.ok, mode: "updated", status: out.status, upstream: out.json || out.text };
+      } else {
+        out = await addStrategy(projectId, featureName, environment, strategyBody);
+        unleashWrite = { ok: out.ok, mode: "created", status: out.status, upstream: out.json || out.text };
+      }
+    }
+  } catch (err) {
+    unleashWrite = { ok: false, error: err.message || String(err) };
+  }
+
+  // 2) Execute Docker OTA promote for matched cars (actual runtime change).
+  const results = [];
+  for (const car_id of matched) {
+    try {
+      const r = await execVehicleRuntimeWsl("promote", { car_id, domain, version, sync_shadow: false });
+      results.push({
+        car_id,
+        ok: Number(r.code) === 0,
+        exit_code: r.code,
+        stderr: (r.stderr || "").trim(),
+        stdout: (r.stdout || "").trim(),
+      });
+    } catch (err) {
+      results.push({ car_id, ok: false, exit_code: -1, stderr: err.message || String(err), stdout: "" });
+    }
+  }
+
+  const success = results.filter((x) => x.ok).map((x) => x.car_id);
+  const failed = results.filter((x) => !x.ok).map((x) => x.car_id);
+
+  res.json({
+    ok: success.length > 0 && failed.length === 0,
+    featureName,
+    domain,
+    contextName,
+    values,
+    version,
+    matched,
+    success_targets: success,
+    failed_targets: failed,
+    unleash_strategy_write: unleashWrite,
+    results,
+  });
+});
+
+// Region -> Version deploy in one request (KR/US/EU).
+app.post("/api/unleash/deploy/region-versions", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const versionsByRegion = body.versionsByRegion && typeof body.versionsByRegion === "object" ? body.versionsByRegion : {};
+
+  if (!featureName) return res.status(400).json({ ok: false, error: "featureName is required" });
+
+  const domainMap = {
+    NavigationFeature: "Navigation",
+    AdasFeature: "ADAS",
+    EvEnergyFeature: "EvEnergy",
+  };
+  const domain = domainMap[featureName];
+  if (!domain) {
+    return res.status(400).json({
+      ok: false,
+      error: 'featureName must be one of "NavigationFeature", "AdasFeature", "EvEnergyFeature"',
+    });
+  }
+
+  const wanted = {};
+  for (const r of ["KR", "US", "EU"]) {
+    const raw = String(versionsByRegion[r] ?? "").trim();
+    const v = raw.replace(/^v(?=\d)/i, "");
+    if (v) wanted[r] = v;
+  }
+  const regions = Object.keys(wanted);
+  if (!regions.length) {
+    return res.status(400).json({ ok: false, error: "No region versions provided (KR/US/EU are all empty)." });
+  }
+
+  let vehicles;
+  try {
+    const raw = readJson(path.join(REPO_ROOT, "config", "fleet", "vehicles.json"));
+    vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: `failed to read config/fleet/vehicles.json: ${err.message}` });
+  }
+
+  const byRegion = { KR: [], US: [], EU: [] };
+  for (const v of vehicles) {
+    if (!v || typeof v !== "object") continue;
+    const id = String(v.car_id || "").trim();
+    const reg = String(v.region || "").trim();
+    if (!/^car_(10|[1-9])$/.test(id)) continue;
+    if (byRegion[reg]) byRegion[reg].push(id);
+  }
+
+  // 1) Upsert Unleash strategy per region (observability: strategy-level variant name = version).
+  const unleashWrites = {};
+  try {
+    const st = await getStrategies(projectId, featureName, environment);
+    const strategies = st.ok && Array.isArray(st.json) ? st.json : [];
+    for (const r of regions) {
+      const version = wanted[r];
+      const values = [r];
+      const gid = `sdv-${featureName}-region-${r}`;
+      const existing = pickExistingStrategyByGroupId(strategies, gid);
+      const title = `SDV region version: ${r} -> v${version}`;
+      const strategyBody = makeFlexibleRolloutStrategy({
+        title,
+        contextName: "region",
+        values,
+        rollout: 100,
+        stickiness: "userId",
+        groupId: gid,
+      });
+      strategyBody.variants = [
+        { name: version, weight: 1000, weightType: "fix", stickiness: "userId" },
+      ];
+
+      let out;
+      if (existing && existing.id) {
+        out = await updateStrategy(projectId, featureName, environment, existing.id, strategyBody);
+        unleashWrites[r] = { ok: out.ok, mode: "updated", status: out.status, upstream: out.json || out.text };
+      } else {
+        out = await addStrategy(projectId, featureName, environment, strategyBody);
+        unleashWrites[r] = { ok: out.ok, mode: "created", status: out.status, upstream: out.json || out.text };
+      }
+    }
+  } catch (err) {
+    for (const r of regions) {
+      unleashWrites[r] = { ok: false, error: err.message || String(err) };
+    }
+  }
+
+  // 2) Execute Docker OTA promote per matched car.
+  const results = [];
+  for (const r of regions) {
+    const version = wanted[r];
+    const cars = byRegion[r] || [];
+    for (const car_id of cars) {
+      try {
+        const rr = await execVehicleRuntimeWsl("promote", { car_id, domain, version, sync_shadow: false });
+        results.push({
+          region: r,
+          version,
+          car_id,
+          ok: Number(rr.code) === 0,
+          exit_code: rr.code,
+          stderr: (rr.stderr || "").trim(),
+          stdout: (rr.stdout || "").trim(),
+        });
+      } catch (e) {
+        results.push({
+          region: r,
+          version,
+          car_id,
+          ok: false,
+          exit_code: -1,
+          stderr: e.message || String(e),
+          stdout: "",
+        });
+      }
+    }
+  }
+
+  const success = results.filter((x) => x.ok).map((x) => x.car_id);
+  const failed = results.filter((x) => !x.ok).map((x) => x.car_id);
+
+  res.json({
+    ok: failed.length === 0,
+    featureName,
+    domain,
+    versionsByRegion: wanted,
+    matched_by_region: Object.fromEntries(regions.map((r) => [r, byRegion[r] || []])),
+    unleash_strategy_write: unleashWrites,
+    success_targets: success,
+    failed_targets: failed,
+    results,
+  });
+});
+
+// Global version deploy (all cars).
+app.post("/api/unleash/deploy/global-version", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const versionRaw = String(body.version || "").trim();
+  const version = versionRaw.replace(/^v(?=\d)/i, "");
+  if (!featureName) return res.status(400).json({ ok: false, error: "featureName is required" });
+  if (!version) return res.status(400).json({ ok: false, error: "version is required" });
+
+  const domainMap = {
+    NavigationFeature: "Navigation",
+    AdasFeature: "ADAS",
+    EvEnergyFeature: "EvEnergy",
+  };
+  const domain = domainMap[featureName];
+  if (!domain) {
+    return res.status(400).json({
+      ok: false,
+      error: 'featureName must be one of "NavigationFeature", "AdasFeature", "EvEnergyFeature"',
+    });
+  }
+
+  let vehicles;
+  try {
+    const raw = readJson(path.join(REPO_ROOT, "config", "fleet", "vehicles.json"));
+    vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: `failed to read config/fleet/vehicles.json: ${err.message}` });
+  }
+  const cars = vehicles
+    .map((v) => String(v?.car_id || "").trim())
+    .filter((id) => /^car_(10|[1-9])$/.test(id));
+
+  // Optional: write a broad Unleash strategy "region IN [KR,US,EU] -> vX" for observability.
+  let unleashWrite = null;
+  try {
+    const st = await getStrategies(projectId, featureName, environment);
+    if (st.ok) {
+      const strategies = Array.isArray(st.json) ? st.json : [];
+      const gid = `sdv-${featureName}-global`;
+      const existing = pickExistingStrategyByGroupId(strategies, gid);
+      const strategyBody = makeFlexibleRolloutStrategy({
+        title: `SDV global version -> v${version}`,
+        contextName: "region",
+        values: ["KR", "US", "EU"],
+        rollout: 100,
+        stickiness: "userId",
+        groupId: gid,
+      });
+      strategyBody.variants = [{ name: version, weight: 1000, weightType: "fix", stickiness: "userId" }];
+      const out = existing && existing.id
+        ? await updateStrategy(projectId, featureName, environment, existing.id, strategyBody)
+        : await addStrategy(projectId, featureName, environment, strategyBody);
+      unleashWrite = { ok: out.ok, status: out.status, upstream: out.json || out.text };
+    }
+  } catch (err) {
+    unleashWrite = { ok: false, error: err.message || String(err) };
+  }
+
+  const results = [];
+  for (const car_id of cars) {
+    try {
+      const rr = await execVehicleRuntimeWsl("promote", { car_id, domain, version, sync_shadow: false });
+      results.push({
+        car_id,
+        ok: Number(rr.code) === 0,
+        exit_code: rr.code,
+        stderr: (rr.stderr || "").trim(),
+        stdout: (rr.stdout || "").trim(),
+      });
+    } catch (e) {
+      results.push({ car_id, ok: false, exit_code: -1, stderr: e.message || String(e), stdout: "" });
+    }
+  }
+
+  const success = results.filter((x) => x.ok).map((x) => x.car_id);
+  const failed = results.filter((x) => !x.ok).map((x) => x.car_id);
+
+  res.json({
+    ok: failed.length === 0,
+    featureName,
+    domain,
+    version,
+    matched: cars,
+    unleash_strategy_write: unleashWrite,
+    success_targets: success,
+    failed_targets: failed,
+    results,
+  });
+});
+
+// Model -> Version deploy in one request (IONIQ5/IONIQ6/KONA_EV/...).
+app.post("/api/unleash/deploy/model-versions", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const versionsByModel = body.versionsByModel && typeof body.versionsByModel === "object" ? body.versionsByModel : {};
+
+  if (!featureName) return res.status(400).json({ ok: false, error: "featureName is required" });
+
+  const domainMap = {
+    NavigationFeature: "Navigation",
+    AdasFeature: "ADAS",
+    EvEnergyFeature: "EvEnergy",
+  };
+  const domain = domainMap[featureName];
+  if (!domain) {
+    return res.status(400).json({
+      ok: false,
+      error: 'featureName must be one of "NavigationFeature", "AdasFeature", "EvEnergyFeature"',
+    });
+  }
+
+  let vehicles;
+  try {
+    const raw = readJson(path.join(REPO_ROOT, "config", "fleet", "vehicles.json"));
+    vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: `failed to read config/fleet/vehicles.json: ${err.message}` });
+  }
+
+  const knownModels = [...new Set(vehicles.map((v) => String(v?.model || "").trim()).filter(Boolean))].sort();
+  const wanted = {};
+  for (const m of knownModels) {
+    const raw = String(versionsByModel[m] ?? "").trim();
+    const v = raw.replace(/^v(?=\d)/i, "");
+    if (v) wanted[m] = v;
+  }
+  const models = Object.keys(wanted);
+  if (!models.length) {
+    return res.status(400).json({ ok: false, error: "No model versions provided (all empty)." });
+  }
+
+  const carsByModel = Object.fromEntries(models.map((m) => [m, []]));
+  for (const v of vehicles) {
+    if (!v || typeof v !== "object") continue;
+    const id = String(v.car_id || "").trim();
+    const model = String(v.model || "").trim();
+    if (!/^car_(10|[1-9])$/.test(id)) continue;
+    if (carsByModel[model]) carsByModel[model].push(id);
+  }
+
+  // 1) Upsert Unleash strategy per model (observability: strategy-level variant name = version).
+  const unleashWrites = {};
+  try {
+    const st = await getStrategies(projectId, featureName, environment);
+    const strategies = st.ok && Array.isArray(st.json) ? st.json : [];
+    for (const m of models) {
+      const version = wanted[m];
+      const values = [m];
+      const gid = `sdv-${featureName}-model-${m}`;
+      const existing = pickExistingStrategyByGroupId(strategies, gid);
+      const title = `SDV model version: ${m} -> v${version}`;
+      const strategyBody = makeFlexibleRolloutStrategy({
+        title,
+        contextName: "model",
+        values,
+        rollout: 100,
+        stickiness: "userId",
+        groupId: gid,
+      });
+      strategyBody.variants = [{ name: version, weight: 1000, weightType: "fix", stickiness: "userId" }];
+
+      let out;
+      if (existing && existing.id) {
+        out = await updateStrategy(projectId, featureName, environment, existing.id, strategyBody);
+        unleashWrites[m] = { ok: out.ok, mode: "updated", status: out.status, upstream: out.json || out.text };
+      } else {
+        out = await addStrategy(projectId, featureName, environment, strategyBody);
+        unleashWrites[m] = { ok: out.ok, mode: "created", status: out.status, upstream: out.json || out.text };
+      }
+    }
+  } catch (err) {
+    for (const m of models) {
+      unleashWrites[m] = { ok: false, error: err.message || String(err) };
+    }
+  }
+
+  // 2) Execute Docker OTA promote per matched car.
+  const results = [];
+  for (const m of models) {
+    const version = wanted[m];
+    const cars = carsByModel[m] || [];
+    for (const car_id of cars) {
+      try {
+        const rr = await execVehicleRuntimeWsl("promote", { car_id, domain, version, sync_shadow: false });
+        results.push({
+          model: m,
+          version,
+          car_id,
+          ok: Number(rr.code) === 0,
+          exit_code: rr.code,
+          stderr: (rr.stderr || "").trim(),
+          stdout: (rr.stdout || "").trim(),
+        });
+      } catch (e) {
+        results.push({
+          model: m,
+          version,
+          car_id,
+          ok: false,
+          exit_code: -1,
+          stderr: e.message || String(e),
+          stdout: "",
+        });
+      }
+    }
+  }
+
+  const success = results.filter((x) => x.ok).map((x) => x.car_id);
+  const failed = results.filter((x) => !x.ok).map((x) => x.car_id);
+
+  res.json({
+    ok: failed.length === 0,
+    featureName,
+    domain,
+    versionsByModel: wanted,
+    matched_by_model: carsByModel,
+    unleash_strategy_write: unleashWrites,
+    success_targets: success,
+    failed_targets: failed,
+    results,
+  });
+});
+
+// Ratio-based rollout: random per-car assignment by percent + promote.
+app.post("/api/unleash/deploy/ratio-versions", async (req, res) => {
+  if (!requireUnleashToken(res)) return;
+
+  const body = req.body || {};
+  const projectId = normalizeProjectId(body.projectId);
+  const environment = normalizeEnvironment(body.environment);
+  const featureName = normalizeFeatureName(body.featureName);
+  const stickiness = String(body.stickiness || "userId").trim() || "userId";
+  const splits = Array.isArray(body.splits) ? body.splits : [];
+
+  if (!featureName) return res.status(400).json({ ok: false, error: "featureName is required" });
+  if (!splits.length) return res.status(400).json({ ok: false, error: "splits must be a non-empty list" });
+
+  const domainMap = {
+    NavigationFeature: "Navigation",
+    AdasFeature: "ADAS",
+    EvEnergyFeature: "EvEnergy",
+  };
+  const domain = domainMap[featureName];
+  if (!domain) {
+    return res.status(400).json({
+      ok: false,
+      error: 'featureName must be one of "NavigationFeature", "AdasFeature", "EvEnergyFeature"',
+    });
+  }
+
+  const cleaned = splits
+    .map((s) => ({
+      percent: clampInt(s?.percent ?? s?.ratio ?? 0, 0, 100, 0),
+      version: String(s?.version || "").trim().replace(/^v(?=\d)/i, ""),
+    }))
+    .filter((s) => s.percent > 0 && s.version);
+
+  if (!cleaned.length) {
+    return res.status(400).json({ ok: false, error: "splits must include percent>0 and non-empty version" });
+  }
+
+  const sum = cleaned.reduce((a, b) => a + b.percent, 0);
+  if (sum !== 100) {
+    return res.status(400).json({ ok: false, error: `split percent sum must equal 100 (got ${sum})` });
+  }
+
+  let vehicles;
+  try {
+    const raw = readJson(path.join(REPO_ROOT, "config", "fleet", "vehicles.json"));
+    vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: `failed to read config/fleet/vehicles.json: ${err.message}` });
+  }
+
+  const cars = vehicles
+    .map((v) => String(v?.car_id || "").trim())
+    .filter((id) => /^car_(10|[1-9])$/.test(id));
+  if (!cars.length) {
+    return res.status(400).json({ ok: false, error: "no cars found in vehicles.json" });
+  }
+
+  // Observability: update Unleash environment variants weights to match ratios (weights 0..1000).
+  let variantsWrite = null;
+  try {
+    const variants = cleaned.map((s) => ({
+      name: s.version,
+      weight: clampInt((s.percent / 100) * 1000, 0, 1000, 0),
+      stickiness,
+    }));
+    // Ensure sum weights == 1000 by adjusting last.
+    const wSum = variants.reduce((a, b) => a + (b.weight || 0), 0);
+    if (variants.length) variants[variants.length - 1].weight = clampInt((variants[variants.length - 1].weight || 0) + (1000 - wSum), 0, 1000, 0);
+    const out = await overwriteVariants(projectId, featureName, environment, variants);
+    variantsWrite = { ok: out.ok, status: out.status, upstream: out.json || out.text, variants };
+  } catch (err) {
+    variantsWrite = { ok: false, error: err.message || String(err) };
+  }
+
+  // Random assignment to cars based on percent.
+  const shuffled = shuffleInPlace([...cars]);
+  const counts = allocateCountsByPercent(shuffled.length, cleaned.map((s) => s.percent));
+  const assignment = [];
+  let cursor = 0;
+  for (let i = 0; i < cleaned.length; i++) {
+    const take = counts[i] || 0;
+    const version = cleaned[i].version;
+    for (const car_id of shuffled.slice(cursor, cursor + take)) {
+      assignment.push({ car_id, version });
+    }
+    cursor += take;
+  }
+
+  // Execute promote per assigned car.
+  const results = [];
+  for (const a of assignment) {
+    try {
+      const rr = await execVehicleRuntimeWsl("promote", { car_id: a.car_id, domain, version: a.version, sync_shadow: false });
+      results.push({
+        car_id: a.car_id,
+        version: a.version,
+        ok: Number(rr.code) === 0,
+        exit_code: rr.code,
+        stderr: (rr.stderr || "").trim(),
+        stdout: (rr.stdout || "").trim(),
+      });
+    } catch (e) {
+      results.push({ car_id: a.car_id, version: a.version, ok: false, exit_code: -1, stderr: e.message || String(e), stdout: "" });
+    }
+  }
+
+  const success = results.filter((x) => x.ok).map((x) => x.car_id);
+  const failed = results.filter((x) => !x.ok).map((x) => x.car_id);
+
+  // Summary per version.
+  const byVersion = {};
+  for (const r of results) {
+    const v = r.version;
+    if (!byVersion[v]) byVersion[v] = { total: 0, success: 0, failed: 0 };
+    byVersion[v].total += 1;
+    if (r.ok) byVersion[v].success += 1;
+    else byVersion[v].failed += 1;
+  }
+
+  res.json({
+    ok: failed.length === 0,
+    featureName,
+    domain,
+    splits: cleaned,
+    matched: cars,
+    assignment,
+    summary_by_version: byVersion,
+    unleash_variants_write: variantsWrite,
+    success_targets: success,
+    failed_targets: failed,
+    results,
+  });
 });
 
 function toWslPath(winPath) {
@@ -75,10 +1123,45 @@ function execWslBash(args, options = {}) {
 }
 
 function detectDeploymentMgrPath() {
-  const unleash = path.join(REPO_ROOT, "build_unleash", "DeploymentMgr");
-  const normal = path.join(REPO_ROOT, "build", "DeploymentMgr");
-  if (fs.existsSync(unleash)) return { winPath: unleash, wslPath: toWslPath(unleash) };
-  return { winPath: normal, wslPath: toWslPath(normal) };
+  const envPreferred = process.env.SDV_DEPLOYMENT_MGR_EXE && String(process.env.SDV_DEPLOYMENT_MGR_EXE).trim();
+  const envFallback = process.env.DEPLOYMENT_MGR_EXE && String(process.env.DEPLOYMENT_MGR_EXE).trim();
+
+  // Candidate search list (in priority order). Keep platform build fallbacks for backwards compatibility.
+  const candidates = [
+    envPreferred,
+    envFallback,
+    // Independent module build (preferred when platform does not build DeploymentManager).
+    path.resolve(REPO_ROOT, "..", "sdv-ota-manager", "platform", "DeploymentManager", "build", "DeploymentMgr"),
+    // Legacy platform builds.
+    path.join(REPO_ROOT, "build_unleash", "DeploymentMgr"),
+    path.join(REPO_ROOT, "build", "DeploymentMgr"),
+  ]
+    .filter(Boolean)
+    .map((p) => path.resolve(String(p)));
+
+  const tried = [];
+  for (const p of candidates) {
+    tried.push(p);
+    if (fs.existsSync(p)) {
+      return { winPath: p, wslPath: toWslPath(p), tried };
+    }
+  }
+
+  const msg =
+    "DeploymentMgr executable not found.\n" +
+    "Tried:\n" +
+    tried.map((p) => `  - ${p}`).join("\n") +
+    "\n\n" +
+    "Fix options:\n" +
+    "  - Set SDV_DEPLOYMENT_MGR_EXE to the full Windows path of DeploymentMgr\n" +
+    "    Example: setx SDV_DEPLOYMENT_MGR_EXE \"C:\\path\\to\\DeploymentMgr\"\n" +
+    "  - Or build the independent module:\n" +
+    "    sdv-ota-manager/platform/DeploymentManager/build/DeploymentMgr\n" +
+    "  - Or build the platform targets (legacy):\n" +
+    "    sdv-feature-flag-platform/build_unleash/DeploymentMgr";
+  const err = new Error(msg);
+  err.tried = tried;
+  throw err;
 }
 
 function readJson(filePath) {
@@ -345,6 +1428,42 @@ app.get("/api/fleet/version-map", (_req, res) => {
 const PACKAGE_REGISTRY_PATH = path.join(DEPLOY_ROOT, "package_registry.json");
 const PKG_FEATURES = new Set(["ADAS", "Navigation", "Energy"]);
 const PKG_ROLES = new Set(["candidate", "stable", "experimental"]);
+const PKG_ARTIFACT_TYPES = new Set(["docker_image", "executable"]);
+
+function dockerTagVersionFromVersionToken(versionToken) {
+  const v = String(versionToken || "").trim();
+  if (!v) return "";
+  if ((v[0] === "v" || v[0] === "V") && v[1] !== undefined && /[0-9]/.test(v[1])) {
+    return `v${v.slice(1)}`;
+  }
+  return `v${v}`;
+}
+
+function normalizeFeatureKey(raw) {
+  // Make feature comparisons robust across user input styles:
+  // - case-insensitive
+  // - accept EvEnergy / EVENERGY / evenergy / energy variants
+  // - strip separators like "_" and "-"
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+}
+
+function defaultDockerRepoForFeature(feature) {
+  const f = normalizeFeatureKey(feature);
+  if (f === "adas") return "sdv/adas-feature";
+  if (f === "navigation" || f === "nav") return "sdv/navigation-feature";
+  if (f === "energy" || f === "evenergy" || f === "ev") return "sdv/evenergy-feature";
+  return `sdv/${f || "unknown"}-feature`;
+}
+
+function normalizeArtifactType(raw, fallback) {
+  const t = String(raw || "").trim();
+  if (!t) return fallback;
+  if (PKG_ARTIFACT_TYPES.has(t)) return t;
+  return fallback;
+}
 
 function defaultPackageRegistry() {
   return { schema_version: 1, packages: [] };
@@ -520,15 +1639,44 @@ app.post("/api/fleet/package-register", (req, res) => {
     package_id_in ||
     `${feature}_${version}_${now.slice(0, 10).replace(/-/g, "")}_${now.slice(11, 19).replace(/:/g, "")}`;
 
-  const package_path = `deploy/packages/${feature}/${version}`;
+  const versionDir = versionRaw[0] === "v" || versionRaw[0] === "V" ? version : `v${version}`;
+  const package_path = `deploy/packages/${feature}/${versionDir}`;
   const manifest_path = `${package_path}/manifest.json`;
 
+  // ---- Docker-oriented metadata (backward-compatible, optional inputs) ----
+  const artifact_type = normalizeArtifactType(body.artifact_type, "docker_image");
+  const docker_image_in = String(body.docker_image || "").trim();
+  const docker_image =
+    docker_image_in ||
+    `${defaultDockerRepoForFeature(feature)}:${dockerTagVersionFromVersionToken(version) || "v0.0"}`;
+  const image_digest = String(body.image_digest || "").trim();
+  const image_digest_source = String(body.image_digest_source || "").trim();
+  const checksum_file = String(body.checksum_file || "").trim() || "checksum.sha256";
+  const checksum = String(body.checksum || "").trim();
+  const supported_targets = Array.isArray(body.supported_targets) && body.supported_targets.length
+    ? body.supported_targets.map((x) => String(x).trim()).filter(Boolean)
+    : ["docker"];
+  const binary_name = String(body.binary_name || "").trim() || binary;
+  const executable_name = String(body.executable_name || "").trim() || binary;
+
   const manifest = {
+    // NOTE: manifest.schema.json uses "domain" to mean the high-level feature domain (ADAS/Navigation/Energy).
+    // For this UI/server, "feature" already carries that domain label; we write both for compatibility.
+    domain: feature,
     package_id,
     feature,
     version,
     role,
     binary,
+    artifact_type,
+    docker_image,
+    image_digest,
+    image_digest_source,
+    checksum_file,
+    checksum,
+    executable_name,
+    binary_name,
+    supported_targets,
     package_path,
     manifest_path,
     description,
@@ -688,7 +1836,8 @@ app.post("/api/fleet/version-map/assign", (req, res) => {
   }
 
   const previous = { ...vm.features[feature][slotRaw] };
-  const package_path = String(pkg.package_path || "").trim() || `deploy/packages/${feature}/${version}`;
+  const vDir = version[0] === "v" || version[0] === "V" ? version : `v${version}`;
+  const package_path = String(pkg.package_path || "").trim() || `deploy/packages/${feature}/${vDir}`;
   const assigned = {
     version,
     binary,
@@ -923,7 +2072,13 @@ app.post("/api/fleet/driver-approval", async (req, res) => {
   }
 
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
-  const dm = detectDeploymentMgrPath();
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
   const cmd =
     `cd ${repoWsl} && ` +
     `${dm.wslPath} fleet-set-approval ${car_id} ${approved ? "true" : "false"}`;
@@ -1262,7 +2417,13 @@ app.post("/api/fleet/action", async (req, res) => {
   }
 
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
-  const dm = detectDeploymentMgrPath();
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
   let cmd = `cd ${repoWsl} && ${dm.wslPath} `;
 
   if (action === "rollback") {
@@ -1379,7 +2540,13 @@ app.post("/api/fleet/deploy", async (req, res) => {
   }
 
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
-  const dm = detectDeploymentMgrPath();
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
   let cmd = `cd ${repoWsl} && ${dm.wslPath} fleet-deploy ${scope} `;
   if (scope === "vehicle") {
     if (!car_id) return res.status(400).json({ ok: false, error: "car_id required" });

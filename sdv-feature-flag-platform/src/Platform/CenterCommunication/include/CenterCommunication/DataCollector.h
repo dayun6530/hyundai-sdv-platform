@@ -4,32 +4,36 @@
 #include <vector>
 #include <atomic>
 #include <cstdint>
+#include <mutex>
+#include <chrono>
 
 namespace sdv::platform::centercommunication {
 
-struct LogFileInfo {
-    std::string filePath;
-    int64_t sizeBytes;
-    int64_t lastTransferTime;
-};
-
 class DataCollector {
 public:
-    DataCollector(const std::string& logDir, int64_t maxSizeBytes, int intervalSeconds);
+    DataCollector(const std::string& eventBusAddress,
+                  const std::string& outDir,
+                  int64_t maxBatchBytes,
+                  int flushIntervalSeconds);
 
     void run();
     void stop();
 
 private:
-    void scanLogFiles();
-    bool shouldTransfer(const LogFileInfo& info) const;
-    void transferToControlCenter(const LogFileInfo& info);
+    void pushTelemetryLine(const std::string& line);
+    bool shouldFlush(std::chrono::steady_clock::time_point now) const;
+    void flushLocked(std::chrono::steady_clock::time_point now);
 
-    std::string logDir_;
-    int64_t maxSizeBytes_;
-    int intervalSeconds_;
-    std::vector<LogFileInfo> logFiles_;
+    std::string eventBusAddress_;
+    std::string outDir_;
+    int64_t maxBatchBytes_;
+    int flushIntervalSeconds_;
     std::atomic<bool> running_;
+
+    mutable std::mutex mu_;
+    std::vector<std::string> buffer_;
+    int64_t bufferBytes_{0};
+    std::chrono::steady_clock::time_point lastFlush_{};
 };
 
 }  // namespace sdv::platform::centercommunication

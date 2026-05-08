@@ -142,6 +142,8 @@ if ($env:SDV_CMAKE_BUILD -eq "1") {
     }
 }
 
+
+Start-Process wsl -ArgumentList "-e bash -c 'cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform && export SDV_LOG_DIR=/mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/logs/fleet && ./build_unleash/DataCollector 127.0.0.1:50051'" -Wait:$false -NoNewWindow:$false -PassThru
 # Default: one CMD window per car (title car_N), each running WSL foreground car_N (Linux binary under
 # build_unleash or build — same as old ".\build\car_N in a CMD" workflow visually).
 # Set SDV_CAR_BACKGROUND=1 for no popups: background start in WSL + tail -f log windows instead.
