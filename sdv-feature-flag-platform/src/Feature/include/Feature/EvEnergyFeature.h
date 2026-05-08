@@ -1,8 +1,10 @@
 #pragma once
 
 #include "LifeCycleManager/Feature.h"
+#include "Feature/SubFeatures/SubFeatureTree.h"
 
 #include <string>
+#include <memory>
 
 namespace sdv::feature {
 
@@ -19,6 +21,9 @@ protected:
 
     virtual void processVehicleLocation(const std::string& message);
     virtual void processRoadInfo(const std::string& message);
+
+private:
+    std::unique_ptr<sdv::feature::sub::CompositeNode> subTree_;
 };
 
 }  // namespace sdv::feature

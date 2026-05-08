@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82108/Desktop/final_merge/sdv-ota-manager/platform/DeploymentManager
+# Install script for directory: /mnt/c/Users/82107/Desktop/PROJECT/sdv-ota-manager/platform/DeploymentManager
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "LifeCycleManager/Feature.h"
+#include "Feature/SubFeatures/SubFeatureTree.h"
 
 #include <string>
+#include <memory>
 
 namespace sdv::feature {
 
@@ -26,6 +28,10 @@ protected:
 private:
     // Demo pacing: iterations per "라운드" inside runNavigationMainLoop (outer execute() repeats forever for car_*).
     static const int broadcastCount_ = 50;
+    std::unique_ptr<sdv::feature::sub::CompositeNode> subTree_;
+    std::shared_ptr<std::string> locPayload_;
+    std::shared_ptr<std::string> roadPayload_;
+    std::shared_ptr<std::string> guidancePayload_;
 };
 
 }  // namespace sdv::feature

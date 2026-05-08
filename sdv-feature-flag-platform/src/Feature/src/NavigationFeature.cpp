@@ -1,12 +1,17 @@
 // Canonical Navigation feature (platform build). Docker/OTA demo: sdv-ota-manager/demo_src + build_standalone_demo.sh
 #include "Feature/NavigationFeature.h"
+#include "Feature/SubFeatures/SubFeatureModule.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 
 #include <thread>
 #include <chrono>
+#include <memory>
 #include <signal.h>
 #include <string>
+#include <utility>
+#include <vector>
+#include <functional>
 
 using namespace sdv::platform::communications::eventbus;
 using namespace sdv::platform::lifecyclemgr;
@@ -18,6 +23,78 @@ constexpr const char* kDistributionVersion = "1.0";
 }  // namespace
 
 namespace sdv::feature {
+
+namespace {
+
+using sdv::feature::sub::CommonCallbacks;
+using sdv::feature::sub::ISubFeatureModule;
+
+class NavLocationModule final : public ISubFeatureModule {
+public:
+    explicit NavLocationModule(CommonCallbacks cb, std::shared_ptr<std::string> payload)
+        : cb_(std::move(cb)), payload_(std::move(payload)) {}
+    const char* key() const override { return "LOCATION"; }
+    void onTick() override {
+        const std::string m = payload_ ? *payload_ : std::string();
+        cb_.logInfo(std::string("차량 위치 전송: ") + m);
+        if (!cb_.sendDomainEvent(static_cast<int>(EventId::VehicleLocationUpdate), m)) {
+            cb_.logWarn("차량 위치 이벤트 전송 실패");
+        }
+    }
+
+private:
+    CommonCallbacks cb_;
+    std::shared_ptr<std::string> payload_;
+};
+
+class NavRoadModule final : public ISubFeatureModule {
+public:
+    explicit NavRoadModule(CommonCallbacks cb, std::shared_ptr<std::string> payload)
+        : cb_(std::move(cb)), payload_(std::move(payload)) {}
+    const char* key() const override { return "ROAD"; }
+    void onTick() override {
+        const std::string m = payload_ ? *payload_ : std::string();
+        cb_.logInfo(std::string("도로 정보 전송: ") + m);
+        if (!cb_.sendDomainEvent(static_cast<int>(EventId::RoadInfoUpdate), m)) {
+            cb_.logWarn("도로 정보 이벤트 전송 실패");
+        }
+    }
+
+private:
+    CommonCallbacks cb_;
+    std::shared_ptr<std::string> payload_;
+};
+
+class NavGuidanceModule final : public ISubFeatureModule {
+public:
+    explicit NavGuidanceModule(CommonCallbacks cb, std::shared_ptr<std::string> payload)
+        : cb_(std::move(cb)), payload_(std::move(payload)) {}
+    const char* key() const override { return "GUIDANCE"; }
+    void onTick() override {
+        const std::string m = payload_ ? *payload_ : std::string();
+        if (!cb_.sendDomainEvent(static_cast<int>(EventId::NavigationGuidanceUpdate), m)) {
+            cb_.logWarn("내비게이션 안내 이벤트 전송 실패");
+        }
+    }
+
+private:
+    CommonCallbacks cb_;
+    std::shared_ptr<std::string> payload_;
+};
+
+static std::vector<std::unique_ptr<ISubFeatureModule>> buildNavModules(
+    CommonCallbacks cb,
+    std::shared_ptr<std::string> loc,
+    std::shared_ptr<std::string> road,
+    std::shared_ptr<std::string> guidance) {
+    std::vector<std::unique_ptr<ISubFeatureModule>> out;
+    out.emplace_back(std::make_unique<NavLocationModule>(cb, std::move(loc)));
+    out.emplace_back(std::make_unique<NavRoadModule>(cb, std::move(road)));
+    out.emplace_back(std::make_unique<NavGuidanceModule>(cb, std::move(guidance)));
+    return out;
+}
+
+}  // namespace
 
 static const char* locations[] = {
     "서울 강남구 테헤란로 (37.5012, 127.0396)",
@@ -39,7 +116,32 @@ static constexpr int kRoutePointCount =
     static_cast<int>(sizeof(locations) / sizeof(locations[0]));
 
 NavigationFeature::NavigationFeature(EventBusInterface& eventBus)
-    : Feature("NavigationFeature", eventBus) {}
+    : Feature("NavigationFeature", eventBus)
+    , locPayload_(std::make_shared<std::string>())
+    , roadPayload_(std::make_shared<std::string>())
+    , guidancePayload_(std::make_shared<std::string>()) {
+    CommonCallbacks cb {
+        /*logInfo*/ [this](const std::string& m) { log(LogLevel::info, m); },
+        /*logWarn*/ [this](const std::string& m) { log(LogLevel::warn, m); },
+        /*sendDomainEvent*/ [this](int id, const std::string& msg) {
+            return sendDomainEvent(static_cast<EventId>(id), msg);
+        },
+    };
+
+    subTree_ = std::make_unique<sdv::feature::sub::CompositeNode>("NavigationRoot", "1.0");
+    auto data = std::make_unique<sdv::feature::sub::CompositeNode>("NavData", "1.0");
+    auto ux = std::make_unique<sdv::feature::sub::CompositeNode>("NavUx", "1.0");
+
+    auto mods = buildNavModules(cb, locPayload_, roadPayload_, guidancePayload_);
+    data->Add(std::make_unique<sdv::feature::sub::LeafNode>(std::move(mods[0]), "1.0"));
+    data->Add(std::make_unique<sdv::feature::sub::LeafNode>(std::move(mods[1]), "1.0"));
+    ux->Add(std::make_unique<sdv::feature::sub::LeafNode>(std::move(mods[2]), "1.0"));
+
+    subTree_->Add(std::move(data));
+    subTree_->Add(std::move(ux));
+    subTree_->Load();
+    subTree_->Start();
+}
 
 std::string NavigationFeature::distributionVersionLabelForLog() const {
     return kDistributionVersion;
@@ -82,31 +184,13 @@ void NavigationFeature::runNavigationMainLoop() {
 
         navLogIterationBanner(i + 1);
 
-        if (flag_.isSubFeatureEnabled("LOCATION")) {
-            log(LogLevel::info, std::string("차량 위치 전송: ") + navDemoLocation(r));
-            if (!sendDomainEvent(EventId::VehicleLocationUpdate, navDemoLocation(r))) {
-                log(LogLevel::warn, "차량 위치 이벤트 전송 실패");
-            }
-        } else {
-            log(LogLevel::info, "LOCATION: OFF — 위치 이벤트 생략");
-        }
+        if (locPayload_) *locPayload_ = navDemoLocation(r);
+        if (roadPayload_) *roadPayload_ = navDemoRoad(r);
+        if (guidancePayload_) *guidancePayload_ = navGuidanceForIteration(i + 1);
 
-        if (flag_.isSubFeatureEnabled("ROAD")) {
-            log(LogLevel::info, std::string("도로 정보 전송: ") + navDemoRoad(r));
-            if (!sendDomainEvent(EventId::RoadInfoUpdate, navDemoRoad(r))) {
-                log(LogLevel::warn, "도로 정보 이벤트 전송 실패");
-            }
-        } else {
-            log(LogLevel::info, "ROAD: OFF — 도로 이벤트 생략");
-        }
-
-        if (flag_.isSubFeatureEnabled("GUIDANCE")) {
-            const std::string guidance = navGuidanceForIteration(i + 1);
-            if (!sendDomainEvent(EventId::NavigationGuidanceUpdate, guidance)) {
-                log(LogLevel::warn, "내비게이션 안내 이벤트 전송 실패");
-            }
-        } else {
-            log(LogLevel::info, "GUIDANCE: OFF — 안내 이벤트 생략");
+        const auto enabled = [this](const char* k) { return flag_.isSubFeatureEnabled(k); };
+        if (subTree_) {
+            subTree_->OnTick(enabled);
         }
 
         if (i < broadcastCount_ - 1) {
