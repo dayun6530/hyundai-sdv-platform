@@ -2,13 +2,13 @@
   "car_id": "car_9",
   "domains": {
     "adas": {
-      "primary_version": "2.0",
+      "primary_version": "3.0",
       "shadow_version": "",
       "binary": "AdasFeature",
       "primary_container": "car_9_agent_adas",
       "shadow_container": "car_9_agent_adas_shadow",
       "last_action": "promote",
-      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v2.0으로 승격되었습니다.",
+      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v3.0으로 승격되었습니다.",
       "shadow_enabled": false,
       "shadow_mode": "inactive"
     },

@@ -9,10 +9,10 @@
   "features": {
     "ADAS": {
       "active_slot": "B",
-      "active_version": "v1.0",
+      "active_version": "v3.0",
       "primary_slot": "B",
       "primary_version": "v0.4",
-      "primary_image": "sdv/adas-feature:v1.0",
+      "primary_image": "sdv/adas-feature:v3.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "OFF",

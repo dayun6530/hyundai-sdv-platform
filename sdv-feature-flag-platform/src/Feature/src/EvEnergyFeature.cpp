@@ -284,6 +284,7 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
         "|SHADOW_ROAD|" + message);
 }  // namespace sdv::feature
 
+}
 #ifndef SDV_FEATURE_NO_MAIN
 int main(int argc, char* argv[]) {
     std::string address = "localhost:50051";

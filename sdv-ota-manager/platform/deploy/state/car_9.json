@@ -7,7 +7,7 @@
   "features": {
     "ADAS": {
       "active_slot": "A",
-      "active_version": "v2.0",
+      "active_version": "v3.0",
       "flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
@@ -16,7 +16,7 @@
       "kill_reason": "",
       "fallback_slot": "A",
       "fallback_version": "v0.1",
-      "primary_image": "sdv/adas-feature:v2.0"
+      "primary_image": "sdv/adas-feature:v3.0"
     },
     "Navigation": {
       "active_slot": "A",
