@@ -8,7 +8,10 @@ using namespace sdv::platform::centercommunication;
 int main() {
     sqa::test::TestCounter tc;
     // EventBus may or may not be running in unit test env. The proxy prints errors on failure but should not throw.
-    DataCollector collector("127.0.0.1:50051", "tests/mockup/generated/telemetry_out", 16 * 1024, 1);
+    DataCollector collector(
+        "127.0.0.1:50051",
+        "http://127.0.0.1:4318/v1/logs",
+        "car_1");
     std::thread worker([&collector]() { collector.run(); });
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     collector.stop();

@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/hyundai/sdv-ota-manager/platform/DeploymentManager/include
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/professional/sdv-ota-manager/platform/DeploymentManager/include
 
 CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic
 
