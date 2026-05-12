@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform/src/Platform/LifeCycleManager
+# Install script for directory: /mnt/c/Users/82108/Desktop/professional/sdv-feature-flag-platform/src/Platform/LifeCycleManager
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

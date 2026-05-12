@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DFMT_SHARED -DOPENSSL=1 -DSDV_ENABLE_MQTT_VEHICLE_AGENT=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
 
-CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform/src/Platform/CenterCommunication/include
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/professional/sdv-feature-flag-platform/src/Platform/CenterCommunication/include
 
 CXX_FLAGS = -std=gnu++17 -fPIC -Wall -Wextra -Wpedantic
 

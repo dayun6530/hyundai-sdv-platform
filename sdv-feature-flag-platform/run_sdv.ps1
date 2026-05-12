@@ -66,11 +66,15 @@ if ($WslDistro) { $wslArgsBase += @("-d", $WslDistro) }
 $wslArgsRoot = $wslArgsBase + @("-u", "root", "--")
 
 # Root pkill: any leftover car_1..car_10 or platform children from an earlier run_sdv / manual start.
-# Kill car_10..car_1 in that order so "build/car_1" does not match a still-running ".../build/car_10" cmdline.
+# Kill car_10..car_1 in that order so "car_1" does not match a still-running ".../car_10" cmdline.
 $cleanupBash = @'
 set +e
 pkill -9 -f SdvPlatform 2>/dev/null
-for i in $(seq 10 -1 1); do pkill -9 -f "/build/car_${i}" 2>/dev/null; done
+for i in $(seq 10 -1 1); do
+  pkill -9 -f "/build_unleash/car_${i}([[:space:]]|$)" 2>/dev/null
+  pkill -9 -f "/build/car_${i}([[:space:]]|$)" 2>/dev/null
+done
+pkill -9 -f 'sdv-feature-flag-platform/build_unleash/car_' 2>/dev/null
 pkill -9 -f 'sdv-feature-flag-platform/build/car_' 2>/dev/null
 pkill -9 -f EventBusHost 2>/dev/null
 pkill -9 -f WatchDog 2>/dev/null
@@ -143,6 +147,7 @@ if ($env:SDV_CMAKE_BUILD -eq "1") {
 }
 
 
+
 # Optional fleet telemetry sink (Linux binary). Each car config already launches DataCollector per vehicle —
 # use SDV_STANDALONE_DATACOLLECTOR=1 only if you need an extra host-side sink against EventBus 50051.
 if ($env:SDV_STANDALONE_DATACOLLECTOR -eq "1") {
@@ -151,6 +156,7 @@ if ($env:SDV_STANDALONE_DATACOLLECTOR -eq "1") {
     $wslDcArgs = $wslArgsRoot + @("bash", "-lc", $collectorCmd)
     Start-Process wsl.exe -ArgumentList $wslDcArgs -WindowStyle Minimized
 }
+
 
 # Default: one CMD window per car (title car_N), each running WSL foreground car_N (Linux binary under
 # build_unleash or build — same as old ".\build\car_N in a CMD" workflow visually).
