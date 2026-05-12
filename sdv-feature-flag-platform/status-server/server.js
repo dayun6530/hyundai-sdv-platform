@@ -1940,6 +1940,143 @@ function mergeRuntimeProbeIntoStates(states, probeMap, warnings) {
   }
 }
 
+function lastMatchingLine(filePath, predicate) {
+  if (!fs.existsSync(filePath)) {
+    return "";
+  }
+  const lines = readText(filePath)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    if (predicate(lines[i])) {
+      return lines[i];
+    }
+  }
+  return "";
+}
+
+function parseLocationLine(line) {
+  const m = String(line || "").match(/(?:차량 위치 전송|현재 위치 수신|차량 위치 수신):\s*(.+?)\s*\(([-\d.]+),\s*([-\d.]+)\)/);
+  if (!m) return null;
+  return {
+    label: m[1],
+    lat: Number(m[2]),
+    lon: Number(m[3]),
+    raw: line,
+  };
+}
+
+function parseRoadLine(line) {
+  const m = String(line || "").match(/(?:도로 정보 전송|도로 정보 수신):\s*(.+?)(?:\s*\((.*)\))?$/);
+  if (!m) return null;
+  const detail = m[2] || "";
+  const speedLimitMatch = detail.match(/제한속도\s*(\d+)km\/h/);
+  return {
+    summary: m[1],
+    detail,
+    speed_limit: speedLimitMatch ? Number(speedLimitMatch[1]) : 80,
+    raw: line,
+  };
+}
+
+function latestCockpitLogTelemetry(carId) {
+  const logDir = path.join(REPO_ROOT, "logs", carId);
+  const navLog = path.join(logDir, "NavigationFeature.log");
+  const adasLog = path.join(logDir, "AdasFeature.log");
+  const energyLog = path.join(logDir, "EvEnergyFeature.log");
+
+  const navLocation = parseLocationLine(lastMatchingLine(navLog, (line) => line.includes("차량 위치 전송")));
+  const adasLocation = parseLocationLine(lastMatchingLine(adasLog, (line) => line.includes("현재 위치 수신")));
+  const energyLocation = parseLocationLine(lastMatchingLine(energyLog, (line) => line.includes("차량 위치 수신")));
+  const navRoad = parseRoadLine(lastMatchingLine(navLog, (line) => line.includes("도로 정보 전송")));
+  const adasRoad = parseRoadLine(lastMatchingLine(adasLog, (line) => line.includes("도로 정보 수신")));
+  const energyRoad = parseRoadLine(lastMatchingLine(energyLog, (line) => line.includes("도로 정보 수신")));
+
+  const energyModeLine = lastMatchingLine(
+    energyLog,
+    (line) => line.includes("평지 주행") || line.includes("오르막 감지") || line.includes("내리막 감지"),
+  );
+
+  return {
+    location: navLocation || adasLocation || energyLocation,
+    road: navRoad || adasRoad || energyRoad,
+    adas: {
+      location: adasLocation,
+      road: adasRoad,
+      latest: lastMatchingLine(adasLog, (line) => line.includes("자율주행 중") || line.includes("LKA:") || line.includes("SCC:")),
+    },
+    navigation: {
+      location: navLocation,
+      road: navRoad,
+    },
+    energy: {
+      location: energyLocation,
+      road: energyRoad,
+      mode: energyModeLine,
+    },
+  };
+}
+
+app.get("/api/fleet/cockpit", (_req, res) => {
+  const carId = String(_req.query.car_id || "car_1").trim();
+  if (!/^car_(10|[1-9])$/.test(carId)) {
+    res.status(400).json({ ok: false, error: "car_id must be car_1 .. car_10" });
+    return;
+  }
+
+  const warnings = [];
+  let state = null;
+  try {
+    state = readJson(path.join(DEPLOY_ROOT, "state", `${carId}.json`));
+  } catch (err) {
+    warnings.push(`fleet state unavailable: ${err.message}`);
+  }
+
+  const ota = state?.ota || {};
+  const features = state?.features || {};
+  const energy = features.Energy || {};
+  const nav = features.Navigation || {};
+  const adas = features.ADAS || {};
+  const logs = latestCockpitLogTelemetry(carId);
+  const battery = Math.max(0, Math.min(100, Math.round(Number(ota.battery) || 82)));
+  let speed = Number(ota.speed);
+  if (!Number.isFinite(speed) || speed < 1) {
+    speed = Math.max(52, Math.min(92, (logs.road?.speed_limit || 100) - 28));
+  }
+
+  res.json({
+    ok: true,
+    car_id: carId,
+    speed: Math.round(speed),
+    battery,
+    range_km: Math.round(battery * 3.8),
+    gear: ota.gear || "D",
+    status: state?.status || "unknown",
+    location: logs.location,
+    road: logs.road,
+    route_distance: logs.road?.summary?.match(/(\d+\s*km|\d+\s*m)/)?.[1] || "120 m",
+    route_direction: logs.location?.label || "판교 / 분당 방면",
+    features: {
+      adas: {
+        active_version: adas.active_version || "v3.0",
+        running: String(adas.flag || "ON").toUpperCase() !== "OFF",
+        latest: logs.adas.latest || "",
+      },
+      navigation: {
+        active_version: nav.active_version || "v2.1",
+        running: String(nav.flag || "ON").toUpperCase() !== "OFF",
+      },
+      energy: {
+        active_version: energy.active_version || "v2.0",
+        running: String(energy.flag || "ON").toUpperCase() !== "OFF",
+        mode: logs.energy.mode || "",
+      },
+    },
+    warnings,
+  });
+});
+
 function readFleetStatesCar1To10(warnings) {
   const states = [];
   for (let i = 1; i <= 10; i += 1) {

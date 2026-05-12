@@ -1,0 +1,4 @@
+C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/SDV_Dashboard.dir
+C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/INSTALL.dir
+C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/ALL_BUILD.dir
+C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/ZERO_CHECK.dir

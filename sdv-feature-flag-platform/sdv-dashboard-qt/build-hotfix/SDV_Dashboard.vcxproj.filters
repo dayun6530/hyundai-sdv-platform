@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\mocs_compilation_Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\MainWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\DashboardDataHub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\VehicleHUDView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\FeatureStatusWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\OTADeploymentWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\ABTestingWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\ShadowCompareWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\HealthMonitorWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\src\EventTimelineWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\CCBC4FUR7J\qrc_qml_Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\mocs_compilation_Release.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\CCBC4FUR7J\qrc_qml_Release.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\mocs_compilation_MinSizeRel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\CCBC4FUR7J\qrc_qml_MinSizeRel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\mocs_compilation_RelWithDebInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\SDV_Dashboard_autogen\CCBC4FUR7J\qrc_qml_RelWithDebInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix\CMakeFiles\a7240a1f5e75b14cc06afd27546f4c29\qrc_qml_(CONFIG).cpp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\qml\qml.qrc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{95ADF704-AAEC-3EF0-B99B-AE48D52A6D98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{BE83D994-2ADD-380E-A3CE-C926DA31A2EB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

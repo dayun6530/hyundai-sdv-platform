@@ -1,0 +1,10 @@
+^C:\USERS\82107\DESKTOP\UI\SDV-FEATURE-FLAG-PLATFORM\SDV-DASHBOARD-QT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt -BC:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix --check-stamp-file C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

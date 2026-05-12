@@ -143,7 +143,15 @@ if ($env:SDV_CMAKE_BUILD -eq "1") {
 }
 
 
-Start-Process wsl -ArgumentList "-e bash -c 'cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform && export SDV_LOG_DIR=/mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/logs/fleet && ./build_unleash/DataCollector 127.0.0.1:50051'" -Wait:$false -NoNewWindow:$false -PassThru
+# Optional fleet telemetry sink (Linux binary). Each car config already launches DataCollector per vehicle —
+# use SDV_STANDALONE_DATACOLLECTOR=1 only if you need an extra host-side sink against EventBus 50051.
+if ($env:SDV_STANDALONE_DATACOLLECTOR -eq "1") {
+    $collectorCmd = "mkdir -p '$projWsl/logs/fleet' && cd '$projWsl' && export SDV_LOG_DIR='$projWsl/logs/fleet' && exec '$buildWsl/DataCollector' 127.0.0.1:50051"
+    Write-Host "[run_sdv] Starting standalone DataCollector (SDV_STANDALONE_DATACOLLECTOR=1)..."
+    $wslDcArgs = $wslArgsRoot + @("bash", "-lc", $collectorCmd)
+    Start-Process wsl.exe -ArgumentList $wslDcArgs -WindowStyle Minimized
+}
+
 # Default: one CMD window per car (title car_N), each running WSL foreground car_N (Linux binary under
 # build_unleash or build — same as old ".\build\car_N in a CMD" workflow visually).
 # Set SDV_CAR_BACKGROUND=1 for no popups: background start in WSL + tail -f log windows instead.
@@ -204,13 +212,15 @@ function Start-OptionalCmdWindow {
     Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
 }
 
-# status-server=8080, dashboard=5173, test-ui=5174. Prior runs often leave node.exe listening.
-Stop-ListenPorts @(8080, 5173, 5174)
+# status-server=8080, dashboard=5173, test-ui=5174, sdv-cockpit-ui=5175.
+# Keep 5173 dashboard alive as a separate UI; the React cockpit uses its own port.
+Stop-ListenPorts @(8080, 5173, 5174, 5175)
 Start-Sleep -Milliseconds 800
 
 Start-OptionalCmdWindow "status-server" "start"
 Start-OptionalCmdWindow "dashboard"
 Start-OptionalCmdWindow "test-ui"
+Start-OptionalCmdWindow "sdv-cockpit-ui"
 
 Write-Host "Waiting for status-server to drain pending Docker OTA queue (if any)..."
 $healthOk = $false
@@ -238,3 +248,28 @@ if ($healthOk) {
 }
 
 Write-Host "Done. test-ui: http://127.0.0.1:5174 (if test-ui package exists)"
+
+# --- Qt SDV Dashboard (Windows native UI; subscribe-only over HTTP + optional MQTT) ---
+if ($env:SDV_SKIP_QT_DASHBOARD -eq "1") {
+    Write-Host "[run_sdv] SDV_SKIP_QT_DASHBOARD=1 — skipping native Qt dashboard launch."
+} else {
+    $dashRoot = Join-Path $ProjectRoot "sdv-dashboard-qt\build"
+    $dashCandidates = @(
+        (Join-Path $dashRoot "Release\SDV_Dashboard.exe"),
+        (Join-Path $dashRoot "RelWithDebInfo\SDV_Dashboard.exe"),
+        (Join-Path $dashRoot "Debug\SDV_Dashboard.exe"),
+        (Join-Path $dashRoot "SDV_Dashboard.exe")
+    )
+    $dashExe = $dashCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if ($dashExe) {
+        Write-Host "[run_sdv] Launching Qt SDV dashboard: $dashExe"
+        Start-Process -FilePath $dashExe -ArgumentList @(
+            "--api-base", "http://127.0.0.1:8080",
+            "--mqtt-host", "127.0.0.1",
+            "--mqtt-port", "1884",
+            "--car-id", "car_1"
+        ) -WorkingDirectory (Split-Path -Parent $dashExe)
+    } else {
+        Write-Warning "[run_sdv] SDV_Dashboard.exe not found. Build once on Windows: cmake -S sdv-dashboard-qt -B sdv-dashboard-qt/build -DCMAKE_PREFIX_PATH=<Qt6_DIR> && cmake --build sdv-dashboard-qt/build --config Release"
+    }
+}
