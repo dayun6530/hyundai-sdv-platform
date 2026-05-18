@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,14 +87,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/CMakeFiles /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Feature//CMakeFiles/progress.marks
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash/CMakeFiles /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash/src/Feature//CMakeFiles/progress.marks
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/clean
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/clean
 .PHONY : clean
 
 # The main clean target
@@ -103,22 +103,23 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/preinstall
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/preinstall
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -P /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash/CMakeFiles/VerifyGlobs.cmake
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/Feature/CMakeFiles/NavigationFeature.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature.dir/rule
 .PHONY : src/Feature/CMakeFiles/NavigationFeature.dir/rule
 
 # Convenience name for target.
@@ -127,12 +128,12 @@ NavigationFeature: src/Feature/CMakeFiles/NavigationFeature.dir/rule
 
 # fast build rule for target.
 NavigationFeature/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/build
 .PHONY : NavigationFeature/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule
 
 # Convenience name for target.
@@ -141,12 +142,12 @@ NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule
 
 # fast build rule for target.
 NavigationFeatureShadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build
 .PHONY : NavigationFeatureShadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/AdasFeature.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature.dir/rule
 .PHONY : src/Feature/CMakeFiles/AdasFeature.dir/rule
 
 # Convenience name for target.
@@ -155,12 +156,12 @@ AdasFeature: src/Feature/CMakeFiles/AdasFeature.dir/rule
 
 # fast build rule for target.
 AdasFeature/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/build
 .PHONY : AdasFeature/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule
 
 # Convenience name for target.
@@ -169,12 +170,12 @@ AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule
 
 # fast build rule for target.
 AdasFeatureShadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/build
 .PHONY : AdasFeatureShadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/EvEnergyFeature.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature.dir/rule
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature.dir/rule
 
 # Convenience name for target.
@@ -183,12 +184,12 @@ EvEnergyFeature: src/Feature/CMakeFiles/EvEnergyFeature.dir/rule
 
 # fast build rule for target.
 EvEnergyFeature/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/build
 .PHONY : EvEnergyFeature/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule
 
 # Convenience name for target.
@@ -197,12 +198,12 @@ EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule
 
 # fast build rule for target.
 EvEnergyFeatureShadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build
 .PHONY : EvEnergyFeatureShadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/AdasFeature_A.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_A.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_A.dir/rule
 .PHONY : src/Feature/CMakeFiles/AdasFeature_A.dir/rule
 
 # Convenience name for target.
@@ -211,12 +212,12 @@ AdasFeature_A: src/Feature/CMakeFiles/AdasFeature_A.dir/rule
 
 # fast build rule for target.
 AdasFeature_A/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/build
 .PHONY : AdasFeature_A/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/AdasFeature_B.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_B.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_B.dir/rule
 .PHONY : src/Feature/CMakeFiles/AdasFeature_B.dir/rule
 
 # Convenience name for target.
@@ -225,12 +226,12 @@ AdasFeature_B: src/Feature/CMakeFiles/AdasFeature_B.dir/rule
 
 # fast build rule for target.
 AdasFeature_B/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/build
 .PHONY : AdasFeature_B/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/NavigationFeature_A.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_A.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_A.dir/rule
 .PHONY : src/Feature/CMakeFiles/NavigationFeature_A.dir/rule
 
 # Convenience name for target.
@@ -239,12 +240,12 @@ NavigationFeature_A: src/Feature/CMakeFiles/NavigationFeature_A.dir/rule
 
 # fast build rule for target.
 NavigationFeature_A/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/build
 .PHONY : NavigationFeature_A/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/NavigationFeature_B.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_B.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_B.dir/rule
 .PHONY : src/Feature/CMakeFiles/NavigationFeature_B.dir/rule
 
 # Convenience name for target.
@@ -253,12 +254,12 @@ NavigationFeature_B: src/Feature/CMakeFiles/NavigationFeature_B.dir/rule
 
 # fast build rule for target.
 NavigationFeature_B/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/build
 .PHONY : NavigationFeature_B/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/EvEnergyFeature_A.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_A.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_A.dir/rule
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature_A.dir/rule
 
 # Convenience name for target.
@@ -267,12 +268,12 @@ EvEnergyFeature_A: src/Feature/CMakeFiles/EvEnergyFeature_A.dir/rule
 
 # fast build rule for target.
 EvEnergyFeature_A/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build
 .PHONY : EvEnergyFeature_A/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/EvEnergyFeature_B.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_B.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_B.dir/rule
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature_B.dir/rule
 
 # Convenience name for target.
@@ -281,12 +282,12 @@ EvEnergyFeature_B: src/Feature/CMakeFiles/EvEnergyFeature_B.dir/rule
 
 # fast build rule for target.
 EvEnergyFeature_B/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build
 .PHONY : EvEnergyFeature_B/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/rule
 
 # Convenience name for target.
@@ -295,12 +296,12 @@ AdasFeature_A_Shadow: src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/rule
 
 # fast build rule for target.
 AdasFeature_A_Shadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build
 .PHONY : AdasFeature_A_Shadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/rule
 
 # Convenience name for target.
@@ -309,12 +310,12 @@ AdasFeature_B_Shadow: src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/rule
 
 # fast build rule for target.
 AdasFeature_B_Shadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build
 .PHONY : AdasFeature_B_Shadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/rule
 
 # Convenience name for target.
@@ -323,12 +324,12 @@ NavigationFeature_A_Shadow: src/Feature/CMakeFiles/NavigationFeature_A_Shadow.di
 
 # fast build rule for target.
 NavigationFeature_A_Shadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build
 .PHONY : NavigationFeature_A_Shadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/rule
 
 # Convenience name for target.
@@ -337,12 +338,12 @@ NavigationFeature_B_Shadow: src/Feature/CMakeFiles/NavigationFeature_B_Shadow.di
 
 # fast build rule for target.
 NavigationFeature_B_Shadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build
 .PHONY : NavigationFeature_B_Shadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/rule
 
 # Convenience name for target.
@@ -351,12 +352,12 @@ EvEnergyFeature_A_Shadow: src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/ru
 
 # fast build rule for target.
 EvEnergyFeature_A_Shadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build
 .PHONY : EvEnergyFeature_A_Shadow/fast
 
 # Convenience name for target.
 src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/rule:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/rule
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/rule
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/rule
 
 # Convenience name for target.
@@ -365,7 +366,7 @@ EvEnergyFeature_B_Shadow: src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/ru
 
 # fast build rule for target.
 EvEnergyFeature_B_Shadow/fast:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build
 .PHONY : EvEnergyFeature_B_Shadow/fast
 
 __/Platform/LifeCycleManager/src/Feature.o: __/Platform/LifeCycleManager/src/Feature.cpp.o
@@ -373,15 +374,15 @@ __/Platform/LifeCycleManager/src/Feature.o: __/Platform/LifeCycleManager/src/Fea
 
 # target to build an object file
 __/Platform/LifeCycleManager/src/Feature.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
 .PHONY : __/Platform/LifeCycleManager/src/Feature.cpp.o
 
 __/Platform/LifeCycleManager/src/Feature.i: __/Platform/LifeCycleManager/src/Feature.cpp.i
@@ -389,15 +390,15 @@ __/Platform/LifeCycleManager/src/Feature.i: __/Platform/LifeCycleManager/src/Fea
 
 # target to preprocess a source file
 __/Platform/LifeCycleManager/src/Feature.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.i
 .PHONY : __/Platform/LifeCycleManager/src/Feature.cpp.i
 
 __/Platform/LifeCycleManager/src/Feature.s: __/Platform/LifeCycleManager/src/Feature.cpp.s
@@ -405,15 +406,15 @@ __/Platform/LifeCycleManager/src/Feature.s: __/Platform/LifeCycleManager/src/Fea
 
 # target to generate assembly for a file
 __/Platform/LifeCycleManager/src/Feature.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.s
 .PHONY : __/Platform/LifeCycleManager/src/Feature.cpp.s
 
 __/Platform/LifeCycleManager/src/Flag.o: __/Platform/LifeCycleManager/src/Flag.cpp.o
@@ -421,15 +422,15 @@ __/Platform/LifeCycleManager/src/Flag.o: __/Platform/LifeCycleManager/src/Flag.c
 
 # target to build an object file
 __/Platform/LifeCycleManager/src/Flag.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
 .PHONY : __/Platform/LifeCycleManager/src/Flag.cpp.o
 
 __/Platform/LifeCycleManager/src/Flag.i: __/Platform/LifeCycleManager/src/Flag.cpp.i
@@ -437,15 +438,15 @@ __/Platform/LifeCycleManager/src/Flag.i: __/Platform/LifeCycleManager/src/Flag.c
 
 # target to preprocess a source file
 __/Platform/LifeCycleManager/src/Flag.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.i
 .PHONY : __/Platform/LifeCycleManager/src/Flag.cpp.i
 
 __/Platform/LifeCycleManager/src/Flag.s: __/Platform/LifeCycleManager/src/Flag.cpp.s
@@ -453,15 +454,15 @@ __/Platform/LifeCycleManager/src/Flag.s: __/Platform/LifeCycleManager/src/Flag.c
 
 # target to generate assembly for a file
 __/Platform/LifeCycleManager/src/Flag.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.s
 .PHONY : __/Platform/LifeCycleManager/src/Flag.cpp.s
 
 __/Platform/LifeCycleManager/src/LogData.o: __/Platform/LifeCycleManager/src/LogData.cpp.o
@@ -469,15 +470,15 @@ __/Platform/LifeCycleManager/src/LogData.o: __/Platform/LifeCycleManager/src/Log
 
 # target to build an object file
 __/Platform/LifeCycleManager/src/LogData.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
 .PHONY : __/Platform/LifeCycleManager/src/LogData.cpp.o
 
 __/Platform/LifeCycleManager/src/LogData.i: __/Platform/LifeCycleManager/src/LogData.cpp.i
@@ -485,15 +486,15 @@ __/Platform/LifeCycleManager/src/LogData.i: __/Platform/LifeCycleManager/src/Log
 
 # target to preprocess a source file
 __/Platform/LifeCycleManager/src/LogData.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.i
 .PHONY : __/Platform/LifeCycleManager/src/LogData.cpp.i
 
 __/Platform/LifeCycleManager/src/LogData.s: __/Platform/LifeCycleManager/src/LogData.cpp.s
@@ -501,15 +502,15 @@ __/Platform/LifeCycleManager/src/LogData.s: __/Platform/LifeCycleManager/src/Log
 
 # target to generate assembly for a file
 __/Platform/LifeCycleManager/src/LogData.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
 .PHONY : __/Platform/LifeCycleManager/src/LogData.cpp.s
 
 src/AdasFeature.o: src/AdasFeature.cpp.o
@@ -517,13 +518,13 @@ src/AdasFeature.o: src/AdasFeature.cpp.o
 
 # target to build an object file
 src/AdasFeature.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/src/AdasFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/AdasFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/AdasFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/AdasFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/AdasFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/AdasFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/AdasFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/AdasFeature.cpp.o
 .PHONY : src/AdasFeature.cpp.o
 
 src/AdasFeature.i: src/AdasFeature.cpp.i
@@ -531,13 +532,13 @@ src/AdasFeature.i: src/AdasFeature.cpp.i
 
 # target to preprocess a source file
 src/AdasFeature.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/src/AdasFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/AdasFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/AdasFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/AdasFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/AdasFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/AdasFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/AdasFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/AdasFeature.cpp.i
 .PHONY : src/AdasFeature.cpp.i
 
 src/AdasFeature.s: src/AdasFeature.cpp.s
@@ -545,13 +546,13 @@ src/AdasFeature.s: src/AdasFeature.cpp.s
 
 # target to generate assembly for a file
 src/AdasFeature.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/src/AdasFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/AdasFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/AdasFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/AdasFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/AdasFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/AdasFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/AdasFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/AdasFeature.cpp.s
 .PHONY : src/AdasFeature.cpp.s
 
 src/EvEnergyFeature.o: src/EvEnergyFeature.cpp.o
@@ -559,13 +560,13 @@ src/EvEnergyFeature.o: src/EvEnergyFeature.cpp.o
 
 # target to build an object file
 src/EvEnergyFeature.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/src/EvEnergyFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/EvEnergyFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/EvEnergyFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/EvEnergyFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/EvEnergyFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/EvEnergyFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/EvEnergyFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/EvEnergyFeature.cpp.o
 .PHONY : src/EvEnergyFeature.cpp.o
 
 src/EvEnergyFeature.i: src/EvEnergyFeature.cpp.i
@@ -573,13 +574,13 @@ src/EvEnergyFeature.i: src/EvEnergyFeature.cpp.i
 
 # target to preprocess a source file
 src/EvEnergyFeature.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/src/EvEnergyFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/EvEnergyFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/EvEnergyFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/EvEnergyFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/EvEnergyFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/EvEnergyFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/EvEnergyFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/EvEnergyFeature.cpp.i
 .PHONY : src/EvEnergyFeature.cpp.i
 
 src/EvEnergyFeature.s: src/EvEnergyFeature.cpp.s
@@ -587,13 +588,13 @@ src/EvEnergyFeature.s: src/EvEnergyFeature.cpp.s
 
 # target to generate assembly for a file
 src/EvEnergyFeature.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/src/EvEnergyFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/EvEnergyFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/EvEnergyFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/EvEnergyFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/EvEnergyFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/EvEnergyFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/EvEnergyFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/EvEnergyFeature.cpp.s
 .PHONY : src/EvEnergyFeature.cpp.s
 
 src/NavigationFeature.o: src/NavigationFeature.cpp.o
@@ -601,13 +602,13 @@ src/NavigationFeature.o: src/NavigationFeature.cpp.o
 
 # target to build an object file
 src/NavigationFeature.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/src/NavigationFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/NavigationFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/NavigationFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/NavigationFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/NavigationFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/NavigationFeature.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/NavigationFeature.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/NavigationFeature.cpp.o
 .PHONY : src/NavigationFeature.cpp.o
 
 src/NavigationFeature.i: src/NavigationFeature.cpp.i
@@ -615,13 +616,13 @@ src/NavigationFeature.i: src/NavigationFeature.cpp.i
 
 # target to preprocess a source file
 src/NavigationFeature.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/src/NavigationFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/NavigationFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/NavigationFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/NavigationFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/NavigationFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/NavigationFeature.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/NavigationFeature.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/NavigationFeature.cpp.i
 .PHONY : src/NavigationFeature.cpp.i
 
 src/NavigationFeature.s: src/NavigationFeature.cpp.s
@@ -629,13 +630,13 @@ src/NavigationFeature.s: src/NavigationFeature.cpp.s
 
 # target to generate assembly for a file
 src/NavigationFeature.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/src/NavigationFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/NavigationFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/NavigationFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/NavigationFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/NavigationFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/NavigationFeature.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/NavigationFeature.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/NavigationFeature.cpp.s
 .PHONY : src/NavigationFeature.cpp.s
 
 src/car/A/AdasFeature_A.o: src/car/A/AdasFeature_A.cpp.o
@@ -643,7 +644,7 @@ src/car/A/AdasFeature_A.o: src/car/A/AdasFeature_A.cpp.o
 
 # target to build an object file
 src/car/A/AdasFeature_A.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/A/AdasFeature_A.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/A/AdasFeature_A.cpp.o
 .PHONY : src/car/A/AdasFeature_A.cpp.o
 
 src/car/A/AdasFeature_A.i: src/car/A/AdasFeature_A.cpp.i
@@ -651,7 +652,7 @@ src/car/A/AdasFeature_A.i: src/car/A/AdasFeature_A.cpp.i
 
 # target to preprocess a source file
 src/car/A/AdasFeature_A.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/A/AdasFeature_A.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/A/AdasFeature_A.cpp.i
 .PHONY : src/car/A/AdasFeature_A.cpp.i
 
 src/car/A/AdasFeature_A.s: src/car/A/AdasFeature_A.cpp.s
@@ -659,7 +660,7 @@ src/car/A/AdasFeature_A.s: src/car/A/AdasFeature_A.cpp.s
 
 # target to generate assembly for a file
 src/car/A/AdasFeature_A.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/A/AdasFeature_A.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/A/AdasFeature_A.cpp.s
 .PHONY : src/car/A/AdasFeature_A.cpp.s
 
 src/car/A/EvEnergyFeature_A.o: src/car/A/EvEnergyFeature_A.cpp.o
@@ -667,7 +668,7 @@ src/car/A/EvEnergyFeature_A.o: src/car/A/EvEnergyFeature_A.cpp.o
 
 # target to build an object file
 src/car/A/EvEnergyFeature_A.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/A/EvEnergyFeature_A.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/A/EvEnergyFeature_A.cpp.o
 .PHONY : src/car/A/EvEnergyFeature_A.cpp.o
 
 src/car/A/EvEnergyFeature_A.i: src/car/A/EvEnergyFeature_A.cpp.i
@@ -675,7 +676,7 @@ src/car/A/EvEnergyFeature_A.i: src/car/A/EvEnergyFeature_A.cpp.i
 
 # target to preprocess a source file
 src/car/A/EvEnergyFeature_A.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/A/EvEnergyFeature_A.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/A/EvEnergyFeature_A.cpp.i
 .PHONY : src/car/A/EvEnergyFeature_A.cpp.i
 
 src/car/A/EvEnergyFeature_A.s: src/car/A/EvEnergyFeature_A.cpp.s
@@ -683,7 +684,7 @@ src/car/A/EvEnergyFeature_A.s: src/car/A/EvEnergyFeature_A.cpp.s
 
 # target to generate assembly for a file
 src/car/A/EvEnergyFeature_A.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/A/EvEnergyFeature_A.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/A/EvEnergyFeature_A.cpp.s
 .PHONY : src/car/A/EvEnergyFeature_A.cpp.s
 
 src/car/A/NavigationFeature_A.o: src/car/A/NavigationFeature_A.cpp.o
@@ -691,7 +692,7 @@ src/car/A/NavigationFeature_A.o: src/car/A/NavigationFeature_A.cpp.o
 
 # target to build an object file
 src/car/A/NavigationFeature_A.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/A/NavigationFeature_A.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/A/NavigationFeature_A.cpp.o
 .PHONY : src/car/A/NavigationFeature_A.cpp.o
 
 src/car/A/NavigationFeature_A.i: src/car/A/NavigationFeature_A.cpp.i
@@ -699,7 +700,7 @@ src/car/A/NavigationFeature_A.i: src/car/A/NavigationFeature_A.cpp.i
 
 # target to preprocess a source file
 src/car/A/NavigationFeature_A.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/A/NavigationFeature_A.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/A/NavigationFeature_A.cpp.i
 .PHONY : src/car/A/NavigationFeature_A.cpp.i
 
 src/car/A/NavigationFeature_A.s: src/car/A/NavigationFeature_A.cpp.s
@@ -707,7 +708,7 @@ src/car/A/NavigationFeature_A.s: src/car/A/NavigationFeature_A.cpp.s
 
 # target to generate assembly for a file
 src/car/A/NavigationFeature_A.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/A/NavigationFeature_A.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/A/NavigationFeature_A.cpp.s
 .PHONY : src/car/A/NavigationFeature_A.cpp.s
 
 src/car/B/AdasFeature_B.o: src/car/B/AdasFeature_B.cpp.o
@@ -715,7 +716,7 @@ src/car/B/AdasFeature_B.o: src/car/B/AdasFeature_B.cpp.o
 
 # target to build an object file
 src/car/B/AdasFeature_B.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/B/AdasFeature_B.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/B/AdasFeature_B.cpp.o
 .PHONY : src/car/B/AdasFeature_B.cpp.o
 
 src/car/B/AdasFeature_B.i: src/car/B/AdasFeature_B.cpp.i
@@ -723,7 +724,7 @@ src/car/B/AdasFeature_B.i: src/car/B/AdasFeature_B.cpp.i
 
 # target to preprocess a source file
 src/car/B/AdasFeature_B.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/B/AdasFeature_B.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/B/AdasFeature_B.cpp.i
 .PHONY : src/car/B/AdasFeature_B.cpp.i
 
 src/car/B/AdasFeature_B.s: src/car/B/AdasFeature_B.cpp.s
@@ -731,7 +732,7 @@ src/car/B/AdasFeature_B.s: src/car/B/AdasFeature_B.cpp.s
 
 # target to generate assembly for a file
 src/car/B/AdasFeature_B.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/B/AdasFeature_B.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/B/AdasFeature_B.cpp.s
 .PHONY : src/car/B/AdasFeature_B.cpp.s
 
 src/car/B/EvEnergyFeature_B.o: src/car/B/EvEnergyFeature_B.cpp.o
@@ -739,7 +740,7 @@ src/car/B/EvEnergyFeature_B.o: src/car/B/EvEnergyFeature_B.cpp.o
 
 # target to build an object file
 src/car/B/EvEnergyFeature_B.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/B/EvEnergyFeature_B.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/B/EvEnergyFeature_B.cpp.o
 .PHONY : src/car/B/EvEnergyFeature_B.cpp.o
 
 src/car/B/EvEnergyFeature_B.i: src/car/B/EvEnergyFeature_B.cpp.i
@@ -747,7 +748,7 @@ src/car/B/EvEnergyFeature_B.i: src/car/B/EvEnergyFeature_B.cpp.i
 
 # target to preprocess a source file
 src/car/B/EvEnergyFeature_B.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/B/EvEnergyFeature_B.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/B/EvEnergyFeature_B.cpp.i
 .PHONY : src/car/B/EvEnergyFeature_B.cpp.i
 
 src/car/B/EvEnergyFeature_B.s: src/car/B/EvEnergyFeature_B.cpp.s
@@ -755,7 +756,7 @@ src/car/B/EvEnergyFeature_B.s: src/car/B/EvEnergyFeature_B.cpp.s
 
 # target to generate assembly for a file
 src/car/B/EvEnergyFeature_B.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/B/EvEnergyFeature_B.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/B/EvEnergyFeature_B.cpp.s
 .PHONY : src/car/B/EvEnergyFeature_B.cpp.s
 
 src/car/B/NavigationFeature_B.o: src/car/B/NavigationFeature_B.cpp.o
@@ -763,7 +764,7 @@ src/car/B/NavigationFeature_B.o: src/car/B/NavigationFeature_B.cpp.o
 
 # target to build an object file
 src/car/B/NavigationFeature_B.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/B/NavigationFeature_B.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/B/NavigationFeature_B.cpp.o
 .PHONY : src/car/B/NavigationFeature_B.cpp.o
 
 src/car/B/NavigationFeature_B.i: src/car/B/NavigationFeature_B.cpp.i
@@ -771,7 +772,7 @@ src/car/B/NavigationFeature_B.i: src/car/B/NavigationFeature_B.cpp.i
 
 # target to preprocess a source file
 src/car/B/NavigationFeature_B.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/B/NavigationFeature_B.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/B/NavigationFeature_B.cpp.i
 .PHONY : src/car/B/NavigationFeature_B.cpp.i
 
 src/car/B/NavigationFeature_B.s: src/car/B/NavigationFeature_B.cpp.s
@@ -779,7 +780,7 @@ src/car/B/NavigationFeature_B.s: src/car/B/NavigationFeature_B.cpp.s
 
 # target to generate assembly for a file
 src/car/B/NavigationFeature_B.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/B/NavigationFeature_B.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/B/NavigationFeature_B.cpp.s
 .PHONY : src/car/B/NavigationFeature_B.cpp.s
 
 src/car/Car.o: src/car/Car.cpp.o
@@ -787,12 +788,12 @@ src/car/Car.o: src/car/Car.cpp.o
 
 # target to build an object file
 src/car/Car.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/Car.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/Car.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/Car.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/Car.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/Car.cpp.o
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/Car.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/Car.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/Car.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/Car.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/Car.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/Car.cpp.o
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/Car.cpp.o
 .PHONY : src/car/Car.cpp.o
 
 src/car/Car.i: src/car/Car.cpp.i
@@ -800,12 +801,12 @@ src/car/Car.i: src/car/Car.cpp.i
 
 # target to preprocess a source file
 src/car/Car.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/Car.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/Car.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/Car.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/Car.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/Car.cpp.i
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/Car.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/Car.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/Car.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/Car.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/Car.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/Car.cpp.i
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/Car.cpp.i
 .PHONY : src/car/Car.cpp.i
 
 src/car/Car.s: src/car/Car.cpp.s
@@ -813,12 +814,12 @@ src/car/Car.s: src/car/Car.cpp.s
 
 # target to generate assembly for a file
 src/car/Car.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/Car.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/Car.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/Car.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/Car.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/Car.cpp.s
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/Car.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/src/car/Car.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/src/car/Car.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/src/car/Car.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/src/car/Car.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/src/car/Car.cpp.s
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/src/car/Car.cpp.s
 .PHONY : src/car/Car.cpp.s
 
 # Help Target
@@ -897,6 +898,7 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -P /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash/CMakeFiles/VerifyGlobs.cmake
+	cd /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

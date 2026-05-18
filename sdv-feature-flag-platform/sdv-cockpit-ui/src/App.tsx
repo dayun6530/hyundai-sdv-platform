@@ -32,6 +32,9 @@ type VehicleTelemetry = {
   roadSummary: string
   speedLimit: number
   connected: boolean
+  adasOn: boolean
+  navOn: boolean
+  evOn: boolean
 }
 
 const useCockpitStore = create<CockpitStore>((set) => ({
@@ -68,8 +71,15 @@ const events = [
   ['14:23:58', 'Package downloaded', 'ADAS v3.1.0', 'SUCCESS'],
 ]
 
+type CockpitFeatureSlice = {
+  running?: boolean
+  active_version?: string
+}
+
 type CockpitApiPayload = {
   ok?: boolean
+  vehicle_process_running?: boolean
+  data_mode?: 'live' | 'offline' | string
   speed?: number
   battery?: number
   range_km?: number
@@ -77,12 +87,18 @@ type CockpitApiPayload = {
   route_direction?: string
   location?: { label?: string; lat?: number; lon?: number } | null
   road?: { summary?: string; detail?: string; speed_limit?: number } | null
+  features?: {
+    adas?: CockpitFeatureSlice
+    navigation?: CockpitFeatureSlice
+    energy?: CockpitFeatureSlice
+  }
 }
 
 type FleetStatePayload = {
   ok?: boolean
   states?: Array<{
     car_id?: string
+    runtime?: { car_process_running?: boolean }
     ota?: { speed?: number; battery?: number; gear?: string }
     features?: {
       ADAS?: { active_version?: string; flag?: string }
@@ -90,6 +106,23 @@ type FleetStatePayload = {
       Energy?: { active_version?: string; flag?: string }
     }
   }>
+}
+
+function featureRunning(
+  vehicleLive: boolean,
+  slice: CockpitFeatureSlice | undefined,
+  fleetFlag?: string,
+): boolean {
+  if (!vehicleLive) {
+    return false
+  }
+  if (typeof slice?.running === 'boolean') {
+    return slice.running
+  }
+  if (fleetFlag) {
+    return fleetFlag.toUpperCase() === 'ON'
+  }
+  return true
 }
 
 function useVehicleTelemetry(vehicleId: string): VehicleTelemetry {
@@ -122,15 +155,27 @@ function useVehicleTelemetry(vehicleId: string): VehicleTelemetry {
         if (!alive || !payload.ok) {
           return
         }
+        const vehicleLive =
+          payload.data_mode === 'live' || payload.vehicle_process_running === true
+        const adasOn = featureRunning(vehicleLive, payload.features?.adas)
+        const navOn = featureRunning(vehicleLive, payload.features?.navigation)
+        const evOn = featureRunning(vehicleLive, payload.features?.energy)
         setApiTelemetry({
-          battery: clampPercent(payload.battery, 82),
-          connected: true,
-          locationLabel: payload.location?.label || payload.route_direction || '판교 / 분당 방면',
-          rangeKm: finiteNumber(payload.range_km, 312),
-          roadSummary: payload.road?.summary || '직진 주행',
-          routeDirection: payload.route_direction || payload.location?.label || '판교 / 분당 방면',
-          routeDistance: payload.route_distance || '120 m',
-          speed: finiteNumber(payload.speed, 72),
+          battery: vehicleLive && evOn ? clampPercent(payload.battery, 82) : 0,
+          connected: vehicleLive,
+          adasOn,
+          navOn,
+          evOn,
+          locationLabel: vehicleLive
+            ? payload.location?.label || payload.route_direction || '판교 / 분당 방면'
+            : '차량 정지 (오프라인)',
+          rangeKm: vehicleLive && evOn ? finiteNumber(payload.range_km, 312) : 0,
+          roadSummary: vehicleLive && navOn ? payload.road?.summary || '직진 주행' : '—',
+          routeDirection: vehicleLive && navOn
+            ? payload.route_direction || payload.location?.label || '판교 / 분당 방면'
+            : 'Simulated',
+          routeDistance: vehicleLive && navOn ? payload.route_distance || '120 m' : '—',
+          speed: vehicleLive && adasOn ? finiteNumber(payload.speed, 72) : 0,
           speedLimit: finiteNumber(payload.road?.speed_limit, 80),
         })
       } catch {
@@ -142,12 +187,26 @@ function useVehicleTelemetry(vehicleId: string): VehicleTelemetry {
             const payload = (await response.json()) as FleetStatePayload
             const car = payload.states?.find((state) => state.car_id === vehicleId)
             if (car) {
+              const vehicleLive = car.runtime?.car_process_running === true
+              const adasOn = featureRunning(vehicleLive, undefined, car.features?.ADAS?.flag)
+              const navOn = featureRunning(vehicleLive, undefined, car.features?.Navigation?.flag)
+              const evOn = featureRunning(vehicleLive, undefined, car.features?.Energy?.flag)
               setApiTelemetry((prev) => ({
                 ...prev,
-                battery: clampPercent(car.ota?.battery, 82),
-                connected: true,
-                rangeKm: Math.round(clampPercent(car.ota?.battery, 82) * 3.8),
-                speed: finiteNumber(car.ota?.speed, 72) > 1 ? finiteNumber(car.ota?.speed, 72) : 72,
+                battery: vehicleLive && evOn ? clampPercent(car.ota?.battery, 82) : 0,
+                connected: vehicleLive,
+                adasOn,
+                navOn,
+                evOn,
+                rangeKm: vehicleLive && evOn ? Math.round(clampPercent(car.ota?.battery, 82) * 3.8) : 0,
+                speed: vehicleLive && adasOn
+                  ? finiteNumber(car.ota?.speed, 72) > 1
+                    ? finiteNumber(car.ota?.speed, 72)
+                    : 72
+                  : 0,
+                routeDirection: vehicleLive && navOn ? prev.routeDirection || '판교 / 분당 방면' : 'Simulated',
+                routeDistance: vehicleLive && navOn ? prev.routeDistance || '120 m' : '—',
+                locationLabel: vehicleLive ? prev.locationLabel : '차량 정지 (오프라인)',
               }))
               return
             }
@@ -170,6 +229,9 @@ function useVehicleTelemetry(vehicleId: string): VehicleTelemetry {
   return {
     battery: 82,
     connected: false,
+    adasOn: false,
+    navOn: false,
+    evOn: false,
     locationLabel: '판교 / 분당 방면',
     rangeKm: 312,
     roadSummary: '직진 주행',
@@ -453,11 +515,11 @@ function RoadScene({ telemetry }: { telemetry: VehicleTelemetry }) {
       <div className="absolute inset-x-0 bottom-0 h-[58%] bg-[linear-gradient(180deg,rgba(8,12,18,0),rgba(2,6,12,0.76)_72%,rgba(1,3,8,0.96)_100%)]" />
       <div className="absolute bottom-[31%] left-1/2 h-[29%] w-[44%] -translate-x-1/2 [clip-path:polygon(42%_0,58%_0,74%_100%,26%_100%)] bg-[linear-gradient(180deg,#2b3642_0%,#1f2935_48%,#111923_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_24px_48px_rgba(0,0,0,0.24)]" />
       <div className="absolute bottom-[31%] left-1/2 h-[29%] w-[44%] -translate-x-1/2 [clip-path:polygon(42%_0,58%_0,74%_100%,26%_100%)] bg-[radial-gradient(ellipse_at_50%_8%,rgba(203,213,225,0.13),transparent_36%),linear-gradient(90deg,rgba(0,0,0,0.22),transparent_26%,transparent_74%,rgba(0,0,0,0.22))]" />
-      <AnimatedRoadsideTreeMarker speed={telemetry.speed} />
+      <AnimatedRoadsideTreeMarker speed={telemetry.adasOn ? telemetry.speed : 0} />
       <motion.div
-        animate={{ y: [0, -3, 0] }}
-        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-[32%] left-[51%] h-[72px] w-[126px] -translate-x-1/2"
+        animate={telemetry.adasOn ? { y: [0, -3, 0] } : { y: 0 }}
+        transition={{ duration: 3.6, repeat: telemetry.adasOn ? Infinity : 0, ease: 'easeInOut' }}
+        className={`absolute bottom-[32%] left-[51%] h-[72px] w-[126px] -translate-x-1/2 ${telemetry.adasOn ? '' : 'opacity-35'}`}
       >
         <VehicleRear className="h-full w-full drop-shadow-[0_14px_18px_rgba(0,0,0,0.5)]" />
       </motion.div>
@@ -502,36 +564,47 @@ function CockpitStage({ telemetry }: { telemetry: VehicleTelemetry }) {
             key={telemetry.speed}
             initial={{ opacity: 0.45, y: -3 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[58px] font-semibold leading-none tracking-tight text-white"
+            className={`text-[58px] font-semibold leading-none tracking-tight ${telemetry.adasOn ? 'text-white' : 'text-slate-400'}`}
           >
-            {telemetry.speed}
+            {telemetry.adasOn ? telemetry.speed : 0}
           </motion.span>
           <span className="mb-1 text-[13px] text-slate-100">km/h</span>
         </div>
-        <div className="mt-4 flex gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-red-400 bg-black/45 text-[18px] font-bold text-red-100 shadow-[0_0_16px_rgba(248,113,113,0.32)]">
-            {telemetry.speedLimit}
+        {/* ADAS speed limit badges */}
+        {telemetry.adasOn ? (
+          <div className="mt-4 flex gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-red-400 bg-black/45 text-[18px] font-bold text-red-100 shadow-[0_0_16px_rgba(248,113,113,0.32)]">
+              {telemetry.speedLimit}
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-emerald-400 bg-black/45 text-[18px] font-bold text-emerald-200 shadow-[0_0_16px_rgba(74,222,128,0.3)]">
+              {telemetry.speedLimit}
+            </div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-emerald-400 bg-black/45 text-[18px] font-bold text-emerald-200 shadow-[0_0_16px_rgba(74,222,128,0.3)]">
-            {telemetry.speedLimit}
-          </div>
-        </div>
+        ) : null}
       </div>
-      <div className="absolute right-[26%] top-6 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.45)]">
+      <motion.div
+        className={`absolute right-[26%] top-6 text-center text-[10px] font-semibold uppercase tracking-wider ${
+          telemetry.adasOn
+            ? 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.45)]'
+            : 'text-slate-500'
+        }`}
+      >
         <span className="text-[9px]">AUTO DRIVE</span>
         <br />
-        ACTIVE
-      </div>
+        {telemetry.adasOn ? 'ACTIVE' : 'OFF'}
+      </motion.div>
       <div className="absolute right-4 top-[28%] rounded bg-black/30 px-2 py-1 text-center text-[11px] tracking-[0.35em] text-slate-400">
         P
         <br />R<br />N<br />
         <span className="text-slate-100">D</span>
       </div>
-      <div className="absolute bottom-[31%] left-[47%] rounded bg-black/30 px-2 py-1 text-[11px] text-slate-100">
-        <span className="mr-2 text-cyan-300">⚑</span>
-        {telemetry.routeDistance}
-        <div className="max-w-[180px] truncate text-[9px] text-slate-300">{telemetry.routeDirection}</div>
-      </div>
+      {telemetry.navOn ? (
+        <div className="absolute bottom-[31%] left-[47%] rounded bg-black/30 px-2 py-1 text-[11px] text-slate-100">
+          <span className="mr-2 text-cyan-300">⚑</span>
+          {telemetry.routeDistance}
+          <div className="max-w-[180px] truncate text-[9px] text-slate-300">{telemetry.routeDirection}</div>
+        </div>
+      ) : null}
       <DashboardCluster telemetry={telemetry} />
       <SteeringWheel />
     </main>
@@ -544,30 +617,33 @@ function DashboardCluster({ telemetry }: { telemetry: VehicleTelemetry }) {
       <div className="grid h-[86%] grid-cols-[0.9fr_1fr_1fr] gap-2">
         <ClusterCard
           title="km/h"
-          value={`${telemetry.speed}`}
-          sub={`${Math.round(telemetry.speed / 3.6)} m/s`}
-          visual={<VehicleTopView className="h-14 w-8" />}
+          value={telemetry.adasOn ? `${telemetry.speed}` : '0'}
+          sub={telemetry.adasOn ? `${Math.round(telemetry.speed / 3.6)} m/s` : '0 m/s'}
+          dimmed={!telemetry.adasOn}
+          visual={<VehicleTopView className={`h-14 w-8 ${telemetry.adasOn ? '' : 'opacity-40'}`} />}
         />
         <ClusterCard
           title="NAVI"
-          value={telemetry.routeDistance}
-          sub={telemetry.routeDirection}
-          visual={<MiniRoute />}
+          value={telemetry.navOn ? telemetry.routeDistance : '—'}
+          sub={telemetry.navOn ? telemetry.routeDirection : 'Simulated'}
+          dimmed={!telemetry.navOn}
+          visual={<MiniRoute dimmed={!telemetry.navOn} />}
         />
         <ClusterCard
           title="EV"
-          value={`${telemetry.battery}%`}
-          sub={`Range ${telemetry.rangeKm} km`}
-          visual={<VehicleSideProfile className="h-14 w-24 opacity-80" />}
+          value={telemetry.evOn ? `${telemetry.battery}%` : '—'}
+          sub={telemetry.evOn ? `Range ${telemetry.rangeKm} km` : 'Simulated'}
+          dimmed={!telemetry.evOn}
+          visual={<VehicleSideProfile className={`h-14 w-24 ${telemetry.evOn ? 'opacity-80' : 'opacity-35'}`} />}
         />
       </div>
     </div>
   )
 }
 
-function MiniRoute() {
+function MiniRoute({ dimmed = false }: { dimmed?: boolean }) {
   return (
-    <div className="relative h-14 w-24 overflow-hidden rounded bg-[#0a1320]">
+    <div className={`relative h-14 w-24 overflow-hidden rounded bg-[#0a1320] ${dimmed ? 'opacity-35' : ''}`}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(14,165,233,0.18),transparent_55%)]" />
       <div className="absolute left-1/2 top-0 h-full w-1 -translate-x-1/2 bg-cyan-300/55 shadow-[0_0_12px_rgba(34,211,238,0.7)]" />
       <div className="absolute bottom-2 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-white" />
@@ -577,12 +653,24 @@ function MiniRoute() {
   )
 }
 
-function ClusterCard({ title, value, sub, visual }: { title: string; value: string; sub: string; visual?: ReactNode }) {
+function ClusterCard({
+  title,
+  value,
+  sub,
+  visual,
+  dimmed = false,
+}: {
+  title: string
+  value: string
+  sub: string
+  visual?: ReactNode
+  dimmed?: boolean
+}) {
   return (
-    <div className="relative overflow-hidden rounded border border-white/8 bg-black/36 p-3">
+    <div className={`relative overflow-hidden rounded border border-white/8 bg-black/36 p-3 ${dimmed ? 'opacity-85' : ''}`}>
       <div className="relative z-10">
         <div className="mb-1 text-[9px] font-semibold uppercase tracking-widest text-slate-500">{title}</div>
-        <div className="text-[28px] font-semibold leading-none text-white">{value}</div>
+        <div className={`text-[28px] font-semibold leading-none ${dimmed ? 'text-slate-400' : 'text-white'}`}>{value}</div>
         <div className="mt-1 text-[10px] text-slate-300">{sub}</div>
       </div>
       {visual ? <div className="absolute bottom-2 right-3 opacity-90">{visual}</div> : null}

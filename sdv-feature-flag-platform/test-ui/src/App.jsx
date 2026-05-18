@@ -73,6 +73,28 @@ function mergeFlagsState(prev, payload) {
   return { ...prev, [id]: slice };
 }
 
+/** Same JSON shape as SignalReceiver / status-server mirror (retained flags/state). */
+function buildFlagsStatePayload(carId, slice) {
+  const id = normalizeCarId(carId);
+  const features = {};
+  for (const f of DEFAULT_FEATURES) {
+    const name = f.name;
+    const row = slice[name] || {};
+    const mainOn = !!row.mainOn;
+    const subs = {};
+    for (const s of SUB_FEATURES[name] || []) {
+      subs[s.key] = mainOn ? !!row[s.key] : false;
+    }
+    features[name] = { main: mainOn, sub: subs };
+  }
+  return {
+    protocol_version: "1.0",
+    car_id: id,
+    source: "test-ui",
+    features,
+  };
+}
+
 export default function App() {
   const [brokerWsUrl, setBrokerWsUrl] = useState("ws://127.0.0.1:9001");
   const [carId, setCarId] = useState("car_1");
@@ -144,6 +166,13 @@ export default function App() {
     };
   }, [brokerWsUrl, topic, stateTopic]);
 
+  const pushLog = useCallback((line) => {
+    setLogLines((prev) => {
+      const next = [`[${nowIso()}] ${line}`, ...prev];
+      return next.slice(0, 200);
+    });
+  }, []);
+
   const publish = useCallback(
     (payload) =>
       new Promise((resolve) => {
@@ -154,13 +183,6 @@ export default function App() {
           connectTimeout: 4000,
           reconnectPeriod: 0,
         });
-
-        const pushLog = (line) => {
-          setLogLines((prev) => {
-            const next = [`[${nowIso()}] ${line}`, ...prev];
-            return next.slice(0, 200);
-          });
-        };
 
         client.on("connect", () => {
           client.publish(topic, payload, { qos: 1 }, () => {
@@ -178,21 +200,86 @@ export default function App() {
           resolve(false);
         });
       }),
-    [brokerWsUrl, topic],
+    [brokerWsUrl, topic, pushLog],
+  );
+
+  /** Retained flags/state so Dashboard + status-server see OFF even when car_N is stopped. */
+  const publishFlagsState = useCallback(
+    (id, slice) =>
+      new Promise((resolve) => {
+        const stTopic = `/sdv/vehicle/${normalizeCarId(id)}/flags/state`;
+        const body = JSON.stringify(buildFlagsStatePayload(id, slice));
+        const client = mqtt.connect(brokerWsUrl, {
+          clientId: `sdv-test-ui-st-${Math.random().toString(16).slice(2)}`,
+          clean: false,
+          keepalive: 10,
+          connectTimeout: 4000,
+          reconnectPeriod: 0,
+        });
+        client.on("connect", () => {
+          client.publish(stTopic, body, { qos: 1, retain: true }, () => {
+            pushLog(`TX ${stTopic} ← retain (${body.length}B)`);
+            client.end(true);
+            resolve(true);
+          });
+        });
+        client.on("error", (err) => {
+          pushLog(`flags/state TX error: ${err?.message || String(err)}`);
+          try {
+            client.end(true);
+          } catch {
+          }
+          resolve(false);
+        });
+      }),
+    [brokerWsUrl, pushLog],
+  );
+
+  const applyUiSlice = useCallback(
+    (id, slice) => {
+      setUiByCar((prev) => ({ ...prev, [normalizeCarId(id)]: slice }));
+    },
+    [],
   );
 
   const sendMain = async (feature, on) => {
+    const id = normalizeCarId(carId);
+    const next = { ...(uiByCar[id] || ui) };
+    next[feature] = { ...(next[feature] || {}), mainOn: on };
+    if (!on) {
+      for (const s of SUB_FEATURES[feature] || []) {
+        next[feature][s.key] = false;
+      }
+    }
+    applyUiSlice(id, next);
     const payload = on ? `FLAG_ON:${feature}` : `FLAG_OFF:${feature}`;
     await publish(payload);
+    await publishFlagsState(id, next);
   };
 
   const sendSub = async (feature, subKey, on) => {
+    const id = normalizeCarId(carId);
+    const next = { ...(uiByCar[id] || ui) };
+    next[feature] = { ...(next[feature] || {}), [subKey]: on };
+    if (on) {
+      next[feature].mainOn = true;
+    }
+    applyUiSlice(id, next);
     const payload = on ? `FLAG_ON:${feature}.${subKey}` : `FLAG_OFF:${feature}.${subKey}`;
     await publish(payload);
+    await publishFlagsState(id, next);
   };
 
   const onKill = async (feature) => {
+    const id = normalizeCarId(carId);
+    const next = { ...(uiByCar[id] || ui) };
+    next[feature] = { ...(next[feature] || {}), mainOn: false };
+    for (const s of SUB_FEATURES[feature] || []) {
+      next[feature][s.key] = false;
+    }
+    applyUiSlice(id, next);
     await publish(`KILL:${feature}`);
+    await publishFlagsState(id, next);
   };
 
   return (

@@ -5,6 +5,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const http = require("http");
 const https = require("https");
+const { mqttFlagCache, forceOfflineFeatureFlags, mergeMqttFlagsIntoStates } = require("./mqttFlagCache");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -1980,6 +1981,88 @@ function parseRoadLine(line) {
   };
 }
 
+/** Last `RANGE: ... 배터리 N% | Mkm` line from EvEnergyFeature.log (live demo drain/charge). */
+function parseEnergyBatteryFromLine(line) {
+  const m = String(line || "").match(/배터리\s*(-?\d+(?:\.\d+)?)\s*%/);
+  if (!m) return null;
+  const pct = Number(m[1]);
+  return Number.isFinite(pct) ? pct : null;
+}
+
+function parseEnergyRangeKmFromLine(line) {
+  const m = String(line || "").match(/\|\s*(-?\d+)\s*km/);
+  if (!m) return null;
+  const km = Number(m[1]);
+  return Number.isFinite(km) ? km : null;
+}
+
+function latestEnergyBatteryFromLog(carId) {
+  const logPath = path.join(REPO_ROOT, "logs", carId, "EvEnergyFeature.log");
+  const line = lastMatchingLine(logPath, (l) => /배터리\s*-?\d/.test(l));
+  if (!line) {
+    return null;
+  }
+  const pct = parseEnergyBatteryFromLine(line);
+  if (pct == null) {
+    return null;
+  }
+  return {
+    battery_pct: pct,
+    range_km: parseEnergyRangeKmFromLine(line),
+    raw: line,
+  };
+}
+
+/**
+ * Overlay deploy/state OTA battery with live EvEnergy RANGE lines when the WSL car_N process
+ * is actually running. Stale log files must not keep the UI in "live" mode after shutdown.
+ */
+function mergeLiveEnergyTelemetryIntoStates(states, probeMap, warnings) {
+  const iso = new Date().toISOString();
+  for (const st of states) {
+    const id = st && st.car_id;
+    if (!id || !/^car_(10|[1-9])$/.test(id)) {
+      continue;
+    }
+    const procUp = probeMap && typeof probeMap[id] === "boolean" ? probeMap[id] : false;
+    if (!procUp) {
+      if (st.features?.Energy) {
+        delete st.features.Energy.live_from_log;
+      }
+      if (st.ota) {
+        delete st.ota.battery_source;
+        delete st.ota.battery_observed_at;
+      }
+      continue;
+    }
+    const live = latestEnergyBatteryFromLog(id);
+    if (!live) {
+      continue;
+    }
+    if (!st.ota || typeof st.ota !== "object") {
+      st.ota = {};
+    }
+    const clamped = Math.max(0, Math.min(100, Math.round(live.battery_pct)));
+    st.ota.battery = clamped;
+    st.ota.battery_source = "EvEnergyFeature.log";
+    st.ota.battery_observed_at = iso;
+    if (live.range_km != null) {
+      st.ota.range_km = live.range_km;
+    }
+    if (!st.features || typeof st.features !== "object") {
+      st.features = {};
+    }
+    if (!st.features.Energy || typeof st.features.Energy !== "object") {
+      st.features.Energy = {};
+    }
+    st.features.Energy.live_from_log = true;
+  }
+  const merged = states.filter((s) => s?.ota?.battery_source === "EvEnergyFeature.log").length;
+  if (merged > 0) {
+    warnings.push(`fleet energy telemetry: merged live battery for ${merged} vehicle(s) from EvEnergyFeature.log`);
+  }
+}
+
 function latestCockpitLogTelemetry(carId) {
   const logDir = path.join(REPO_ROOT, "logs", carId);
   const navLog = path.join(logDir, "NavigationFeature.log");
@@ -2018,7 +2101,7 @@ function latestCockpitLogTelemetry(carId) {
   };
 }
 
-app.get("/api/fleet/cockpit", (_req, res) => {
+app.get("/api/fleet/cockpit", async (_req, res) => {
   const carId = String(_req.query.car_id || "car_1").trim();
   if (!/^car_(10|[1-9])$/.test(carId)) {
     res.status(400).json({ ok: false, error: "car_id must be car_1 .. car_10" });
@@ -2033,45 +2116,83 @@ app.get("/api/fleet/cockpit", (_req, res) => {
     warnings.push(`fleet state unavailable: ${err.message}`);
   }
 
+  const probeMap = await probeFleetCarProcessesWsl(warnings);
+  const procUp = probeMap && typeof probeMap[carId] === "boolean" ? probeMap[carId] : false;
+  const vehicleLive = procUp === true;
+
+  if (state) {
+    const enriched = [{ ...state, car_id: carId }];
+    mergeRuntimeProbeIntoStates(enriched, probeMap, warnings);
+    forceOfflineFeatureFlags(enriched, probeMap, warnings);
+    mergeMqttFlagsIntoStates(enriched, mqttFlagCache, probeMap, warnings);
+    state = enriched[0];
+  }
+
   const ota = state?.ota || {};
   const features = state?.features || {};
   const energy = features.Energy || {};
   const nav = features.Navigation || {};
   const adas = features.ADAS || {};
-  const logs = latestCockpitLogTelemetry(carId);
-  const battery = Math.max(0, Math.min(100, Math.round(Number(ota.battery) || 82)));
+  const logs = vehicleLive ? latestCockpitLogTelemetry(carId) : {};
+  const liveEnergy = vehicleLive ? latestEnergyBatteryFromLog(carId) : null;
+  let battery = 0;
+  let batterySource = "offline";
+  if (vehicleLive) {
+    battery = Math.max(0, Math.min(100, Math.round(Number(ota.battery) || 82)));
+    batterySource = "deploy/state";
+    if (liveEnergy) {
+      battery = Math.max(0, Math.min(100, Math.round(liveEnergy.battery_pct)));
+      batterySource = "EvEnergyFeature.log";
+    }
+  }
   let speed = Number(ota.speed);
-  if (!Number.isFinite(speed) || speed < 1) {
+  if (vehicleLive && (!Number.isFinite(speed) || speed < 1)) {
     speed = Math.max(52, Math.min(92, (logs.road?.speed_limit || 100) - 28));
+  } else if (!Number.isFinite(speed) || speed < 1) {
+    speed = 0;
   }
 
   res.json({
     ok: true,
     car_id: carId,
+    vehicle_process_running: procUp,
+    data_mode: vehicleLive ? "live" : "offline",
     speed: Math.round(speed),
     battery,
-    range_km: Math.round(battery * 3.8),
-    gear: ota.gear || "D",
-    status: state?.status || "unknown",
-    location: logs.location,
-    road: logs.road,
-    route_distance: logs.road?.summary?.match(/(\d+\s*km|\d+\s*m)/)?.[1] || "120 m",
-    route_direction: logs.location?.label || "판교 / 분당 방면",
+    battery_source: batterySource,
+    range_km: vehicleLive
+      ? liveEnergy?.range_km != null
+        ? liveEnergy.range_km
+        : Math.round(battery * 3.8)
+      : 0,
+    gear: vehicleLive ? ota.gear || "D" : "P",
+    status: vehicleLive ? state?.status || "online" : "offline",
+    location: vehicleLive ? logs.location || null : null,
+    road: vehicleLive ? logs.road || null : null,
+    route_distance: vehicleLive
+      ? logs.road?.summary?.match(/(\d+\s*km|\d+\s*m)/)?.[1] || "120 m"
+      : "—",
+    route_direction: vehicleLive ? logs.location?.label || "판교 / 분당 방면" : "차량 정지",
     features: {
       adas: {
         active_version: adas.active_version || "v3.0",
-        running: String(adas.flag || "ON").toUpperCase() !== "OFF",
-        latest: logs.adas.latest || "",
+        running: String(adas.flag || "ON").toUpperCase() === "ON",
+        latest: vehicleLive ? logs.adas?.latest || "" : "",
       },
       navigation: {
         active_version: nav.active_version || "v2.1",
-        running: String(nav.flag || "ON").toUpperCase() !== "OFF",
+        running: String(nav.flag || "ON").toUpperCase() === "ON",
       },
       energy: {
         active_version: energy.active_version || "v2.0",
-        running: String(energy.flag || "ON").toUpperCase() !== "OFF",
-        mode: logs.energy.mode || "",
+        running: String(energy.flag || "ON").toUpperCase() === "ON",
+        mode: vehicleLive ? logs.energy?.mode || "" : "",
       },
+    },
+    runtime: {
+      car_process_running: procUp,
+      probed_at: new Date().toISOString(),
+      source: "wsl_pgrep",
     },
     warnings,
   });
@@ -2121,7 +2242,10 @@ app.get("/api/fleet/state", async (_req, res) => {
     const states = readFleetStatesCar1To10(warnings);
     const probeMap = await probeFleetCarProcessesWsl(warnings);
     mergeRuntimeProbeIntoStates(states, probeMap, warnings);
-    res.json({ ok: true, states, warnings });
+    forceOfflineFeatureFlags(states, probeMap, warnings);
+    mergeMqttFlagsIntoStates(states, mqttFlagCache, probeMap, warnings);
+    mergeLiveEnergyTelemetryIntoStates(states, probeMap, warnings);
+    res.json({ ok: true, states, warnings, mqtt_connected: mqttFlagCache.connected });
   } catch (err) {
     warnings.push(`fleet state: ${err.message}`);
     res.json({ ok: false, states: [], warnings });
@@ -3332,7 +3456,11 @@ app.post("/api/fleet/docker-feature-versions/apply", async (req, res) => {
   }
 });
 
+const SDV_MQTT_BROKER_URI = String(process.env.SDV_MQTT_BROKER_URI || "mqtt://127.0.0.1:1884").trim();
+mqttFlagCache.start(SDV_MQTT_BROKER_URI);
+
 app.listen(PORT, () => {
   console.log(`[STATUS] server started on http://localhost:${PORT}`);
   console.log(`[STATUS] reading deployment state from ${DEPLOY_ROOT}`);
+  console.log(`[STATUS] MQTT flag mirror: ${SDV_MQTT_BROKER_URI} (topic /sdv/vehicle/+/flags/state)`);
 });

@@ -268,12 +268,13 @@ Write-Host "Done. dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:51
 if ($env:SDV_SKIP_QT_DASHBOARD -eq "1") {
     Write-Host "[run_sdv] SDV_SKIP_QT_DASHBOARD=1 — skipping native Qt dashboard launch."
 } else {
-    $dashRoot = Join-Path $ProjectRoot "sdv-dashboard-qt\build"
     $dashCandidates = @(
-        (Join-Path $dashRoot "Release\SDV_Dashboard.exe"),
-        (Join-Path $dashRoot "RelWithDebInfo\SDV_Dashboard.exe"),
-        (Join-Path $dashRoot "Debug\SDV_Dashboard.exe"),
-        (Join-Path $dashRoot "SDV_Dashboard.exe")
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\Release\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\RelWithDebInfo\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\Debug\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build-hotfix\Release\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build-hotfix\x64\Release\SDV_Dashboard.exe")
     )
     $dashExe = $dashCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
     if ($dashExe) {

@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/tests/unit
+# Install script for directory: /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/tests/unit
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

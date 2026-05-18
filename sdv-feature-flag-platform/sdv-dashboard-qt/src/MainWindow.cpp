@@ -60,6 +60,13 @@ bool featureFlagOn(const QJsonObject& feature) {
     return enabled && !feature.value(QStringLiteral("kill_switch")).toBool();
 }
 
+QJsonObject mqttFlagsForCar(const QJsonObject& carState, const QJsonObject& hubMqtt) {
+    if (!hubMqtt.isEmpty()) {
+        return hubMqtt;
+    }
+    return carState.value(QStringLiteral("mqtt_flags")).toObject();
+}
+
 }  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), carId_(QStringLiteral("car_1")) {
@@ -269,8 +276,9 @@ void MainWindow::onFleetStates(const QJsonArray& states) {
 
     const QJsonObject car = pickCar(states, carId_);
     if (!car.isEmpty()) {
+        const QJsonObject mqtt = mqttFlagsForCar(car, lastMqtt_);
         syncCockpitState(car);
-        features_->updateCards(car, lastMqtt_);
+        features_->updateCards(car, mqtt);
         ota_->updateFromCarState(car);
         shadow_->updateFromCarState(car);
         health_->updateFromCarState(car);
@@ -282,7 +290,7 @@ void MainWindow::onMqttFeatures(const QJsonObject& env) {
     const QJsonObject car = pickCar(lastFleet_, carId_);
     if (!car.isEmpty()) {
         syncCockpitState(car);
-        features_->updateCards(car, lastMqtt_);
+        features_->updateCards(car, mqttFlagsForCar(car, lastMqtt_));
     }
 }
 
@@ -302,7 +310,8 @@ void MainWindow::onCarComboChanged(int idx) {
     const QJsonObject car = pickCar(lastFleet_, carId_);
     syncCockpitState(car);
     if (!car.isEmpty()) {
-        features_->updateCards(car, lastMqtt_);
+        const QJsonObject mqtt = mqttFlagsForCar(car, lastMqtt_);
+        features_->updateCards(car, mqtt);
         ota_->updateFromCarState(car);
         shadow_->updateFromCarState(car);
         health_->updateFromCarState(car);
@@ -323,7 +332,8 @@ void MainWindow::onCockpitCarSelected(const QString& carId) {
     const QJsonObject car = pickCar(lastFleet_, carId_);
     syncCockpitState(car);
     if (!car.isEmpty()) {
-        features_->updateCards(car, lastMqtt_);
+        const QJsonObject mqtt = mqttFlagsForCar(car, lastMqtt_);
+        features_->updateCards(car, mqtt);
         ota_->updateFromCarState(car);
         shadow_->updateFromCarState(car);
         health_->updateFromCarState(car);

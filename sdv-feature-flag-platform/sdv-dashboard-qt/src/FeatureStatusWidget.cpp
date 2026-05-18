@@ -11,57 +11,25 @@ using sdv::dash::FeatureStatusWidget;
 
 namespace {
 
-QString deriveState(const QJsonObject& fleetFeat, const QJsonObject& mqttFeat, const QJsonObject& ota) {
-    const bool kill = fleetFeat.value(QStringLiteral("kill_switch")).toBool();
-    const bool shadow = fleetFeat.value(QStringLiteral("shadow_enabled")).toBool();
-    const QString pend = fleetFeat.value(QStringLiteral("pending_active_version")).toString();
+// ON/OFF follows status-server merged features.*.flag (from MQTT flags/state + test-ui).
+bool isFeatureFlagOn(const QJsonObject& fleetFeat) {
+    if (fleetFeat.value(QStringLiteral("kill_switch")).toBool()) {
+        return false;
+    }
     const QString flag = fleetFeat.value(QStringLiteral("flag")).toString();
-    const QString upd = ota.value(QStringLiteral("update_mode")).toString();
-    const QString phase = ota.value(QStringLiteral("ota_phase")).toString();
+    if (!flag.isEmpty()) {
+        return flag.compare(QLatin1String("ON"), Qt::CaseInsensitive) == 0;
+    }
+    return false;
+}
 
-    if (kill) {
-        return QStringLiteral("FAILED");
-    }
-    if (upd.compare(QLatin1String("FAILED"), Qt::CaseInsensitive) == 0 ||
-        phase.contains(QLatin1String("FAIL"), Qt::CaseInsensitive)) {
-        return QStringLiteral("FAILED");
-    }
-    const bool blocked = fleetFeat.contains(QStringLiteral("blocked_versions")) &&
-                         fleetFeat.value(QStringLiteral("blocked_versions")).toArray().size() > 0;
-    if (blocked && phase.contains(QLatin1String("ROLL"), Qt::CaseInsensitive)) {
-        return QStringLiteral("ROLLBACK");
-    }
-    if (!pend.isEmpty()) {
-        return QStringLiteral("DEPLOYING");
-    }
-    if (shadow) {
-        return QStringLiteral("SHADOW");
-    }
-    if (flag.compare(QLatin1String("OFF"), Qt::CaseInsensitive) == 0) {
-        return QStringLiteral("DISABLED");
-    }
-    const bool mqttMain = mqttFeat.value(QStringLiteral("main")).toBool(true);
-    if (!mqttFeat.isEmpty() && !mqttMain) {
-        return QStringLiteral("DISABLED");
-    }
-    return QStringLiteral("RUNNING");
+QString deriveState(const QJsonObject& fleetFeat) {
+    return isFeatureFlagOn(fleetFeat) ? QStringLiteral("ON") : QStringLiteral("OFF");
 }
 
 QString stateColor(const QString& s) {
-    if (s == QLatin1String("RUNNING")) {
+    if (s == QLatin1String("ON")) {
         return QStringLiteral("#34d399");
-    }
-    if (s == QLatin1String("SHADOW")) {
-        return QStringLiteral("#38bdf8");
-    }
-    if (s == QLatin1String("DEPLOYING")) {
-        return QStringLiteral("#fbbf24");
-    }
-    if (s == QLatin1String("FAILED")) {
-        return QStringLiteral("#f87171");
-    }
-    if (s == QLatin1String("ROLLBACK")) {
-        return QStringLiteral("#fb923c");
     }
     return QStringLiteral("#94a3b8");
 }
@@ -89,20 +57,19 @@ void FeatureStatusWidget::styleCard(QFrame* f, const QString& accent) {
 
 void FeatureStatusWidget::fillCard(CardUi& c, const QString& displayName, const QJsonObject& fleetFeat,
                                    const QJsonObject& mqttFeat, const QJsonObject& ota) {
-    const QString ver = fleetFeat.value(QStringLiteral("active_version")).toString(QStringLiteral("—"));
-    const QString st = deriveState(fleetFeat, mqttFeat, ota);
+    Q_UNUSED(ota);
+    Q_UNUSED(mqttFeat);
+    const QString verRaw = fleetFeat.value(QStringLiteral("active_version")).toString(QStringLiteral("—"));
+    const QString ver =
+        verRaw.startsWith(QLatin1String("v"), Qt::CaseInsensitive) ? verRaw : QStringLiteral("v %1").arg(verRaw);
+    const bool on = isFeatureFlagOn(fleetFeat);
+    const QString st = deriveState(fleetFeat);
     c.title->setText(QStringLiteral("<b>%1</b>").arg(displayName));
-    c.ver->setText(QStringLiteral("v %1").arg(ver));
+    c.ver->setText(ver);
     c.state->setText(st);
     c.state->setStyleSheet(QStringLiteral("color:%1;font-weight:700;font-size:9px").arg(stateColor(st)));
-
-    const bool logicalOn =
-        fleetFeat.value(QStringLiteral("flag")).toString().compare(QLatin1String("ON"), Qt::CaseInsensitive) == 0 &&
-        !fleetFeat.value(QStringLiteral("kill_switch")).toBool();
-    const bool mqttMain = mqttFeat.value(QStringLiteral("main")).toBool(true);
-    const bool on = logicalOn && mqttMain;
-    c.cpu->setText(QStringLiteral("%1 %").arg(estCpu(on, displayName == QLatin1String("ADAS"))));
-    c.mem->setText(QStringLiteral("%1 MB").arg(estMem(on)));
+    c.cpu->setText(QStringLiteral("CPU %1%").arg(estCpu(on, displayName == QLatin1String("ADAS"))));
+    c.mem->setText(QStringLiteral("MEM %1 MB").arg(estMem(on)));
     c.hb->setText(hbOn_ ? QStringLiteral("●") : QStringLiteral("○"));
     c.hb->setStyleSheet(on ? QStringLiteral("color:#22c55e") : QStringLiteral("color:#475569"));
 }
@@ -130,7 +97,9 @@ FeatureStatusWidget::FeatureStatusWidget(QWidget* parent) : QWidget(parent) {
         auto* row = new QHBoxLayout();
         row->setContentsMargins(0, 0, 0, 0);
         row->setSpacing(2);
-        row->addWidget(new QLabel(QStringLiteral("HB"), c.frame));
+        auto* hbLab = new QLabel(QStringLiteral("HB"), c.frame);
+        hbLab->setStyleSheet(QStringLiteral("color:#64748b;font-size:8px"));
+        row->addWidget(hbLab);
         row->addStretch();
         row->addWidget(c.hb);
         v->addLayout(row);
@@ -157,8 +126,24 @@ void FeatureStatusWidget::pulseHeartbeat() {
 void FeatureStatusWidget::updateCards(const QJsonObject& carState, const QJsonObject& mqttFeatures) {
     lastCar_ = carState;
     lastMqtt_ = mqttFeatures;
-    const QJsonObject feats = carState.value(QStringLiteral("features")).toObject();
+    QJsonObject feats = carState.value(QStringLiteral("features")).toObject();
     const QJsonObject ota = carState.value(QStringLiteral("ota")).toObject();
+    const QJsonObject runtime = carState.value(QStringLiteral("runtime")).toObject();
+    const bool procUp = runtime.value(QStringLiteral("car_process_running")).toBool();
+
+    if (!procUp) {
+        auto forceOff = [](const QJsonObject& in) {
+            QJsonObject o = in;
+            o.insert(QStringLiteral("flag"), QStringLiteral("OFF"));
+            o.insert(QStringLiteral("flag_source"), QStringLiteral("vehicle_offline"));
+            return o;
+        };
+        QJsonObject patched;
+        patched.insert(QStringLiteral("ADAS"), forceOff(feats.value(QStringLiteral("ADAS")).toObject()));
+        patched.insert(QStringLiteral("Navigation"), forceOff(feats.value(QStringLiteral("Navigation")).toObject()));
+        patched.insert(QStringLiteral("Energy"), forceOff(feats.value(QStringLiteral("Energy")).toObject()));
+        feats = patched;
+    }
 
     const QJsonObject mqttRoot = mqttFeatures.value(QStringLiteral("features")).toObject();
     const QJsonObject adasM = mqttRoot.value(QStringLiteral("AdasFeature")).toObject();

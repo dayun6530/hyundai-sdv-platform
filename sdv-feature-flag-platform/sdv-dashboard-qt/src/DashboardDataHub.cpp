@@ -19,7 +19,7 @@ DashboardDataHub::DashboardDataHub(QObject* parent)
     : QObject(parent), nam_(new QNetworkAccessManager(this)) {
     connect(&fleetTimer_, &QTimer::timeout, this, &DashboardDataHub::pollFleet);
     connect(&historyTimer_, &QTimer::timeout, this, &DashboardDataHub::pollHistory);
-    fleetTimer_.start(750);
+    fleetTimer_.start(400);
     historyTimer_.start(2800);
     pollFleet();
     pollHistory();

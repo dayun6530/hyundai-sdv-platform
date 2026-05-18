@@ -61,6 +61,10 @@ public:
         const qreal h = r.height();
 
         const QJsonObject ota = car_->value(QStringLiteral("ota")).toObject();
+        const QJsonObject runtime = car_->value(QStringLiteral("runtime")).toObject();
+        const bool procUp = runtime.contains(QStringLiteral("car_process_running"))
+                                  ? runtime.value(QStringLiteral("car_process_running")).toBool()
+                                  : true;
         const QJsonObject feats = car_->value(QStringLiteral("features")).toObject();
         const QJsonObject adasFleet = feats.value(QStringLiteral("ADAS")).toObject();
         const QJsonObject navFleet = feats.value(QStringLiteral("Navigation")).toObject();
@@ -71,9 +75,9 @@ public:
         const QJsonObject navM = mqttFeats.value(QStringLiteral("NavigationFeature")).toObject();
         const QJsonObject evM = mqttFeats.value(QStringLiteral("EvEnergyFeature")).toObject();
 
-        const bool adasOn = mqttMainOn(*mqtt_, "AdasFeature") || featureOn(adasFleet);
-        const bool navOn = mqttMainOn(*mqtt_, "NavigationFeature") || featureOn(navFleet);
-        const bool evOn = mqttMainOn(*mqtt_, "EvEnergyFeature") || featureOn(energyFleet);
+        const bool adasOn = procUp && (mqttMainOn(*mqtt_, "AdasFeature") || featureOn(adasFleet));
+        const bool navOn = procUp && (mqttMainOn(*mqtt_, "NavigationFeature") || featureOn(navFleet));
+        const bool evOn = procUp && (mqttMainOn(*mqtt_, "EvEnergyFeature") || featureOn(energyFleet));
         const bool lka = adasOn && mqttSubOnOrDefault(adasM, "LKA", true);
         const bool fca = adasOn && mqttSubOnOrDefault(adasM, "FCA", true);
         const bool scc = adasOn && mqttSubOnOrDefault(adasM, "SCC", true);
@@ -88,12 +92,14 @@ public:
                                    phase.contains(QLatin1String("COMPLETE"), Qt::CaseInsensitive) ||
                                    phase.contains(QLatin1String("READY"), Qt::CaseInsensitive);
 
-        qreal speed = ota.value(QStringLiteral("speed")).toDouble(72.0);
-        if (speed < 1.0) {
+        qreal speed = procUp ? ota.value(QStringLiteral("speed")).toDouble(72.0) : 0.0;
+        if (procUp && speed < 1.0) {
             speed = 72.0 + 4.0 * std::sin(*simTime_ * 0.42);
         }
         const int battery = qBound(0, qRound(ota.value(QStringLiteral("battery")).toDouble(82.0)), 100);
-        const int range = qRound(battery * 3.8);
+        const int range = ota.contains(QStringLiteral("range_km"))
+                                ? qRound(ota.value(QStringLiteral("range_km")).toDouble(battery * 3.8))
+                                : qRound(battery * 3.8);
 
         drawAtmosphere(p, r, postOtaPolish);
 
