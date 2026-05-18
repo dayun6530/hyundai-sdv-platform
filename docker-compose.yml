@@ -76,7 +76,7 @@ services:
       - '4242:4242'
     restart: unless-stopped
 
-  # Operational data store (Shadow / Kill Switch / telemetry) ??separate from Unleash Postgres.
+  # Operational data store (Shadow / Kill Switch / telemetry) — separate from Unleash Postgres.
   operational-postgres:
     image: postgres:16-alpine
     container_name: sdv-operational-postgres
@@ -118,13 +118,20 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+      # Pre-load Team_SDV_DB (operational-postgres on compose network); password in /pgpass.
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     ports:
       - '5050:80'
     depends_on:
       - operational-postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgpass:ro
     restart: unless-stopped
 
 volumes:
   unleash_pgdata:
   grafana_data:
   operational_pgdata:
+  pgadmin_data:

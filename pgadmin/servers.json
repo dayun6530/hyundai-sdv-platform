@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Team_SDV_DB",
+      "Group": "Servers",
+      "Host": "operational-postgres",
+      "Port": 5432,
+      "MaintenanceDB": "sdv_operational",
+      "Username": "sdv",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass"
+    }
+  }
+}
