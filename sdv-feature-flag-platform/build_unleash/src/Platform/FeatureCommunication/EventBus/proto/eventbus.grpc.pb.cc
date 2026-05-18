@@ -26,7 +26,7 @@ static const char* EventBus_method_names[] = {
   "/sdv.platform.EventBus/registerComponent",
   "/sdv.platform.EventBus/unRegister",
   "/sdv.platform.EventBus/sendEvent",
-  "/sdv.platform.EventBus/getEventQueue",
+  "/sdv.platform.EventBus/SubscribeEvents",
 };
 
 std::unique_ptr< EventBus::Stub> EventBus::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -39,7 +39,7 @@ EventBus::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, 
   : channel_(channel), rpcmethod_registerComponent_(EventBus_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_unRegister_(EventBus_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_sendEvent_(EventBus_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_getEventQueue_(EventBus_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SubscribeEvents_(EventBus_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   {}
 
 ::grpc::Status EventBus::Stub::registerComponent(::grpc::ClientContext* context, const ::sdv::platform::RegisterRequest& request, ::sdv::platform::RegisterResponse* response) {
@@ -111,27 +111,20 @@ void EventBus::Stub::async::sendEvent(::grpc::ClientContext* context, const ::sd
   return result;
 }
 
-::grpc::Status EventBus::Stub::getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::sdv::platform::GetEventQueueResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_getEventQueue_, context, request, response);
+::grpc::ClientReader< ::sdv::platform::EventMessage>* EventBus::Stub::SubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request) {
+  return ::grpc::internal::ClientReaderFactory< ::sdv::platform::EventMessage>::Create(channel_.get(), rpcmethod_SubscribeEvents_, context, request);
 }
 
-void EventBus::Stub::async::getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_getEventQueue_, context, request, response, std::move(f));
+void EventBus::Stub::async::SubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest* request, ::grpc::ClientReadReactor< ::sdv::platform::EventMessage>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::sdv::platform::EventMessage>::Create(stub_->channel_.get(), stub_->rpcmethod_SubscribeEvents_, context, request, reactor);
 }
 
-void EventBus::Stub::async::getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_getEventQueue_, context, request, response, reactor);
+::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>* EventBus::Stub::AsyncSubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::sdv::platform::EventMessage>::Create(channel_.get(), cq, rpcmethod_SubscribeEvents_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>* EventBus::Stub::PrepareAsyncgetEventQueueRaw(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::sdv::platform::GetEventQueueResponse, ::sdv::platform::GetEventQueueRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_getEventQueue_, context, request);
-}
-
-::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>* EventBus::Stub::AsyncgetEventQueueRaw(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) {
-  auto* result =
-    this->PrepareAsyncgetEventQueueRaw(context, request, cq);
-  result->StartCall();
-  return result;
+::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>* EventBus::Stub::PrepareAsyncSubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::sdv::platform::EventMessage>::Create(channel_.get(), cq, rpcmethod_SubscribeEvents_, context, request, false, nullptr);
 }
 
 EventBus::Service::Service() {
@@ -167,13 +160,13 @@ EventBus::Service::Service() {
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       EventBus_method_names[3],
-      ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< EventBus::Service, ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      ::grpc::internal::RpcMethod::SERVER_STREAMING,
+      new ::grpc::internal::ServerStreamingHandler< EventBus::Service, ::sdv::platform::SubscribeEventsRequest, ::sdv::platform::EventMessage>(
           [](EventBus::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::sdv::platform::GetEventQueueRequest* req,
-             ::sdv::platform::GetEventQueueResponse* resp) {
-               return service->getEventQueue(ctx, req, resp);
+             const ::sdv::platform::SubscribeEventsRequest* req,
+             ::grpc::ServerWriter<::sdv::platform::EventMessage>* writer) {
+               return service->SubscribeEvents(ctx, req, writer);
              }, this)));
 }
 
@@ -201,10 +194,10 @@ EventBus::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status EventBus::Service::getEventQueue(::grpc::ServerContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response) {
+::grpc::Status EventBus::Service::SubscribeEvents(::grpc::ServerContext* context, const ::sdv::platform::SubscribeEventsRequest* request, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* writer) {
   (void) context;
   (void) request;
-  (void) response;
+  (void) writer;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 

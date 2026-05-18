@@ -1,152 +1,240 @@
 #include "CenterCommunication/DataCollector.h"
 
-#include <iostream>
-#include <thread>
 #include <chrono>
-#include <signal.h>
 #include <cstdlib>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
+#include <iostream>
+#include <signal.h>
+#include <thread>
 
+#include "CenterCommunication/telemetry/OperationalDbExporter.h"
+#include "CenterCommunication/telemetry/OtlpLogsExporter.h"
+#include "CenterCommunication/telemetry/TelemetryRecord.h"
+
+#include <vector>
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 
-namespace fs = std::filesystem;
-
 namespace sdv::platform::centercommunication {
 
+namespace {
+
+std::string resolveOperationalDbIngestUrl() {
+    if (const char* env = std::getenv("SDV_OPERATIONAL_DB_INGEST_URL")) {
+        if (env[0] != '\0') {
+            return std::string(env);
+        }
+    }
+    return "http://127.0.0.1:8090/v1/ingest";
+}
+
+std::size_t resolveTelemetryBatchMax() {
+    constexpr std::size_t kDefault = 50;
+    constexpr std::size_t kMin = 1;
+    constexpr std::size_t kMax = 100;
+    if (const char* env = std::getenv("SDV_TELEMETRY_BATCH_MAX")) {
+        try {
+            const long parsed = std::strtol(env, nullptr, 10);
+            if (parsed >= static_cast<long>(kMin) && parsed <= static_cast<long>(kMax)) {
+                return static_cast<std::size_t>(parsed);
+            }
+        } catch (...) {
+        }
+    }
+    return kDefault;
+}
+
+int resolveTelemetryFlushMs() {
+    constexpr int kDefault = 1000;
+    constexpr int kMin = 500;
+    constexpr int kMax = 2000;
+    if (const char* env = std::getenv("SDV_TELEMETRY_FLUSH_MS")) {
+        try {
+            const long parsed = std::strtol(env, nullptr, 10);
+            if (parsed >= kMin && parsed <= kMax) {
+                return static_cast<int>(parsed);
+            }
+        } catch (...) {
+        }
+    }
+    return kDefault;
+}
+
+}  // namespace
+
+std::vector<std::unique_ptr<ITelemetryExporter>> DataCollector::buildDefaultExporters(
+    const std::string& otlpLogsEndpoint,
+    const std::string& carId) {
+    std::vector<std::unique_ptr<ITelemetryExporter>> exporters;
+    exporters.push_back(std::make_unique<OtlpLogsExporter>(otlpLogsEndpoint, carId));
+    exporters.push_back(
+        std::make_unique<OperationalDbExporter>(resolveOperationalDbIngestUrl(), carId));
+    return exporters;
+}
+
 DataCollector::DataCollector(const std::string& eventBusAddress,
-                             const std::string& outDir,
-                             int64_t maxBatchBytes,
-                             int flushIntervalSeconds)
+                             const std::string& otlpLogsEndpoint,
+                             const std::string& carId,
+                             const std::size_t queueCapacity)
+    : DataCollector(eventBusAddress, buildDefaultExporters(otlpLogsEndpoint, carId), carId, queueCapacity) {
+}
+
+DataCollector::DataCollector(const std::string& eventBusAddress,
+                             std::vector<std::unique_ptr<ITelemetryExporter>> exporters,
+                             const std::string& carId,
+                             const std::size_t queueCapacity)
     : eventBusAddress_(eventBusAddress)
-    , outDir_(outDir)
-    , maxBatchBytes_(maxBatchBytes)
-    , flushIntervalSeconds_(flushIntervalSeconds)
+    , carId_(carId)
+    , queueCapacity_(queueCapacity > 0 ? queueCapacity : kDefaultQueueCapacity)
+    , exporters_(std::move(exporters))
+    , telemetryQueue_(queueCapacity_)
     , running_(false) {}
+
+DataCollector::~DataCollector() {
+    stop();
+    telemetryQueue_.close();
+    if (exporterThread_.joinable()) {
+        exporterThread_.join();
+    }
+}
+
+void DataCollector::dispatchTelemetry(const std::string& telemetryJson) {
+    dispatchTelemetryBatch({TelemetryRecord::fromRaw(telemetryJson, carId_)});
+}
+
+void DataCollector::dispatchTelemetryBatch(const std::vector<TelemetryRecord>& records) {
+    if (records.empty()) {
+        return;
+    }
+    for (const auto& exporter : exporters_) {
+        if (!exporter) {
+            continue;
+        }
+        if (!exporter->exportRecords(records)) {
+            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' batch export failed"
+                      << std::endl;
+        }
+    }
+}
+
+void DataCollector::flushExporters() {
+    for (const auto& exporter : exporters_) {
+        if (!exporter) {
+            continue;
+        }
+        if (!exporter->flush()) {
+            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' flush failed"
+                      << std::endl;
+        }
+    }
+}
+
+void DataCollector::exportWorkerLoop() {
+    const std::size_t batchMax = resolveTelemetryBatchMax();
+    const auto flushInterval = std::chrono::milliseconds(resolveTelemetryFlushMs());
+
+    std::vector<std::string> pending;
+    pending.reserve(batchMax);
+
+    auto flushPending = [this, &pending]() {
+        if (pending.empty()) {
+            return;
+        }
+        std::vector<TelemetryRecord> records;
+        records.reserve(pending.size());
+        for (const std::string& payload : pending) {
+            records.push_back(TelemetryRecord::fromRaw(payload, carId_));
+        }
+        dispatchTelemetryBatch(records);
+        pending.clear();
+    };
+
+    while (true) {
+        std::string payload;
+        if (telemetryQueue_.pop(payload, flushInterval)) {
+            pending.push_back(std::move(payload));
+            if (pending.size() >= batchMax) {
+                flushPending();
+            }
+            continue;
+        }
+
+        flushPending();
+
+        if (telemetryQueue_.isClosed()) {
+            break;
+        }
+    }
+
+    std::string payload;
+    while (telemetryQueue_.tryPop(payload)) {
+        pending.push_back(std::move(payload));
+        if (pending.size() >= batchMax) {
+            flushPending();
+        }
+    }
+    flushPending();
+    flushExporters();
+}
 
 void DataCollector::run() {
     running_ = true;
-    fs::create_directories(outDir_);
+    exporterThread_ = std::thread(&DataCollector::exportWorkerLoop, this);
+
     sdv::platform::communications::eventbus::EventBusProxy proxy(eventBusAddress_);
     const int64_t cid = proxy.registerComponent();
 
-    {
-        std::lock_guard<std::mutex> lock(mu_);
-        lastFlush_ = std::chrono::steady_clock::now();
+    if (cid < 0) {
+        std::cerr << "[DataCollector] FATAL: EventBus registerComponent failed (address="
+                  << eventBusAddress_ << ")" << std::endl;
+        running_ = false;
+        telemetryQueue_.close();
+        if (exporterThread_.joinable()) {
+            exporterThread_.join();
+        }
+        return;
     }
 
     std::cout << "[DataCollector] Started. EventBus=" << eventBusAddress_
               << " component_id=" << cid
-              << " outDir=" << outDir_
-              << " maxBatch=" << (maxBatchBytes_ / 1024) << "KB"
-              << " flushInterval=" << flushIntervalSeconds_ << "s"
-              << std::endl;
+              << " carId=" << carId_
+              << " queueCapacity=" << queueCapacity_
+              << " batchMax=" << resolveTelemetryBatchMax()
+              << " flushMs=" << resolveTelemetryFlushMs()
+              << " exporters=" << exporters_.size();
+    for (const auto& exporter : exporters_) {
+        if (exporter) {
+            std::cout << " " << exporter->name();
+        }
+    }
+    std::cout << std::endl;
 
-    while (running_) {
-        auto now = std::chrono::steady_clock::now();
-
-        // Poll EventBus for new events (pull model).
-        auto q = proxy.getEventQueue(cid);
-        while (q.getSize() > 0) {
-            auto ev = q.getEvent();
+    proxy.consumeEventStream(
+        cid,
+        [this]() { return running_.load(std::memory_order_acquire); },
+        [this](const sdv::platform::communications::eventbus::Event& ev) {
             if (ev.getEventId() == sdv::platform::communications::eventbus::EventId::TelemetryData) {
-                pushTelemetryLine(ev.getMessage());
+                telemetryQueue_.push(ev.getMessage());
             }
-        }
+        });
 
-        // Time-based flush.
-        if (shouldFlush(now)) {
-            std::lock_guard<std::mutex> lock(mu_);
-            flushLocked(now);
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    telemetryQueue_.close();
+    if (exporterThread_.joinable()) {
+        exporterThread_.join();
     }
 
-    // Final flush.
-    {
-        std::lock_guard<std::mutex> lock(mu_);
-        flushLocked(std::chrono::steady_clock::now());
-    }
     proxy.unRegister(cid);
+
+    const std::uint64_t drops = telemetryQueue_.dropCount();
+    if (drops > 0) {
+        std::cerr << "[DataCollector] NOTE: dropped " << drops
+                  << " telemetry item(s) while queue was at capacity (" << queueCapacity_
+                  << ")" << std::endl;
+    }
     std::cout << "[DataCollector] Stopped." << std::endl;
 }
 
 void DataCollector::stop() {
-    running_ = false;
-}
-
-void DataCollector::pushTelemetryLine(const std::string& line) {
-    // Thread-safe buffer append.
-    std::lock_guard<std::mutex> lock(mu_);
-    buffer_.push_back(line);
-    bufferBytes_ += static_cast<int64_t>(line.size() + 1); // newline
-
-    // Size-based flush.
-    const auto now = std::chrono::steady_clock::now();
-    if (bufferBytes_ >= maxBatchBytes_) {
-        flushLocked(now);
-    }
-}
-
-bool DataCollector::shouldFlush(std::chrono::steady_clock::time_point now) const {
-    std::lock_guard<std::mutex> lock(mu_);
-    if (buffer_.empty()) {
-        return false;
-    }
-    const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - lastFlush_).count();
-    return elapsed >= flushIntervalSeconds_;
-}
-
-static std::string nowUtcCompact() {
-    using clock = std::chrono::system_clock;
-    const auto t = clock::to_time_t(clock::now());
-    std::tm tm{};
-#if defined(_WIN32)
-    gmtime_s(&tm, &t);
-#else
-    gmtime_r(&t, &tm);
-#endif
-    std::ostringstream os;
-    os << std::put_time(&tm, "%Y%m%d_%H%M%S");
-    return os.str();
-}
-
-void DataCollector::flushLocked(std::chrono::steady_clock::time_point now) {
-    if (buffer_.empty()) {
-        lastFlush_ = now;
-        return;
-    }
-
-    const fs::path outDirPath(outDir_);
-    std::error_code ec;
-    if (!fs::exists(outDirPath, ec) || !fs::is_directory(outDirPath, ec)) {
-        // Users may delete the telemetry folder while the process is running.
-        // Re-create it defensively right before opening the flush file.
-        fs::create_directories(outDirPath, ec);
-        if (ec) {
-            std::cerr << "[DataCollector] ERROR: failed to create outDir=" << outDir_
-                      << " (" << ec.message() << ")\n";
-            return;
-        }
-    }
-
-    const std::string file = (outDirPath / ("telemetry_" + nowUtcCompact() + ".jsonl")).string();
-    std::ofstream out(file, std::ios::out | std::ios::app);
-    if (out.is_open()) {
-        for (const auto& line : buffer_) {
-            out << line << "\n";
-        }
-        out.close();
-    } else {
-        std::cerr << "[DataCollector] ERROR: failed to open " << file << " for flush\n";
-    }
-
-    buffer_.clear();
-    bufferBytes_ = 0;
-    lastFlush_ = now;
+    running_.store(false, std::memory_order_release);
 }
 
 }  // namespace sdv::platform::centercommunication
@@ -157,6 +245,7 @@ void dataCollectorSignalHandler(int) {
     shutdownRequested = true;
 }
 
+#if !defined(SDV_CENTERCOMM_NO_MAIN)
 static std::string resolveEventBusAddressFromEnvOrDefault() {
     if (const char* env = std::getenv("SDV_EVENTBUS_ADDR"); env != nullptr && *env != '\0') {
         return std::string(env);
@@ -164,28 +253,40 @@ static std::string resolveEventBusAddressFromEnvOrDefault() {
     return "127.0.0.1:50051";
 }
 
-#if !defined(SDV_CENTERCOMM_NO_MAIN)
+static std::string resolveOtlpLogsEndpointFromEnvOrDefault() {
+    if (const char* env = std::getenv("SDV_OTLP_LOGS_ENDPOINT"); env != nullptr && *env != '\0') {
+        return std::string(env);
+    }
+    return "http://127.0.0.1:4318/v1/logs";
+}
+
+static std::string resolveCarIdFromArgvOrEnv(int argc, char** argv) {
+    if (argc > 1 && argv[argc - 1]) {
+        const std::string last = std::string(argv[argc - 1]);
+        if (last.rfind("car_", 0) == 0) {
+            return last;
+        }
+    }
+    if (const char* env = std::getenv("SDV_CAR_INSTANCE"); env != nullptr && *env != '\0') {
+        return std::string(env);
+    }
+    return "car_1";
+}
+
 int main(int argc, char** argv) {
     signal(SIGTERM, dataCollectorSignalHandler);
     signal(SIGINT, dataCollectorSignalHandler);
-
-    const char* envLogDir = std::getenv("SDV_LOG_DIR");
-    const std::string logDir = (envLogDir != nullptr && *envLogDir != '\0')
-        ? std::string(envLogDir)
-        : std::string("logs");
 
     std::string eventBusAddr = resolveEventBusAddressFromEnvOrDefault();
     if (argc > 1 && argv[1] && *argv[1] != '\0') {
         eventBusAddr = std::string(argv[1]);
     }
 
-    const std::string outDir = (fs::path(logDir) / "telemetry").string();
-    sdv::platform::centercommunication::DataCollector collector(
-        eventBusAddr, outDir, 512 * 1024, 10);
+    const std::string otlpLogsEndpoint = resolveOtlpLogsEndpointFromEnvOrDefault();
+    const std::string carId = resolveCarIdFromArgvOrEnv(argc, argv);
+    sdv::platform::centercommunication::DataCollector collector(eventBusAddr, otlpLogsEndpoint, carId);
 
-    std::thread collectorThread([&collector]() {
-        collector.run();
-    });
+    std::thread collectorThread([&collector]() { collector.run(); });
 
     while (!shutdownRequested) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -197,3 +298,4 @@ int main(int argc, char** argv) {
     return 0;
 }
 #endif
+

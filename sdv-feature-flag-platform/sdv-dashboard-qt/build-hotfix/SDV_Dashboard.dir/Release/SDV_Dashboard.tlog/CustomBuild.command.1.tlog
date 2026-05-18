@@ -1,0 +1,24 @@
+^C:\USERS\82107\DESKTOP\UI\SDV-FEATURE-FLAG-PLATFORM\SDV-DASHBOARD-QT\BUILD-HOTFIX\CMAKEFILES\A7240A1F5E75B14CC06AFD27546F4C29\QRC_QML_(CONFIG).CPP.RULE
+setlocal
+cd C:\Users\82107\Desktop\UI\sdv-feature-flag-platform\sdv-dashboard-qt\build-hotfix
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autorcc C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/SDV_Dashboard_autogen.dir/AutoRcc_qml_CCBC4FUR7J_Info.json Release
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\82107\DESKTOP\UI\SDV-FEATURE-FLAG-PLATFORM\SDV-DASHBOARD-QT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt -BC:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix --check-stamp-file C:/Users/82107/Desktop/UI/sdv-feature-flag-platform/sdv-dashboard-qt/build-hotfix/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -6,7 +6,8 @@ service EventBus {
     rpc registerComponent(RegisterRequest) returns (RegisterResponse);
     rpc unRegister(UnRegisterRequest) returns (UnRegisterResponse);
     rpc sendEvent(SendEventRequest) returns (SendEventResponse);
-    rpc getEventQueue(GetEventQueueRequest) returns (GetEventQueueResponse);
+    // Server pushes each broadcast event to the subscriber as it occurs.
+    rpc SubscribeEvents(SubscribeEventsRequest) returns (stream EventMessage);
 }
 
 message RegisterRequest {}
@@ -28,7 +29,7 @@ message SendEventRequest {
 
 message SendEventResponse {}
 
-message GetEventQueueRequest {
+message SubscribeEventsRequest {
     int64 component_id = 1;
 }
 
@@ -40,8 +41,3 @@ message EventMessage {
 // NOTE: Event IDs are defined in C++ `EventId.h` as an enum class.
 // This proto keeps event_id as int32 for compatibility, and does not duplicate
 // the enum to avoid regeneration churn in this demo repo.
-
-message GetEventQueueResponse {
-    int64 component_id = 1;
-    repeated EventMessage events = 2;
-}

@@ -66,11 +66,15 @@ if ($WslDistro) { $wslArgsBase += @("-d", $WslDistro) }
 $wslArgsRoot = $wslArgsBase + @("-u", "root", "--")
 
 # Root pkill: any leftover car_1..car_10 or platform children from an earlier run_sdv / manual start.
-# Kill car_10..car_1 in that order so "build/car_1" does not match a still-running ".../build/car_10" cmdline.
+# Kill car_10..car_1 in that order so "car_1" does not match a still-running ".../car_10" cmdline.
 $cleanupBash = @'
 set +e
 pkill -9 -f SdvPlatform 2>/dev/null
-for i in $(seq 10 -1 1); do pkill -9 -f "/build/car_${i}" 2>/dev/null; done
+for i in $(seq 10 -1 1); do
+  pkill -9 -f "/build_unleash/car_${i}([[:space:]]|$)" 2>/dev/null
+  pkill -9 -f "/build/car_${i}([[:space:]]|$)" 2>/dev/null
+done
+pkill -9 -f 'sdv-feature-flag-platform/build_unleash/car_' 2>/dev/null
 pkill -9 -f 'sdv-feature-flag-platform/build/car_' 2>/dev/null
 pkill -9 -f EventBusHost 2>/dev/null
 pkill -9 -f WatchDog 2>/dev/null
@@ -99,10 +103,12 @@ Start-Sleep -Milliseconds 600
 # Strip CRLF before any bash scripts run (fixes `set: pipefail: invalid option name` on Windows checkouts).
 & wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/docker_up_team_wsl.sh`" `"$projWsl/scripts/wait_unleash_http.sh`" `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
 
-Write-Host "Starting docker stack (teamproject/docker-compose.yml)..."
+Write-Host "Starting docker stack (teamproject/docker-compose.yml: mosquitto, loki, grafana, unleash, operational-data-api, pgadmin, ...)..."
 & wsl.exe @wslArgsBase -- bash "$projWsl/scripts/docker_up_team_wsl.sh" "$teamWsl"
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "docker compose exited with code $LASTEXITCODE (continuing)"
+} else {
+    Write-Host "Docker: pgAdmin http://127.0.0.1:5050  (admin@admin.com / admin) — connects to operational-postgres on the compose network"
 }
 
 Write-Host "Waiting for Unleash (http://localhost:4242)..."
@@ -143,7 +149,17 @@ if ($env:SDV_CMAKE_BUILD -eq "1") {
 }
 
 
-Start-Process wsl -ArgumentList "-e bash -c 'cd /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform && export SDV_LOG_DIR=/mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/logs/fleet && ./build_unleash/DataCollector 127.0.0.1:50051'" -Wait:$false -NoNewWindow:$false -PassThru
+
+# Optional fleet telemetry sink (Linux binary). Each car config already launches DataCollector per vehicle —
+# use SDV_STANDALONE_DATACOLLECTOR=1 only if you need an extra host-side sink against EventBus 50051.
+if ($env:SDV_STANDALONE_DATACOLLECTOR -eq "1") {
+    $collectorCmd = "mkdir -p '$projWsl/logs/fleet' && cd '$projWsl' && export SDV_LOG_DIR='$projWsl/logs/fleet' && exec '$buildWsl/DataCollector' 127.0.0.1:50051"
+    Write-Host "[run_sdv] Starting standalone DataCollector (SDV_STANDALONE_DATACOLLECTOR=1)..."
+    $wslDcArgs = $wslArgsRoot + @("bash", "-lc", $collectorCmd)
+    Start-Process wsl.exe -ArgumentList $wslDcArgs -WindowStyle Minimized
+}
+
+
 # Default: one CMD window per car (title car_N), each running WSL foreground car_N (Linux binary under
 # build_unleash or build — same as old ".\build\car_N in a CMD" workflow visually).
 # Set SDV_CAR_BACKGROUND=1 for no popups: background start in WSL + tail -f log windows instead.
@@ -204,13 +220,22 @@ function Start-OptionalCmdWindow {
     Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
 }
 
-# status-server=8080, dashboard=5173, test-ui=5174. Prior runs often leave node.exe listening.
-Stop-ListenPorts @(8080, 5173, 5174)
+# status-server=8080, dashboard=5173, test-ui=5174, sdv-cockpit-ui=5175
+Stop-ListenPorts @(8080, 5173, 5174, 5175)
 Start-Sleep -Milliseconds 800
+
+$viteDiag = Join-Path $ProjectRoot "scripts\diagnose_vite_ports.ps1"
+if (Test-Path -LiteralPath $viteDiag) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $viteDiag -Quiet
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Vite ports 5173-5175 may be blocked on this Windows host. Run: .\scripts\diagnose_vite_ports.ps1 -FixHint"
+    }
+}
 
 Start-OptionalCmdWindow "status-server" "start"
 Start-OptionalCmdWindow "dashboard"
 Start-OptionalCmdWindow "test-ui"
+Start-OptionalCmdWindow "sdv-cockpit-ui"
 
 Write-Host "Waiting for status-server to drain pending Docker OTA queue (if any)..."
 $healthOk = $false
@@ -237,4 +262,30 @@ if ($healthOk) {
     Write-Warning "[run_sdv] status-server not ready on :8080; skipped apply-pending (start status-server manually if needed)"
 }
 
-Write-Host "Done. test-ui: http://127.0.0.1:5174 (if test-ui package exists)"
+Write-Host "Done. dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:5174  cockpit-ui: http://127.0.0.1:5175  pgAdmin: http://127.0.0.1:5050"
+
+# --- Qt SDV Dashboard (Windows native UI; subscribe-only over HTTP + optional MQTT) ---
+if ($env:SDV_SKIP_QT_DASHBOARD -eq "1") {
+    Write-Host "[run_sdv] SDV_SKIP_QT_DASHBOARD=1 — skipping native Qt dashboard launch."
+} else {
+    $dashCandidates = @(
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\Release\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\RelWithDebInfo\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\Debug\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build-hotfix\Release\SDV_Dashboard.exe"),
+        (Join-Path $ProjectRoot "sdv-dashboard-qt\build-hotfix\x64\Release\SDV_Dashboard.exe")
+    )
+    $dashExe = $dashCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if ($dashExe) {
+        Write-Host "[run_sdv] Launching Qt SDV dashboard: $dashExe"
+        Start-Process -FilePath $dashExe -ArgumentList @(
+            "--api-base", "http://127.0.0.1:8080",
+            "--mqtt-host", "127.0.0.1",
+            "--mqtt-port", "1884",
+            "--car-id", "car_1"
+        ) -WorkingDirectory (Split-Path -Parent $dashExe)
+    } else {
+        Write-Warning "[run_sdv] SDV_Dashboard.exe not found. Build once on Windows: cmake -S sdv-dashboard-qt -B sdv-dashboard-qt/build -DCMAKE_PREFIX_PATH=<Qt6_DIR> && cmake --build sdv-dashboard-qt/build --config Release"
+    }
+}

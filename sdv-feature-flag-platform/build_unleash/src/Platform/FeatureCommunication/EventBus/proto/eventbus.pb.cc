@@ -95,19 +95,19 @@ struct SendEventResponseDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SendEventResponseDefaultTypeInternal _SendEventResponse_default_instance_;
-PROTOBUF_CONSTEXPR GetEventQueueRequest::GetEventQueueRequest(
+PROTOBUF_CONSTEXPR SubscribeEventsRequest::SubscribeEventsRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.component_id_)*/int64_t{0}
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct GetEventQueueRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR GetEventQueueRequestDefaultTypeInternal()
+struct SubscribeEventsRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SubscribeEventsRequestDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~GetEventQueueRequestDefaultTypeInternal() {}
+  ~SubscribeEventsRequestDefaultTypeInternal() {}
   union {
-    GetEventQueueRequest _instance;
+    SubscribeEventsRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetEventQueueRequestDefaultTypeInternal _GetEventQueueRequest_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SubscribeEventsRequestDefaultTypeInternal _SubscribeEventsRequest_default_instance_;
 PROTOBUF_CONSTEXPR EventMessage::EventMessage(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -122,23 +122,9 @@ struct EventMessageDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EventMessageDefaultTypeInternal _EventMessage_default_instance_;
-PROTOBUF_CONSTEXPR GetEventQueueResponse::GetEventQueueResponse(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.events_)*/{}
-  , /*decltype(_impl_.component_id_)*/int64_t{0}
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct GetEventQueueResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR GetEventQueueResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~GetEventQueueResponseDefaultTypeInternal() {}
-  union {
-    GetEventQueueResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetEventQueueResponseDefaultTypeInternal _GetEventQueueResponse_default_instance_;
 }  // namespace platform
 }  // namespace sdv
-static ::_pb::Metadata file_level_metadata_proto_2feventbus_2eproto[9];
+static ::_pb::Metadata file_level_metadata_proto_2feventbus_2eproto[8];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_proto_2feventbus_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_proto_2feventbus_2eproto = nullptr;
 
@@ -184,12 +170,12 @@ const uint32_t TableStruct_proto_2feventbus_2eproto::offsets[] PROTOBUF_SECTION_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::sdv::platform::GetEventQueueRequest, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::sdv::platform::SubscribeEventsRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::sdv::platform::GetEventQueueRequest, _impl_.component_id_),
+  PROTOBUF_FIELD_OFFSET(::sdv::platform::SubscribeEventsRequest, _impl_.component_id_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sdv::platform::EventMessage, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -198,14 +184,6 @@ const uint32_t TableStruct_proto_2feventbus_2eproto::offsets[] PROTOBUF_SECTION_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::sdv::platform::EventMessage, _impl_.event_id_),
   PROTOBUF_FIELD_OFFSET(::sdv::platform::EventMessage, _impl_.message_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::sdv::platform::GetEventQueueResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::sdv::platform::GetEventQueueResponse, _impl_.component_id_),
-  PROTOBUF_FIELD_OFFSET(::sdv::platform::GetEventQueueResponse, _impl_.events_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::sdv::platform::RegisterRequest)},
@@ -214,9 +192,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 20, -1, -1, sizeof(::sdv::platform::UnRegisterResponse)},
   { 26, -1, -1, sizeof(::sdv::platform::SendEventRequest)},
   { 34, -1, -1, sizeof(::sdv::platform::SendEventResponse)},
-  { 40, -1, -1, sizeof(::sdv::platform::GetEventQueueRequest)},
+  { 40, -1, -1, sizeof(::sdv::platform::SubscribeEventsRequest)},
   { 47, -1, -1, sizeof(::sdv::platform::EventMessage)},
-  { 55, -1, -1, sizeof(::sdv::platform::GetEventQueueResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -226,9 +203,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::sdv::platform::_UnRegisterResponse_default_instance_._instance,
   &::sdv::platform::_SendEventRequest_default_instance_._instance,
   &::sdv::platform::_SendEventResponse_default_instance_._instance,
-  &::sdv::platform::_GetEventQueueRequest_default_instance_._instance,
+  &::sdv::platform::_SubscribeEventsRequest_default_instance_._instance,
   &::sdv::platform::_EventMessage_default_instance_._instance,
-  &::sdv::platform::_GetEventQueueResponse_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_proto_2feventbus_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -237,27 +213,25 @@ const char descriptor_table_protodef_proto_2feventbus_2eproto[] PROTOBUF_SECTION
   "omponent_id\030\001 \001(\003\")\n\021UnRegisterRequest\022\024"
   "\n\014component_id\030\001 \001(\003\"\024\n\022UnRegisterRespon"
   "se\"5\n\020SendEventRequest\022\020\n\010event_id\030\001 \001(\005"
-  "\022\017\n\007message\030\002 \001(\t\"\023\n\021SendEventResponse\","
-  "\n\024GetEventQueueRequest\022\024\n\014component_id\030\001"
-  " \001(\003\"1\n\014EventMessage\022\020\n\010event_id\030\001 \001(\005\022\017"
-  "\n\007message\030\002 \001(\t\"Y\n\025GetEventQueueResponse"
-  "\022\024\n\014component_id\030\001 \001(\003\022*\n\006events\030\002 \003(\0132\032"
-  ".sdv.platform.EventMessage2\327\002\n\010EventBus\022"
-  "R\n\021registerComponent\022\035.sdv.platform.Regi"
-  "sterRequest\032\036.sdv.platform.RegisterRespo"
-  "nse\022O\n\nunRegister\022\037.sdv.platform.UnRegis"
-  "terRequest\032 .sdv.platform.UnRegisterResp"
-  "onse\022L\n\tsendEvent\022\036.sdv.platform.SendEve"
-  "ntRequest\032\037.sdv.platform.SendEventRespon"
-  "se\022X\n\rgetEventQueue\022\".sdv.platform.GetEv"
-  "entQueueRequest\032#.sdv.platform.GetEventQ"
-  "ueueResponseb\006proto3"
+  "\022\017\n\007message\030\002 \001(\t\"\023\n\021SendEventResponse\"."
+  "\n\026SubscribeEventsRequest\022\024\n\014component_id"
+  "\030\001 \001(\003\"1\n\014EventMessage\022\020\n\010event_id\030\001 \001(\005"
+  "\022\017\n\007message\030\002 \001(\t2\324\002\n\010EventBus\022R\n\021regist"
+  "erComponent\022\035.sdv.platform.RegisterReque"
+  "st\032\036.sdv.platform.RegisterResponse\022O\n\nun"
+  "Register\022\037.sdv.platform.UnRegisterReques"
+  "t\032 .sdv.platform.UnRegisterResponse\022L\n\ts"
+  "endEvent\022\036.sdv.platform.SendEventRequest"
+  "\032\037.sdv.platform.SendEventResponse\022U\n\017Sub"
+  "scribeEvents\022$.sdv.platform.SubscribeEve"
+  "ntsRequest\032\032.sdv.platform.EventMessage0\001"
+  "b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_proto_2feventbus_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_proto_2feventbus_2eproto = {
-    false, false, 780, descriptor_table_protodef_proto_2feventbus_2eproto,
+    false, false, 688, descriptor_table_protodef_proto_2feventbus_2eproto,
     "proto/eventbus.proto",
-    &descriptor_table_proto_2feventbus_2eproto_once, nullptr, 0, 9,
+    &descriptor_table_proto_2feventbus_2eproto_once, nullptr, 0, 8,
     schemas, file_default_instances, TableStruct_proto_2feventbus_2eproto::offsets,
     file_level_metadata_proto_2feventbus_2eproto, file_level_enum_descriptors_proto_2feventbus_2eproto,
     file_level_service_descriptors_proto_2feventbus_2eproto,
@@ -979,29 +953,29 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SendEventResponse::GetClassDat
 
 // ===================================================================
 
-class GetEventQueueRequest::_Internal {
+class SubscribeEventsRequest::_Internal {
  public:
 };
 
-GetEventQueueRequest::GetEventQueueRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+SubscribeEventsRequest::SubscribeEventsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:sdv.platform.GetEventQueueRequest)
+  // @@protoc_insertion_point(arena_constructor:sdv.platform.SubscribeEventsRequest)
 }
-GetEventQueueRequest::GetEventQueueRequest(const GetEventQueueRequest& from)
+SubscribeEventsRequest::SubscribeEventsRequest(const SubscribeEventsRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  GetEventQueueRequest* const _this = this; (void)_this;
+  SubscribeEventsRequest* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.component_id_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   _this->_impl_.component_id_ = from._impl_.component_id_;
-  // @@protoc_insertion_point(copy_constructor:sdv.platform.GetEventQueueRequest)
+  // @@protoc_insertion_point(copy_constructor:sdv.platform.SubscribeEventsRequest)
 }
 
-inline void GetEventQueueRequest::SharedCtor(
+inline void SubscribeEventsRequest::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -1011,8 +985,8 @@ inline void GetEventQueueRequest::SharedCtor(
   };
 }
 
-GetEventQueueRequest::~GetEventQueueRequest() {
-  // @@protoc_insertion_point(destructor:sdv.platform.GetEventQueueRequest)
+SubscribeEventsRequest::~SubscribeEventsRequest() {
+  // @@protoc_insertion_point(destructor:sdv.platform.SubscribeEventsRequest)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -1020,16 +994,16 @@ GetEventQueueRequest::~GetEventQueueRequest() {
   SharedDtor();
 }
 
-inline void GetEventQueueRequest::SharedDtor() {
+inline void SubscribeEventsRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
 }
 
-void GetEventQueueRequest::SetCachedSize(int size) const {
+void SubscribeEventsRequest::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void GetEventQueueRequest::Clear() {
-// @@protoc_insertion_point(message_clear_start:sdv.platform.GetEventQueueRequest)
+void SubscribeEventsRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sdv.platform.SubscribeEventsRequest)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1038,7 +1012,7 @@ void GetEventQueueRequest::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* GetEventQueueRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* SubscribeEventsRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -1075,9 +1049,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* GetEventQueueRequest::_InternalSerialize(
+uint8_t* SubscribeEventsRequest::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:sdv.platform.GetEventQueueRequest)
+  // @@protoc_insertion_point(serialize_to_array_start:sdv.platform.SubscribeEventsRequest)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -1091,12 +1065,12 @@ uint8_t* GetEventQueueRequest::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:sdv.platform.GetEventQueueRequest)
+  // @@protoc_insertion_point(serialize_to_array_end:sdv.platform.SubscribeEventsRequest)
   return target;
 }
 
-size_t GetEventQueueRequest::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:sdv.platform.GetEventQueueRequest)
+size_t SubscribeEventsRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sdv.platform.SubscribeEventsRequest)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -1111,17 +1085,17 @@ size_t GetEventQueueRequest::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetEventQueueRequest::_class_data_ = {
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData SubscribeEventsRequest::_class_data_ = {
     ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    GetEventQueueRequest::MergeImpl
+    SubscribeEventsRequest::MergeImpl
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetEventQueueRequest::GetClassData() const { return &_class_data_; }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SubscribeEventsRequest::GetClassData() const { return &_class_data_; }
 
 
-void GetEventQueueRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<GetEventQueueRequest*>(&to_msg);
-  auto& from = static_cast<const GetEventQueueRequest&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:sdv.platform.GetEventQueueRequest)
+void SubscribeEventsRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<SubscribeEventsRequest*>(&to_msg);
+  auto& from = static_cast<const SubscribeEventsRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:sdv.platform.SubscribeEventsRequest)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -1132,24 +1106,24 @@ void GetEventQueueRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, c
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void GetEventQueueRequest::CopyFrom(const GetEventQueueRequest& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:sdv.platform.GetEventQueueRequest)
+void SubscribeEventsRequest::CopyFrom(const SubscribeEventsRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sdv.platform.SubscribeEventsRequest)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool GetEventQueueRequest::IsInitialized() const {
+bool SubscribeEventsRequest::IsInitialized() const {
   return true;
 }
 
-void GetEventQueueRequest::InternalSwap(GetEventQueueRequest* other) {
+void SubscribeEventsRequest::InternalSwap(SubscribeEventsRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_.component_id_, other->_impl_.component_id_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata GetEventQueueRequest::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata SubscribeEventsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_proto_2feventbus_2eproto_getter, &descriptor_table_proto_2feventbus_2eproto_once,
       file_level_metadata_proto_2feventbus_2eproto[6]);
@@ -1385,218 +1359,6 @@ void EventMessage::InternalSwap(EventMessage* other) {
       file_level_metadata_proto_2feventbus_2eproto[7]);
 }
 
-// ===================================================================
-
-class GetEventQueueResponse::_Internal {
- public:
-};
-
-GetEventQueueResponse::GetEventQueueResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:sdv.platform.GetEventQueueResponse)
-}
-GetEventQueueResponse::GetEventQueueResponse(const GetEventQueueResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  GetEventQueueResponse* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.events_){from._impl_.events_}
-    , decltype(_impl_.component_id_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.component_id_ = from._impl_.component_id_;
-  // @@protoc_insertion_point(copy_constructor:sdv.platform.GetEventQueueResponse)
-}
-
-inline void GetEventQueueResponse::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.events_){arena}
-    , decltype(_impl_.component_id_){int64_t{0}}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-}
-
-GetEventQueueResponse::~GetEventQueueResponse() {
-  // @@protoc_insertion_point(destructor:sdv.platform.GetEventQueueResponse)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void GetEventQueueResponse::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.events_.~RepeatedPtrField();
-}
-
-void GetEventQueueResponse::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void GetEventQueueResponse::Clear() {
-// @@protoc_insertion_point(message_clear_start:sdv.platform.GetEventQueueResponse)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.events_.Clear();
-  _impl_.component_id_ = int64_t{0};
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* GetEventQueueResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // int64 component_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          _impl_.component_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .sdv.platform.EventMessage events = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_events(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* GetEventQueueResponse::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:sdv.platform.GetEventQueueResponse)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // int64 component_id = 1;
-  if (this->_internal_component_id() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt64ToArray(1, this->_internal_component_id(), target);
-  }
-
-  // repeated .sdv.platform.EventMessage events = 2;
-  for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_events_size()); i < n; i++) {
-    const auto& repfield = this->_internal_events(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-        InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:sdv.platform.GetEventQueueResponse)
-  return target;
-}
-
-size_t GetEventQueueResponse::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:sdv.platform.GetEventQueueResponse)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // repeated .sdv.platform.EventMessage events = 2;
-  total_size += 1UL * this->_internal_events_size();
-  for (const auto& msg : this->_impl_.events_) {
-    total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
-  }
-
-  // int64 component_id = 1;
-  if (this->_internal_component_id() != 0) {
-    total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(this->_internal_component_id());
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetEventQueueResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    GetEventQueueResponse::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetEventQueueResponse::GetClassData() const { return &_class_data_; }
-
-
-void GetEventQueueResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<GetEventQueueResponse*>(&to_msg);
-  auto& from = static_cast<const GetEventQueueResponse&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:sdv.platform.GetEventQueueResponse)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  _this->_impl_.events_.MergeFrom(from._impl_.events_);
-  if (from._internal_component_id() != 0) {
-    _this->_internal_set_component_id(from._internal_component_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void GetEventQueueResponse::CopyFrom(const GetEventQueueResponse& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:sdv.platform.GetEventQueueResponse)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool GetEventQueueResponse::IsInitialized() const {
-  return true;
-}
-
-void GetEventQueueResponse::InternalSwap(GetEventQueueResponse* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.events_.InternalSwap(&other->_impl_.events_);
-  swap(_impl_.component_id_, other->_impl_.component_id_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata GetEventQueueResponse::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_proto_2feventbus_2eproto_getter, &descriptor_table_proto_2feventbus_2eproto_once,
-      file_level_metadata_proto_2feventbus_2eproto[8]);
-}
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace platform
 }  // namespace sdv
@@ -1625,17 +1387,13 @@ template<> PROTOBUF_NOINLINE ::sdv::platform::SendEventResponse*
 Arena::CreateMaybeMessage< ::sdv::platform::SendEventResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sdv::platform::SendEventResponse >(arena);
 }
-template<> PROTOBUF_NOINLINE ::sdv::platform::GetEventQueueRequest*
-Arena::CreateMaybeMessage< ::sdv::platform::GetEventQueueRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::sdv::platform::GetEventQueueRequest >(arena);
+template<> PROTOBUF_NOINLINE ::sdv::platform::SubscribeEventsRequest*
+Arena::CreateMaybeMessage< ::sdv::platform::SubscribeEventsRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sdv::platform::SubscribeEventsRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::sdv::platform::EventMessage*
 Arena::CreateMaybeMessage< ::sdv::platform::EventMessage >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sdv::platform::EventMessage >(arena);
-}
-template<> PROTOBUF_NOINLINE ::sdv::platform::GetEventQueueResponse*
-Arena::CreateMaybeMessage< ::sdv::platform::GetEventQueueResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::sdv::platform::GetEventQueueResponse >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

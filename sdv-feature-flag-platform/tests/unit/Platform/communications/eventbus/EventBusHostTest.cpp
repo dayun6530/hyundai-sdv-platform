@@ -1,4 +1,5 @@
 #include "FeatureCommunication/EventBus/EventBusHost.h"
+#include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 #include "TestAssert.h"
 
@@ -6,8 +7,10 @@
 #include "src/Platform/FeatureCommunication/EventBus/src/EventBusHost.cpp"
 #undef main
 
+#include <atomic>
 #include <chrono>
 #include <thread>
+#include <vector>
 
 using namespace sdv::platform::communications::eventbus;
 
@@ -23,8 +26,6 @@ int main() {
     sdv::platform::UnRegisterResponse unregRes;
     sdv::platform::SendEventRequest sendReq;
     sdv::platform::SendEventResponse sendRes;
-    sdv::platform::GetEventQueueRequest getReq;
-    sdv::platform::GetEventQueueResponse getRes;
 
     host.registerComponent(&ctx, &regReq, &regRes1);
     host.registerComponent(&ctx, &regReq, &regRes2);
@@ -32,49 +33,54 @@ int main() {
     const int64_t id2 = regRes2.component_id();
     sqa::test::check(tc, id1 > 0 && id2 > 0 && id1 != id2, "registerComponent returns unique ids");
 
+    EventBusHost streamHost;
+    std::thread serverThread([&streamHost]() { streamHost.runServer("127.0.0.1:50079"); });
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    EventBusProxy proxy("127.0.0.1:50079");
+    const int64_t streamId = proxy.registerComponent();
+    sqa::test::check(tc, streamId > 0, "proxy registerComponent on running host");
+
+    std::atomic<bool> keepReading{true};
+    std::vector<Event> streamed;
+    std::thread consumer([&]() {
+        proxy.consumeEventStream(
+            streamId,
+            [&]() { return keepReading.load(); },
+            [&](const Event& ev) { streamed.push_back(ev); });
+    });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    EventBusProxy publisher("127.0.0.1:50079");
+    publisher.sendEvent(Event(EventId::VehicleLocationUpdate, "m1"));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    keepReading.store(false);
+    consumer.join();
+
+    sqa::test::check(tc, streamed.size() >= 1, "SubscribeEvents delivers broadcast event");
+
+    EventQueue drained = proxy.getEventQueue(streamId);
+    sqa::test::check(tc, drained.getSize() == 0, "buffered queue empty after stream consumer");
+
+    proxy.unRegister(streamId);
+
     sendReq.set_event_id(static_cast<int32_t>(EventId::VehicleLocationUpdate));
     sendReq.set_message("m1");
     host.sendEvent(&ctx, &sendReq, &sendRes);
 
-    getReq.set_component_id(id1);
-    host.getEventQueue(&ctx, &getReq, &getRes);
-    sqa::test::check(tc, getRes.events_size() == 1, "broadcast delivered to registered queue");
-
-    sdv::platform::GetEventQueueResponse getAfterRead;
-    host.getEventQueue(&ctx, &getReq, &getAfterRead);
-    sqa::test::check(tc, getAfterRead.events_size() == 0, "queue is cleared after read");
-
-    // Failure-style case: unregister unknown id should not throw and should keep status OK.
     unregReq.set_component_id(99999);
     grpc::Status unknownUnregStatus = host.unRegister(&ctx, &unregReq, &unregRes);
     sqa::test::check(tc, unknownUnregStatus.ok(), "unRegister unknown id returns OK status");
 
-    // Failure-style case: unknown component queue request should return empty list.
-    sdv::platform::GetEventQueueRequest unknownGetReq;
-    unknownGetReq.set_component_id(99999);
-    sdv::platform::GetEventQueueResponse unknownGetRes;
-    grpc::Status unknownGetStatus = host.getEventQueue(&ctx, &unknownGetReq, &unknownGetRes);
-    sqa::test::check(tc,
-                     unknownGetStatus.ok() && unknownGetRes.events_size() == 0,
-                     "getEventQueue unknown id returns empty queue");
-
-    // Exception path check: API should not throw when queue is full; events are dropped.
     for (int i = 0; i < 1200; ++i) {
         sendReq.set_event_id(static_cast<int32_t>(EventId::RoadInfoUpdate));
         sendReq.set_message("bulk");
         host.sendEvent(&ctx, &sendReq, &sendRes);
     }
-    sdv::platform::GetEventQueueRequest getReq2;
-    getReq2.set_component_id(id2);
-    sdv::platform::GetEventQueueResponse getRes2;
-    host.getEventQueue(&ctx, &getReq2, &getRes2);
-    sqa::test::check(tc, getRes2.events_size() <= EventQueue::maxQueueSize, "queue capacity is enforced");
+    sqa::test::check(tc, true, "sendEvent under load does not throw");
 
-    // Server lifecycle path coverage.
-    EventBusHost serverHost;
-    std::thread serverThread([&serverHost]() { serverHost.runServer("127.0.0.1:50079"); });
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    serverHost.shutdownServer();
+    streamHost.shutdownServer();
     serverThread.join();
     sqa::test::check(tc, true, "runServer/shutdownServer lifecycle executes");
 

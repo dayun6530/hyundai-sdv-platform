@@ -1,39 +1,54 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include "CenterCommunication/detail/BoundedQueue.h"
+#include "CenterCommunication/telemetry/ITelemetryExporter.h"
+#include "CenterCommunication/telemetry/TelemetryRecord.h"
+
 #include <atomic>
-#include <cstdint>
-#include <mutex>
-#include <chrono>
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace sdv::platform::centercommunication {
 
 class DataCollector {
 public:
+    static constexpr std::size_t kDefaultQueueCapacity = 4096;
+
     DataCollector(const std::string& eventBusAddress,
-                  const std::string& outDir,
-                  int64_t maxBatchBytes,
-                  int flushIntervalSeconds);
+                  const std::string& otlpLogsEndpoint,
+                  const std::string& carId,
+                  std::size_t queueCapacity = kDefaultQueueCapacity);
+
+    DataCollector(const std::string& eventBusAddress,
+                  std::vector<std::unique_ptr<ITelemetryExporter>> exporters,
+                  const std::string& carId,
+                  std::size_t queueCapacity = kDefaultQueueCapacity);
+
+    ~DataCollector();
 
     void run();
     void stop();
 
 private:
-    void pushTelemetryLine(const std::string& line);
-    bool shouldFlush(std::chrono::steady_clock::time_point now) const;
-    void flushLocked(std::chrono::steady_clock::time_point now);
+    static std::vector<std::unique_ptr<ITelemetryExporter>> buildDefaultExporters(
+        const std::string& otlpLogsEndpoint,
+        const std::string& carId);
+
+    void exportWorkerLoop();
+    void dispatchTelemetry(const std::string& telemetryJson);
+    void dispatchTelemetryBatch(const std::vector<TelemetryRecord>& records);
+    void flushExporters();
 
     std::string eventBusAddress_;
-    std::string outDir_;
-    int64_t maxBatchBytes_;
-    int flushIntervalSeconds_;
+    std::string carId_;
+    std::size_t queueCapacity_;
+    std::vector<std::unique_ptr<ITelemetryExporter>> exporters_;
+    detail::BoundedQueue<std::string> telemetryQueue_;
+    std::thread exporterThread_;
     std::atomic<bool> running_;
-
-    mutable std::mutex mu_;
-    std::vector<std::string> buffer_;
-    int64_t bufferBytes_{0};
-    std::chrono::steady_clock::time_point lastFlush_{};
 };
 
 }  // namespace sdv::platform::centercommunication

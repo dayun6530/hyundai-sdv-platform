@@ -216,10 +216,12 @@ public:
         return grpc::Status::OK;
     }
 
-    grpc::Status getEventQueue(grpc::ServerContext*,
-                               const sdv::platform::GetEventQueueRequest* request,
-                               sdv::platform::GetEventQueueResponse* response) override {
-        response->set_component_id(request->component_id());
+    grpc::Status SubscribeEvents(grpc::ServerContext* context,
+                                 const sdv::platform::SubscribeEventsRequest*,
+                                 grpc::ServerWriter<sdv::platform::EventMessage>*) override {
+        while (!context->IsCancelled()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
         return grpc::Status::OK;
     }
 

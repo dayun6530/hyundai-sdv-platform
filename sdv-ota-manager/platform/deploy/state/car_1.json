@@ -7,7 +7,7 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS":     {
+    "ADAS": {
       "active_slot": "B",
       "active_version": "v0.5",
       "primary_slot": "B",
@@ -75,7 +75,7 @@
         }
       ]
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "A",
       "active_version": "v1.0",
       "primary_slot": "A",
@@ -96,7 +96,7 @@
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     },
-    "Energy":     {
+    "Energy": {
       "active_slot": "A",
       "active_version": "v2.0",
       "primary_slot": "A",
@@ -118,7 +118,7 @@
       "fallback_version": "v0.5"
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "downloaded",
     "install_status": "installed",
     "vehicle_mode": "PARKED",
@@ -133,7 +133,7 @@
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack":   {
+  "last_ack": {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",
