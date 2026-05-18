@@ -1,8 +1,8 @@
 src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/src/DeploymentHistory.cpp.o: \
- /mnt/c/Users/82108/Desktop/professional/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp \
+ /mnt/c/Users/82108/Desktop/teamproject/sdv-ota-manager/platform/DeploymentManager/src/DeploymentHistory.cpp \
  /usr/include/stdc-predef.h \
- /mnt/c/Users/82108/Desktop/professional/sdv-ota-manager/platform/DeploymentManager/include/DeploymentManager/DeploymentHistory.h \
- /mnt/c/Users/82108/Desktop/professional/sdv-ota-manager/platform/DeploymentManager/include/DeploymentManager/PackageInfo.h \
+ /mnt/c/Users/82108/Desktop/teamproject/sdv-ota-manager/platform/DeploymentManager/include/DeploymentManager/DeploymentHistory.h \
+ /mnt/c/Users/82108/Desktop/teamproject/sdv-ota-manager/platform/DeploymentManager/include/DeploymentManager/PackageInfo.h \
  /usr/include/c++/13/optional /usr/include/c++/13/type_traits \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \

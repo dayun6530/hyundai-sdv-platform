@@ -1,5 +1,9 @@
 add_library(CenterCommunicationLib
     src/Signal.cpp
+    src/telemetry/HttpPostJson.cpp
+    src/telemetry/TelemetryRecord.cpp
+    src/telemetry/OtlpLogsExporter.cpp
+    src/telemetry/OperationalDbExporter.cpp
 )
 
 target_include_directories(CenterCommunicationLib

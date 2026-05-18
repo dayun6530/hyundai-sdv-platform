@@ -103,10 +103,12 @@ Start-Sleep -Milliseconds 600
 # Strip CRLF before any bash scripts run (fixes `set: pipefail: invalid option name` on Windows checkouts).
 & wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/docker_up_team_wsl.sh`" `"$projWsl/scripts/wait_unleash_http.sh`" `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
 
-Write-Host "Starting docker stack (teamproject/docker-compose.yml)..."
+Write-Host "Starting docker stack (teamproject/docker-compose.yml: mosquitto, loki, grafana, unleash, operational-data-api, pgadmin, ...)..."
 & wsl.exe @wslArgsBase -- bash "$projWsl/scripts/docker_up_team_wsl.sh" "$teamWsl"
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "docker compose exited with code $LASTEXITCODE (continuing)"
+} else {
+    Write-Host "Docker: pgAdmin http://127.0.0.1:5050  (admin@admin.com / admin) — connects to operational-postgres on the compose network"
 }
 
 Write-Host "Waiting for Unleash (http://localhost:4242)..."
@@ -218,10 +220,17 @@ function Start-OptionalCmdWindow {
     Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
 }
 
-# status-server=8080, dashboard=5173, test-ui=5174, sdv-cockpit-ui=5175.
-# Keep 5173 dashboard alive as a separate UI; the React cockpit uses its own port.
+# status-server=8080, dashboard=5173, test-ui=5174, sdv-cockpit-ui=5175
 Stop-ListenPorts @(8080, 5173, 5174, 5175)
 Start-Sleep -Milliseconds 800
+
+$viteDiag = Join-Path $ProjectRoot "scripts\diagnose_vite_ports.ps1"
+if (Test-Path -LiteralPath $viteDiag) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $viteDiag -Quiet
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Vite ports 5173-5175 may be blocked on this Windows host. Run: .\scripts\diagnose_vite_ports.ps1 -FixHint"
+    }
+}
 
 Start-OptionalCmdWindow "status-server" "start"
 Start-OptionalCmdWindow "dashboard"
@@ -253,7 +262,7 @@ if ($healthOk) {
     Write-Warning "[run_sdv] status-server not ready on :8080; skipped apply-pending (start status-server manually if needed)"
 }
 
-Write-Host "Done. test-ui: http://127.0.0.1:5174 (if test-ui package exists)"
+Write-Host "Done. dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:5174  cockpit-ui: http://127.0.0.1:5175  pgAdmin: http://127.0.0.1:5050"
 
 # --- Qt SDV Dashboard (Windows native UI; subscribe-only over HTTP + optional MQTT) ---
 if ($env:SDV_SKIP_QT_DASHBOARD -eq "1") {

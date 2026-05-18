@@ -1,4 +1,17 @@
 {
   "java.compile.nullAnalysis.mode": "automatic",
-  "liveServer.settings.port": 5501
+  "liveServer.settings.port": 5501,
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5435,
+      "driver": "PostgreSQL",
+      "database": "sdv_operational",
+      "username": "sdv",
+      "password": "sdv",
+      "name": "SDV_DB"
+    }
+  ]
 }

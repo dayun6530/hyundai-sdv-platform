@@ -37,6 +37,10 @@ fi
 # Print what we're about to run (helps confirm car_1 vs SdvPlatform).
 echo "[start_platform_wsl] platform=${PLATFORM} config=${CONFIG_REL} (arg=${CONFIG_REL_ARG})" >&2
 
+# Telemetry export defaults (DataCollector child process inherits env).
+export SDV_OTLP_LOGS_ENDPOINT="${SDV_OTLP_LOGS_ENDPOINT:-http://127.0.0.1:4318/v1/logs}"
+export SDV_OPERATIONAL_DB_INGEST_URL="${SDV_OPERATIONAL_DB_INGEST_URL:-http://127.0.0.1:8090/v1/ingest}"
+
 # Ensure log directory exists (repo-relative, works regardless of caller cwd).
 mkdir -p logs
 # LifeCycleMgr resolves fleet shadow policy from this file (see removeInactiveShadowFeaturesUsingFleetState).

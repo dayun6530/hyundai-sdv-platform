@@ -8,8 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/mnt/c/Users/82108/Desktop/professional/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp" "tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o" "gcc" "tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o.d"
-  "/mnt/c/Users/82108/Desktop/professional/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp" "tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o" "gcc" "tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o.d"
+  "/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/DataCollectorTest.cpp" "tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o" "gcc" "tests/unit/CMakeFiles/unit_data_collector.dir/Platform/centercommunication/DataCollectorTest.cpp.o.d"
+  "/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp" "tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o" "gcc" "tests/unit/CMakeFiles/unit_data_collector.dir/__/__/src/Platform/CenterCommunication/src/DataCollector.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

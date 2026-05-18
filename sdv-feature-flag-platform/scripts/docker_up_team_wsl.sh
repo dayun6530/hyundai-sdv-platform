@@ -14,6 +14,10 @@ docker rm -f \
   sdv-otel-collector \
   sdv-unleash \
   sdv-unleash-postgres \
+  sdv-operational-postgres \
+  sdv-operational-data-api \
+  sdv-pgadmin \
   >/dev/null 2>&1 || true
 
-docker compose -p sdv up -d
+# All services in teamproject/docker-compose.yml (incl. pgadmin on :5050).
+docker compose -p sdv up -d --remove-orphans
