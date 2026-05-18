@@ -57,12 +57,15 @@ class EventBus final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::SendEventResponse>> PrepareAsyncsendEvent(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::SendEventResponse>>(PrepareAsyncsendEventRaw(context, request, cq));
     }
-    virtual ::grpc::Status getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::sdv::platform::GetEventQueueResponse* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::GetEventQueueResponse>> AsyncgetEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::GetEventQueueResponse>>(AsyncgetEventQueueRaw(context, request, cq));
+    // Server pushes each broadcast event to the subscriber as it occurs.
+    std::unique_ptr< ::grpc::ClientReaderInterface< ::sdv::platform::EventMessage>> SubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request) {
+      return std::unique_ptr< ::grpc::ClientReaderInterface< ::sdv::platform::EventMessage>>(SubscribeEventsRaw(context, request));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::GetEventQueueResponse>> PrepareAsyncgetEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::GetEventQueueResponse>>(PrepareAsyncgetEventQueueRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::sdv::platform::EventMessage>> AsyncSubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::sdv::platform::EventMessage>>(AsyncSubscribeEventsRaw(context, request, cq, tag));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::sdv::platform::EventMessage>> PrepareAsyncSubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::sdv::platform::EventMessage>>(PrepareAsyncSubscribeEventsRaw(context, request, cq));
     }
     class async_interface {
      public:
@@ -73,8 +76,8 @@ class EventBus final {
       virtual void unRegister(::grpc::ClientContext* context, const ::sdv::platform::UnRegisterRequest* request, ::sdv::platform::UnRegisterResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void sendEvent(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest* request, ::sdv::platform::SendEventResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void sendEvent(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest* request, ::sdv::platform::SendEventResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Server pushes each broadcast event to the subscriber as it occurs.
+      virtual void SubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest* request, ::grpc::ClientReadReactor< ::sdv::platform::EventMessage>* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -86,8 +89,9 @@ class EventBus final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::UnRegisterResponse>* PrepareAsyncunRegisterRaw(::grpc::ClientContext* context, const ::sdv::platform::UnRegisterRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::SendEventResponse>* AsyncsendEventRaw(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::SendEventResponse>* PrepareAsyncsendEventRaw(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::GetEventQueueResponse>* AsyncgetEventQueueRaw(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::sdv::platform::GetEventQueueResponse>* PrepareAsyncgetEventQueueRaw(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderInterface< ::sdv::platform::EventMessage>* SubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< ::sdv::platform::EventMessage>* AsyncSubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< ::sdv::platform::EventMessage>* PrepareAsyncSubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -113,12 +117,14 @@ class EventBus final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sdv::platform::SendEventResponse>> PrepareAsyncsendEvent(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sdv::platform::SendEventResponse>>(PrepareAsyncsendEventRaw(context, request, cq));
     }
-    ::grpc::Status getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::sdv::platform::GetEventQueueResponse* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>> AsyncgetEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>>(AsyncgetEventQueueRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientReader< ::sdv::platform::EventMessage>> SubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request) {
+      return std::unique_ptr< ::grpc::ClientReader< ::sdv::platform::EventMessage>>(SubscribeEventsRaw(context, request));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>> PrepareAsyncgetEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>>(PrepareAsyncgetEventQueueRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>> AsyncSubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>>(AsyncSubscribeEventsRaw(context, request, cq, tag));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>> PrepareAsyncSubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>>(PrepareAsyncSubscribeEventsRaw(context, request, cq));
     }
     class async final :
       public StubInterface::async_interface {
@@ -129,8 +135,7 @@ class EventBus final {
       void unRegister(::grpc::ClientContext* context, const ::sdv::platform::UnRegisterRequest* request, ::sdv::platform::UnRegisterResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void sendEvent(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest* request, ::sdv::platform::SendEventResponse* response, std::function<void(::grpc::Status)>) override;
       void sendEvent(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest* request, ::sdv::platform::SendEventResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response, std::function<void(::grpc::Status)>) override;
-      void getEventQueue(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void SubscribeEvents(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest* request, ::grpc::ClientReadReactor< ::sdv::platform::EventMessage>* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -148,12 +153,13 @@ class EventBus final {
     ::grpc::ClientAsyncResponseReader< ::sdv::platform::UnRegisterResponse>* PrepareAsyncunRegisterRaw(::grpc::ClientContext* context, const ::sdv::platform::UnRegisterRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::sdv::platform::SendEventResponse>* AsyncsendEventRaw(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::sdv::platform::SendEventResponse>* PrepareAsyncsendEventRaw(::grpc::ClientContext* context, const ::sdv::platform::SendEventRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>* AsyncgetEventQueueRaw(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::sdv::platform::GetEventQueueResponse>* PrepareAsyncgetEventQueueRaw(::grpc::ClientContext* context, const ::sdv::platform::GetEventQueueRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientReader< ::sdv::platform::EventMessage>* SubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request) override;
+    ::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>* AsyncSubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReader< ::sdv::platform::EventMessage>* PrepareAsyncSubscribeEventsRaw(::grpc::ClientContext* context, const ::sdv::platform::SubscribeEventsRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_registerComponent_;
     const ::grpc::internal::RpcMethod rpcmethod_unRegister_;
     const ::grpc::internal::RpcMethod rpcmethod_sendEvent_;
-    const ::grpc::internal::RpcMethod rpcmethod_getEventQueue_;
+    const ::grpc::internal::RpcMethod rpcmethod_SubscribeEvents_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -164,7 +170,8 @@ class EventBus final {
     virtual ::grpc::Status registerComponent(::grpc::ServerContext* context, const ::sdv::platform::RegisterRequest* request, ::sdv::platform::RegisterResponse* response);
     virtual ::grpc::Status unRegister(::grpc::ServerContext* context, const ::sdv::platform::UnRegisterRequest* request, ::sdv::platform::UnRegisterResponse* response);
     virtual ::grpc::Status sendEvent(::grpc::ServerContext* context, const ::sdv::platform::SendEventRequest* request, ::sdv::platform::SendEventResponse* response);
-    virtual ::grpc::Status getEventQueue(::grpc::ServerContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response);
+    // Server pushes each broadcast event to the subscriber as it occurs.
+    virtual ::grpc::Status SubscribeEvents(::grpc::ServerContext* context, const ::sdv::platform::SubscribeEventsRequest* request, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* writer);
   };
   template <class BaseClass>
   class WithAsyncMethod_registerComponent : public BaseClass {
@@ -227,26 +234,26 @@ class EventBus final {
     }
   };
   template <class BaseClass>
-  class WithAsyncMethod_getEventQueue : public BaseClass {
+  class WithAsyncMethod_SubscribeEvents : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_getEventQueue() {
+    WithAsyncMethod_SubscribeEvents() {
       ::grpc::Service::MarkMethodAsync(3);
     }
-    ~WithAsyncMethod_getEventQueue() override {
+    ~WithAsyncMethod_SubscribeEvents() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status getEventQueue(::grpc::ServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/) override {
+    ::grpc::Status SubscribeEvents(::grpc::ServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestgetEventQueue(::grpc::ServerContext* context, ::sdv::platform::GetEventQueueRequest* request, ::grpc::ServerAsyncResponseWriter< ::sdv::platform::GetEventQueueResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    void RequestSubscribeEvents(::grpc::ServerContext* context, ::sdv::platform::SubscribeEventsRequest* request, ::grpc::ServerAsyncWriter< ::sdv::platform::EventMessage>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncServerStreaming(3, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_registerComponent<WithAsyncMethod_unRegister<WithAsyncMethod_sendEvent<WithAsyncMethod_getEventQueue<Service > > > > AsyncService;
+  typedef WithAsyncMethod_registerComponent<WithAsyncMethod_unRegister<WithAsyncMethod_sendEvent<WithAsyncMethod_SubscribeEvents<Service > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_registerComponent : public BaseClass {
    private:
@@ -329,33 +336,28 @@ class EventBus final {
       ::grpc::CallbackServerContext* /*context*/, const ::sdv::platform::SendEventRequest* /*request*/, ::sdv::platform::SendEventResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithCallbackMethod_getEventQueue : public BaseClass {
+  class WithCallbackMethod_SubscribeEvents : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithCallbackMethod_getEventQueue() {
+    WithCallbackMethod_SubscribeEvents() {
       ::grpc::Service::MarkMethodCallback(3,
-          new ::grpc::internal::CallbackUnaryHandler< ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse>(
+          new ::grpc::internal::CallbackServerStreamingHandler< ::sdv::platform::SubscribeEventsRequest, ::sdv::platform::EventMessage>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::sdv::platform::GetEventQueueRequest* request, ::sdv::platform::GetEventQueueResponse* response) { return this->getEventQueue(context, request, response); }));}
-    void SetMessageAllocatorFor_getEventQueue(
-        ::grpc::MessageAllocator< ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse>*>(handler)
-              ->SetMessageAllocator(allocator);
+                   ::grpc::CallbackServerContext* context, const ::sdv::platform::SubscribeEventsRequest* request) { return this->SubscribeEvents(context, request); }));
     }
-    ~WithCallbackMethod_getEventQueue() override {
+    ~WithCallbackMethod_SubscribeEvents() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status getEventQueue(::grpc::ServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/) override {
+    ::grpc::Status SubscribeEvents(::grpc::ServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* getEventQueue(
-      ::grpc::CallbackServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/)  { return nullptr; }
+    virtual ::grpc::ServerWriteReactor< ::sdv::platform::EventMessage>* SubscribeEvents(
+      ::grpc::CallbackServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_registerComponent<WithCallbackMethod_unRegister<WithCallbackMethod_sendEvent<WithCallbackMethod_getEventQueue<Service > > > > CallbackService;
+  typedef WithCallbackMethod_registerComponent<WithCallbackMethod_unRegister<WithCallbackMethod_sendEvent<WithCallbackMethod_SubscribeEvents<Service > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_registerComponent : public BaseClass {
@@ -409,18 +411,18 @@ class EventBus final {
     }
   };
   template <class BaseClass>
-  class WithGenericMethod_getEventQueue : public BaseClass {
+  class WithGenericMethod_SubscribeEvents : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_getEventQueue() {
+    WithGenericMethod_SubscribeEvents() {
       ::grpc::Service::MarkMethodGeneric(3);
     }
-    ~WithGenericMethod_getEventQueue() override {
+    ~WithGenericMethod_SubscribeEvents() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status getEventQueue(::grpc::ServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/) override {
+    ::grpc::Status SubscribeEvents(::grpc::ServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -486,23 +488,23 @@ class EventBus final {
     }
   };
   template <class BaseClass>
-  class WithRawMethod_getEventQueue : public BaseClass {
+  class WithRawMethod_SubscribeEvents : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_getEventQueue() {
+    WithRawMethod_SubscribeEvents() {
       ::grpc::Service::MarkMethodRaw(3);
     }
-    ~WithRawMethod_getEventQueue() override {
+    ~WithRawMethod_SubscribeEvents() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status getEventQueue(::grpc::ServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/) override {
+    ::grpc::Status SubscribeEvents(::grpc::ServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestgetEventQueue(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    void RequestSubscribeEvents(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncServerStreaming(3, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -572,26 +574,26 @@ class EventBus final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithRawCallbackMethod_getEventQueue : public BaseClass {
+  class WithRawCallbackMethod_SubscribeEvents : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawCallbackMethod_getEventQueue() {
+    WithRawCallbackMethod_SubscribeEvents() {
       ::grpc::Service::MarkMethodRawCallback(3,
-          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->getEventQueue(context, request, response); }));
+                   ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->SubscribeEvents(context, request); }));
     }
-    ~WithRawCallbackMethod_getEventQueue() override {
+    ~WithRawCallbackMethod_SubscribeEvents() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status getEventQueue(::grpc::ServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/) override {
+    ::grpc::Status SubscribeEvents(::grpc::ServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* getEventQueue(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+    virtual ::grpc::ServerWriteReactor< ::grpc::ByteBuffer>* SubscribeEvents(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_registerComponent : public BaseClass {
@@ -674,36 +676,36 @@ class EventBus final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedsendEvent(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::sdv::platform::SendEventRequest,::sdv::platform::SendEventResponse>* server_unary_streamer) = 0;
   };
+  typedef WithStreamedUnaryMethod_registerComponent<WithStreamedUnaryMethod_unRegister<WithStreamedUnaryMethod_sendEvent<Service > > > StreamedUnaryService;
   template <class BaseClass>
-  class WithStreamedUnaryMethod_getEventQueue : public BaseClass {
+  class WithSplitStreamingMethod_SubscribeEvents : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithStreamedUnaryMethod_getEventQueue() {
+    WithSplitStreamingMethod_SubscribeEvents() {
       ::grpc::Service::MarkMethodStreamed(3,
-        new ::grpc::internal::StreamedUnaryHandler<
-          ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse>(
+        new ::grpc::internal::SplitServerStreamingHandler<
+          ::sdv::platform::SubscribeEventsRequest, ::sdv::platform::EventMessage>(
             [this](::grpc::ServerContext* context,
-                   ::grpc::ServerUnaryStreamer<
-                     ::sdv::platform::GetEventQueueRequest, ::sdv::platform::GetEventQueueResponse>* streamer) {
-                       return this->StreamedgetEventQueue(context,
+                   ::grpc::ServerSplitStreamer<
+                     ::sdv::platform::SubscribeEventsRequest, ::sdv::platform::EventMessage>* streamer) {
+                       return this->StreamedSubscribeEvents(context,
                          streamer);
                   }));
     }
-    ~WithStreamedUnaryMethod_getEventQueue() override {
+    ~WithSplitStreamingMethod_SubscribeEvents() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status getEventQueue(::grpc::ServerContext* /*context*/, const ::sdv::platform::GetEventQueueRequest* /*request*/, ::sdv::platform::GetEventQueueResponse* /*response*/) override {
+    ::grpc::Status SubscribeEvents(::grpc::ServerContext* /*context*/, const ::sdv::platform::SubscribeEventsRequest* /*request*/, ::grpc::ServerWriter< ::sdv::platform::EventMessage>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedgetEventQueue(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::sdv::platform::GetEventQueueRequest,::sdv::platform::GetEventQueueResponse>* server_unary_streamer) = 0;
+    // replace default version of method with split streamed
+    virtual ::grpc::Status StreamedSubscribeEvents(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::sdv::platform::SubscribeEventsRequest,::sdv::platform::EventMessage>* server_split_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_registerComponent<WithStreamedUnaryMethod_unRegister<WithStreamedUnaryMethod_sendEvent<WithStreamedUnaryMethod_getEventQueue<Service > > > > StreamedUnaryService;
-  typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_registerComponent<WithStreamedUnaryMethod_unRegister<WithStreamedUnaryMethod_sendEvent<WithStreamedUnaryMethod_getEventQueue<Service > > > > StreamedService;
+  typedef WithSplitStreamingMethod_SubscribeEvents<Service > SplitStreamedService;
+  typedef WithStreamedUnaryMethod_registerComponent<WithStreamedUnaryMethod_unRegister<WithStreamedUnaryMethod_sendEvent<WithSplitStreamingMethod_SubscribeEvents<Service > > > > StreamedService;
 };
 
 }  // namespace platform

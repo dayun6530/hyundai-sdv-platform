@@ -2,6 +2,7 @@
 
 #include "CenterCommunication/detail/BoundedQueue.h"
 #include "CenterCommunication/telemetry/ITelemetryExporter.h"
+#include "CenterCommunication/telemetry/TelemetryRecord.h"
 
 #include <atomic>
 #include <cstddef>
@@ -38,6 +39,8 @@ private:
 
     void exportWorkerLoop();
     void dispatchTelemetry(const std::string& telemetryJson);
+    void dispatchTelemetryBatch(const std::vector<TelemetryRecord>& records);
+    void flushExporters();
 
     std::string eventBusAddress_;
     std::string carId_;

@@ -9,6 +9,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/OperationalDbExporter.cpp.o.d"
   "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/OtlpLogsExporter.cpp.o"
   "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/OtlpLogsExporter.cpp.o.d"
+  "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/TelemetryExporter.cpp.o"
+  "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/TelemetryExporter.cpp.o.d"
   "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/TelemetryRecord.cpp.o"
   "CMakeFiles/CenterCommunicationLib.dir/src/telemetry/TelemetryRecord.cpp.o.d"
   "libCenterCommunicationLib.a"

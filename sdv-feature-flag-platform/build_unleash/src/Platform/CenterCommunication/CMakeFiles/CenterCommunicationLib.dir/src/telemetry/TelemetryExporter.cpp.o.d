@@ -1,7 +1,8 @@
-third_party/unleash-cpp-sdk/unleash-cpp-sdk-main/CMakeFiles/unleash_sdk.dir/src/variant.cpp.o: \
- /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/third_party/unleash-cpp-sdk/unleash-cpp-sdk-main/src/variant.cpp \
+src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/src/telemetry/TelemetryExporter.cpp.o: \
+ /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/telemetry/TelemetryExporter.cpp \
  /usr/include/stdc-predef.h \
- /mnt/c/Users/82107/Desktop/TP2/sdv-feature-flag-platform/third_party/unleash-cpp-sdk/unleash-cpp-sdk-main/include/unleash/Domain/variant.hpp \
+ /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/telemetry/ITelemetryExporter.h \
+ /mnt/c/Users/82108/Desktop/project/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/telemetry/TelemetryRecord.h \
  /usr/include/c++/13/optional /usr/include/c++/13/type_traits \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
@@ -121,4 +122,7 @@ third_party/unleash-cpp-sdk/unleash-cpp-sdk-main/CMakeFiles/unleash_sdk.dir/src/
  /usr/include/c++/13/bits/memory_resource.h /usr/include/c++/13/cstddef \
  /usr/include/c++/13/bits/uses_allocator.h \
  /usr/include/c++/13/bits/uses_allocator_args.h /usr/include/c++/13/tuple \
- /usr/include/c++/13/utility /usr/include/c++/13/bits/stl_relops.h
+ /usr/include/c++/13/vector /usr/include/c++/13/bits/stl_uninitialized.h \
+ /usr/include/c++/13/bits/stl_vector.h \
+ /usr/include/c++/13/bits/stl_bvector.h \
+ /usr/include/c++/13/bits/vector.tcc

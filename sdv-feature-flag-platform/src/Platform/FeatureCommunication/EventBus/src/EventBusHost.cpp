@@ -10,8 +10,59 @@
 
 namespace sdv::platform::communications::eventbus {
 
+namespace {
+
+EventMessage toProtoMessage(const Event& event) {
+    EventMessage msg;
+    msg.set_event_id(static_cast<int32_t>(event.getEventId()));
+    msg.set_message(event.getMessage());
+    return msg;
+}
+
+}  // namespace
+
 EventBusHost::EventBusHost()
     : nextComponentId_(1) {}
+
+bool EventBusHost::pushEventToStream(int64_t componentId, const Event& event) {
+    std::shared_ptr<StreamSubscriber> sub;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        const auto it = subscribers_.find(componentId);
+        if (it == subscribers_.end() || !it->second || !it->second->active.load()) {
+            return false;
+        }
+        sub = it->second;
+    }
+
+    const EventMessage msg = toProtoMessage(event);
+    std::lock_guard<std::mutex> writeLock(sub->writeMu);
+    if (!sub->active.load() || sub->writer == nullptr) {
+        return false;
+    }
+    if (!sub->writer->Write(msg)) {
+        sub->active.store(false);
+        return false;
+    }
+    return true;
+}
+
+void EventBusHost::flushQueueToStream(EventQueue& queue,
+                                      const std::shared_ptr<StreamSubscriber>& sub) {
+    while (queue.getSize() > 0) {
+        const Event event = queue.getEvent();
+        const EventMessage msg = toProtoMessage(event);
+
+        std::lock_guard<std::mutex> writeLock(sub->writeMu);
+        if (!sub->active.load() || sub->writer == nullptr) {
+            return;
+        }
+        if (!sub->writer->Write(msg)) {
+            sub->active.store(false);
+            return;
+        }
+    }
+}
 
 grpc::Status EventBusHost::registerComponent(grpc::ServerContext* /*context*/,
                                               const RegisterRequest* /*request*/,
@@ -30,6 +81,7 @@ grpc::Status EventBusHost::unRegister(grpc::ServerContext* /*context*/,
                                       UnRegisterResponse* /*response*/) {
     std::lock_guard<std::mutex> lock(mutex_);
     int64_t id = request->component_id();
+    subscribers_.erase(id);
     for (auto it = eventQueueList_.begin(); it != eventQueueList_.end(); ++it) {
         if (it->getId() == id) {
             eventQueueList_.erase(it);
@@ -43,50 +95,69 @@ grpc::Status EventBusHost::unRegister(grpc::ServerContext* /*context*/,
 grpc::Status EventBusHost::sendEvent(grpc::ServerContext* /*context*/,
                                      const SendEventRequest* request,
                                      SendEventResponse* /*response*/) {
-    std::lock_guard<std::mutex> lock(mutex_);
     EventId eventId = static_cast<EventId>(request->event_id());
     Event sentEvent(eventId, request->message());
 
-    int totalQueues = static_cast<int>(eventQueueList_.size());
-    int droppedCount = 0;
-    for (auto& eventQueue : eventQueueList_) {
-        if (!eventQueue.addEvent(sentEvent)) {
-            std::cerr << "WARNING: Queue (ID:" << eventQueue.getId()
-                      << ") is full, event dropped" << std::endl;
-            droppedCount++;
+    std::vector<int64_t> targetIds;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        int totalQueues = static_cast<int>(eventQueueList_.size());
+        int droppedCount = 0;
+        for (auto& eventQueue : eventQueueList_) {
+            if (!eventQueue.addEvent(sentEvent)) {
+                std::cerr << "WARNING: Queue (ID:" << eventQueue.getId()
+                          << ") is full, event dropped" << std::endl;
+                droppedCount++;
+            } else {
+                targetIds.push_back(eventQueue.getId());
+            }
+        }
+        std::cout << "Event Information(ID: " << request->event_id()
+                  << ", Message: " << request->message() << ")" << std::endl;
+
+        if (totalQueues > 0 && droppedCount == totalQueues) {
+            return grpc::Status(grpc::StatusCode::RESOURCE_EXHAUSTED,
+                                "all queues full, event dropped");
         }
     }
-    std::cout << "Event Information(ID: " << request->event_id()
-              << ", Message: " << request->message() << ")" << std::endl;
 
-    if (totalQueues > 0 && droppedCount == totalQueues) {
-        return grpc::Status(grpc::StatusCode::RESOURCE_EXHAUSTED,
-                            "all queues full, event dropped");
+    for (const int64_t componentId : targetIds) {
+        pushEventToStream(componentId, sentEvent);
     }
     return grpc::Status::OK;
 }
 
-grpc::Status EventBusHost::getEventQueue(grpc::ServerContext* /*context*/,
-                                         const GetEventQueueRequest* request,
-                                         GetEventQueueResponse* response) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    int64_t id = request->component_id();
+grpc::Status EventBusHost::SubscribeEvents(grpc::ServerContext* context,
+                                           const SubscribeEventsRequest* request,
+                                           grpc::ServerWriter<EventMessage>* writer) {
+    const int64_t id = request->component_id();
+    auto sub = std::make_shared<StreamSubscriber>();
+    sub->writer = writer;
+    sub->active.store(true);
 
-    for (auto& originalQueue : eventQueueList_) {
-        if (originalQueue.getId() == id) {
-            EventQueue copiedQueue = originalQueue.getCopy();
-            response->set_component_id(copiedQueue.getId());
-
-            while (copiedQueue.getSize() > 0) {
-                Event event = copiedQueue.getEvent();
-                auto* msg = response->add_events();
-                msg->set_event_id(static_cast<int32_t>(event.getEventId()));
-                msg->set_message(event.getMessage());
+  {
+        std::lock_guard<std::mutex> lock(mutex_);
+        subscribers_[id] = sub;
+        for (auto& queue : eventQueueList_) {
+            if (queue.getId() == id) {
+                flushQueueToStream(queue, sub);
+                break;
             }
-            originalQueue.clearEventQueue();
-            break;
         }
     }
+
+    while (!context->IsCancelled()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        const auto it = subscribers_.find(id);
+        if (it != subscribers_.end() && it->second == sub) {
+            subscribers_.erase(it);
+        }
+    }
+    sub->active.store(false);
     return grpc::Status::OK;
 }
 

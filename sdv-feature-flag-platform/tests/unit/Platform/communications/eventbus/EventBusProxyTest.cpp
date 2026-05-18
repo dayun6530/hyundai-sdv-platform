@@ -7,6 +7,7 @@
 #include "eventbus.grpc.pb.h"
 
 #include <atomic>
+#include <deque>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -23,7 +24,6 @@ public:
                                    sdv::platform::RegisterResponse* response) override {
         std::lock_guard<std::mutex> lock(mutex_);
         const int64_t id = nextId_++;
-        queues_[id] = std::vector<EventMessageData>();
         response->set_component_id(id);
         return grpc::Status::OK;
     }
@@ -32,41 +32,64 @@ public:
                             const sdv::platform::UnRegisterRequest* request,
                             sdv::platform::UnRegisterResponse*) override {
         std::lock_guard<std::mutex> lock(mutex_);
-        queues_.erase(request->component_id());
+        subscribers_.erase(request->component_id());
         return grpc::Status::OK;
     }
 
     grpc::Status sendEvent(grpc::ServerContext*,
                            const sdv::platform::SendEventRequest* request,
                            sdv::platform::SendEventResponse*) override {
-        std::lock_guard<std::mutex> lock(mutex_);
         EventMessageData msg;
         msg.eventId = request->event_id();
         msg.message = request->message();
-        for (auto& [id, queue] : queues_) {
-            (void)id;
-            queue.push_back(msg);
+
+        std::vector<std::shared_ptr<SubscriberState>> targets;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            for (auto& [id, sub] : subscribers_) {
+                (void)id;
+                if (sub && sub->active.load()) {
+                    targets.push_back(sub);
+                }
+            }
+        }
+
+        for (const auto& sub : targets) {
+            sdv::platform::EventMessage out;
+            out.set_event_id(msg.eventId);
+            out.set_message(msg.message);
+            std::lock_guard<std::mutex> writeLock(sub->writeMu);
+            if (sub->active.load() && sub->writer != nullptr) {
+                sub->writer->Write(out);
+            }
         }
         return grpc::Status::OK;
     }
 
-    grpc::Status getEventQueue(grpc::ServerContext*,
-                               const sdv::platform::GetEventQueueRequest* request,
-                               sdv::platform::GetEventQueueResponse* response) override {
-        std::lock_guard<std::mutex> lock(mutex_);
+    grpc::Status SubscribeEvents(grpc::ServerContext* context,
+                                 const sdv::platform::SubscribeEventsRequest* request,
+                                 grpc::ServerWriter<sdv::platform::EventMessage>* writer) override {
         const int64_t id = request->component_id();
-        response->set_component_id(id);
-        auto it = queues_.find(id);
-        if (it == queues_.end()) {
-            return grpc::Status::OK;
+        auto sub = std::make_shared<SubscriberState>();
+        sub->writer = writer;
+        sub->active.store(true);
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            subscribers_[id] = sub;
         }
 
-        for (const auto& entry : it->second) {
-            auto* event = response->add_events();
-            event->set_event_id(entry.eventId);
-            event->set_message(entry.message);
+        while (!context->IsCancelled()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
-        it->second.clear();
+
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            const auto it = subscribers_.find(id);
+            if (it != subscribers_.end() && it->second == sub) {
+                subscribers_.erase(it);
+            }
+        }
+        sub->active.store(false);
         return grpc::Status::OK;
     }
 
@@ -76,9 +99,15 @@ private:
         std::string message;
     };
 
+    struct SubscriberState {
+        grpc::ServerWriter<sdv::platform::EventMessage>* writer{nullptr};
+        std::mutex writeMu;
+        std::atomic<bool> active{false};
+    };
+
     std::mutex mutex_;
     std::atomic<int64_t> nextId_{1};
-    std::map<int64_t, std::vector<EventMessageData>> queues_;
+    std::map<int64_t, std::shared_ptr<SubscriberState>> subscribers_;
 };
 
 int main() {
@@ -101,21 +130,32 @@ int main() {
     const int64_t id2 = proxy2.registerComponent();
     sqa::test::check(tc, id1 > 0 && id2 > 0 && id1 != id2, "registerComponent success path");
 
-    proxy1.sendEvent(Event(EventId::VehicleLocationUpdate, "msg-a"));
+    std::atomic<bool> keepReading{true};
+    std::vector<Event> streamed1;
+    std::thread consumer([&]() {
+        proxy1.consumeEventStream(
+            id1,
+            [&]() { return keepReading.load(); },
+            [&](const Event& ev) { streamed1.push_back(ev); });
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(80));
 
-    EventQueue q1 = proxy1.getEventQueue(id1);
-    EventQueue q2 = proxy2.getEventQueue(id2);
-    sqa::test::check(tc, q1.getSize() == 1 && q2.getSize() == 1, "sendEvent broadcast success");
+    proxy2.sendEvent(Event(EventId::VehicleLocationUpdate, "msg-a"));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    keepReading.store(false);
+    consumer.join();
+
+    sqa::test::check(tc, streamed1.size() >= 1, "SubscribeEvents delivers broadcast event");
 
     EventQueue afterRead = proxy1.getEventQueue(id1);
-    sqa::test::check(tc, afterRead.getSize() == 0, "getEventQueue clears queue on server");
+    sqa::test::check(tc, afterRead.getSize() == 0, "stream buffer drained via getEventQueue");
 
     proxy1.unRegister(id1);
     proxy2.sendEvent(Event(EventId::RoadInfoUpdate, "msg-b"));
     EventQueue q1AfterUnreg = proxy1.getEventQueue(id1);
     sqa::test::check(tc, q1AfterUnreg.getSize() == 0, "unregistered component receives no events");
 
-    // Failure path: unreachable server should return failure values instead of throwing.
     EventBusProxy badProxy("127.0.0.1:1");
     const int64_t badId = badProxy.registerComponent();
     sqa::test::check(tc, badId == -1, "registerComponent returns -1 on RPC failure");

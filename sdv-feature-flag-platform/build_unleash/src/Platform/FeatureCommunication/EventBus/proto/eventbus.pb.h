@@ -50,12 +50,6 @@ namespace platform {
 class EventMessage;
 struct EventMessageDefaultTypeInternal;
 extern EventMessageDefaultTypeInternal _EventMessage_default_instance_;
-class GetEventQueueRequest;
-struct GetEventQueueRequestDefaultTypeInternal;
-extern GetEventQueueRequestDefaultTypeInternal _GetEventQueueRequest_default_instance_;
-class GetEventQueueResponse;
-struct GetEventQueueResponseDefaultTypeInternal;
-extern GetEventQueueResponseDefaultTypeInternal _GetEventQueueResponse_default_instance_;
 class RegisterRequest;
 struct RegisterRequestDefaultTypeInternal;
 extern RegisterRequestDefaultTypeInternal _RegisterRequest_default_instance_;
@@ -68,6 +62,9 @@ extern SendEventRequestDefaultTypeInternal _SendEventRequest_default_instance_;
 class SendEventResponse;
 struct SendEventResponseDefaultTypeInternal;
 extern SendEventResponseDefaultTypeInternal _SendEventResponse_default_instance_;
+class SubscribeEventsRequest;
+struct SubscribeEventsRequestDefaultTypeInternal;
+extern SubscribeEventsRequestDefaultTypeInternal _SubscribeEventsRequest_default_instance_;
 class UnRegisterRequest;
 struct UnRegisterRequestDefaultTypeInternal;
 extern UnRegisterRequestDefaultTypeInternal _UnRegisterRequest_default_instance_;
@@ -78,12 +75,11 @@ extern UnRegisterResponseDefaultTypeInternal _UnRegisterResponse_default_instanc
 }  // namespace sdv
 PROTOBUF_NAMESPACE_OPEN
 template<> ::sdv::platform::EventMessage* Arena::CreateMaybeMessage<::sdv::platform::EventMessage>(Arena*);
-template<> ::sdv::platform::GetEventQueueRequest* Arena::CreateMaybeMessage<::sdv::platform::GetEventQueueRequest>(Arena*);
-template<> ::sdv::platform::GetEventQueueResponse* Arena::CreateMaybeMessage<::sdv::platform::GetEventQueueResponse>(Arena*);
 template<> ::sdv::platform::RegisterRequest* Arena::CreateMaybeMessage<::sdv::platform::RegisterRequest>(Arena*);
 template<> ::sdv::platform::RegisterResponse* Arena::CreateMaybeMessage<::sdv::platform::RegisterResponse>(Arena*);
 template<> ::sdv::platform::SendEventRequest* Arena::CreateMaybeMessage<::sdv::platform::SendEventRequest>(Arena*);
 template<> ::sdv::platform::SendEventResponse* Arena::CreateMaybeMessage<::sdv::platform::SendEventResponse>(Arena*);
+template<> ::sdv::platform::SubscribeEventsRequest* Arena::CreateMaybeMessage<::sdv::platform::SubscribeEventsRequest>(Arena*);
 template<> ::sdv::platform::UnRegisterRequest* Arena::CreateMaybeMessage<::sdv::platform::UnRegisterRequest>(Arena*);
 template<> ::sdv::platform::UnRegisterResponse* Arena::CreateMaybeMessage<::sdv::platform::UnRegisterResponse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -906,24 +902,24 @@ class SendEventResponse final :
 };
 // -------------------------------------------------------------------
 
-class GetEventQueueRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sdv.platform.GetEventQueueRequest) */ {
+class SubscribeEventsRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sdv.platform.SubscribeEventsRequest) */ {
  public:
-  inline GetEventQueueRequest() : GetEventQueueRequest(nullptr) {}
-  ~GetEventQueueRequest() override;
-  explicit PROTOBUF_CONSTEXPR GetEventQueueRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline SubscribeEventsRequest() : SubscribeEventsRequest(nullptr) {}
+  ~SubscribeEventsRequest() override;
+  explicit PROTOBUF_CONSTEXPR SubscribeEventsRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  GetEventQueueRequest(const GetEventQueueRequest& from);
-  GetEventQueueRequest(GetEventQueueRequest&& from) noexcept
-    : GetEventQueueRequest() {
+  SubscribeEventsRequest(const SubscribeEventsRequest& from);
+  SubscribeEventsRequest(SubscribeEventsRequest&& from) noexcept
+    : SubscribeEventsRequest() {
     *this = ::std::move(from);
   }
 
-  inline GetEventQueueRequest& operator=(const GetEventQueueRequest& from) {
+  inline SubscribeEventsRequest& operator=(const SubscribeEventsRequest& from) {
     CopyFrom(from);
     return *this;
   }
-  inline GetEventQueueRequest& operator=(GetEventQueueRequest&& from) noexcept {
+  inline SubscribeEventsRequest& operator=(SubscribeEventsRequest&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -946,20 +942,20 @@ class GetEventQueueRequest final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const GetEventQueueRequest& default_instance() {
+  static const SubscribeEventsRequest& default_instance() {
     return *internal_default_instance();
   }
-  static inline const GetEventQueueRequest* internal_default_instance() {
-    return reinterpret_cast<const GetEventQueueRequest*>(
-               &_GetEventQueueRequest_default_instance_);
+  static inline const SubscribeEventsRequest* internal_default_instance() {
+    return reinterpret_cast<const SubscribeEventsRequest*>(
+               &_SubscribeEventsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     6;
 
-  friend void swap(GetEventQueueRequest& a, GetEventQueueRequest& b) {
+  friend void swap(SubscribeEventsRequest& a, SubscribeEventsRequest& b) {
     a.Swap(&b);
   }
-  inline void Swap(GetEventQueueRequest* other) {
+  inline void Swap(SubscribeEventsRequest* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -972,7 +968,7 @@ class GetEventQueueRequest final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(GetEventQueueRequest* other) {
+  void UnsafeArenaSwap(SubscribeEventsRequest* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -980,14 +976,14 @@ class GetEventQueueRequest final :
 
   // implements Message ----------------------------------------------
 
-  GetEventQueueRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<GetEventQueueRequest>(arena);
+  SubscribeEventsRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SubscribeEventsRequest>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const GetEventQueueRequest& from);
+  void CopyFrom(const SubscribeEventsRequest& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const GetEventQueueRequest& from) {
-    GetEventQueueRequest::MergeImpl(*this, from);
+  void MergeFrom( const SubscribeEventsRequest& from) {
+    SubscribeEventsRequest::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -1005,15 +1001,15 @@ class GetEventQueueRequest final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(GetEventQueueRequest* other);
+  void InternalSwap(SubscribeEventsRequest* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "sdv.platform.GetEventQueueRequest";
+    return "sdv.platform.SubscribeEventsRequest";
   }
   protected:
-  explicit GetEventQueueRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit SubscribeEventsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -1038,7 +1034,7 @@ class GetEventQueueRequest final :
   void _internal_set_component_id(int64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:sdv.platform.GetEventQueueRequest)
+  // @@protoc_insertion_point(class_scope:sdv.platform.SubscribeEventsRequest)
  private:
   class _Internal;
 
@@ -1216,174 +1212,6 @@ class EventMessage final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_proto_2feventbus_2eproto;
 };
-// -------------------------------------------------------------------
-
-class GetEventQueueResponse final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sdv.platform.GetEventQueueResponse) */ {
- public:
-  inline GetEventQueueResponse() : GetEventQueueResponse(nullptr) {}
-  ~GetEventQueueResponse() override;
-  explicit PROTOBUF_CONSTEXPR GetEventQueueResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  GetEventQueueResponse(const GetEventQueueResponse& from);
-  GetEventQueueResponse(GetEventQueueResponse&& from) noexcept
-    : GetEventQueueResponse() {
-    *this = ::std::move(from);
-  }
-
-  inline GetEventQueueResponse& operator=(const GetEventQueueResponse& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline GetEventQueueResponse& operator=(GetEventQueueResponse&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const GetEventQueueResponse& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const GetEventQueueResponse* internal_default_instance() {
-    return reinterpret_cast<const GetEventQueueResponse*>(
-               &_GetEventQueueResponse_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    8;
-
-  friend void swap(GetEventQueueResponse& a, GetEventQueueResponse& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(GetEventQueueResponse* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(GetEventQueueResponse* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  GetEventQueueResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<GetEventQueueResponse>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const GetEventQueueResponse& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const GetEventQueueResponse& from) {
-    GetEventQueueResponse::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(GetEventQueueResponse* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "sdv.platform.GetEventQueueResponse";
-  }
-  protected:
-  explicit GetEventQueueResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kEventsFieldNumber = 2,
-    kComponentIdFieldNumber = 1,
-  };
-  // repeated .sdv.platform.EventMessage events = 2;
-  int events_size() const;
-  private:
-  int _internal_events_size() const;
-  public:
-  void clear_events();
-  ::sdv::platform::EventMessage* mutable_events(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sdv::platform::EventMessage >*
-      mutable_events();
-  private:
-  const ::sdv::platform::EventMessage& _internal_events(int index) const;
-  ::sdv::platform::EventMessage* _internal_add_events();
-  public:
-  const ::sdv::platform::EventMessage& events(int index) const;
-  ::sdv::platform::EventMessage* add_events();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sdv::platform::EventMessage >&
-      events() const;
-
-  // int64 component_id = 1;
-  void clear_component_id();
-  int64_t component_id() const;
-  void set_component_id(int64_t value);
-  private:
-  int64_t _internal_component_id() const;
-  void _internal_set_component_id(int64_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:sdv.platform.GetEventQueueResponse)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sdv::platform::EventMessage > events_;
-    int64_t component_id_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_proto_2feventbus_2eproto;
-};
 // ===================================================================
 
 
@@ -1527,26 +1355,26 @@ inline void SendEventRequest::set_allocated_message(std::string* message) {
 
 // -------------------------------------------------------------------
 
-// GetEventQueueRequest
+// SubscribeEventsRequest
 
 // int64 component_id = 1;
-inline void GetEventQueueRequest::clear_component_id() {
+inline void SubscribeEventsRequest::clear_component_id() {
   _impl_.component_id_ = int64_t{0};
 }
-inline int64_t GetEventQueueRequest::_internal_component_id() const {
+inline int64_t SubscribeEventsRequest::_internal_component_id() const {
   return _impl_.component_id_;
 }
-inline int64_t GetEventQueueRequest::component_id() const {
-  // @@protoc_insertion_point(field_get:sdv.platform.GetEventQueueRequest.component_id)
+inline int64_t SubscribeEventsRequest::component_id() const {
+  // @@protoc_insertion_point(field_get:sdv.platform.SubscribeEventsRequest.component_id)
   return _internal_component_id();
 }
-inline void GetEventQueueRequest::_internal_set_component_id(int64_t value) {
+inline void SubscribeEventsRequest::_internal_set_component_id(int64_t value) {
   
   _impl_.component_id_ = value;
 }
-inline void GetEventQueueRequest::set_component_id(int64_t value) {
+inline void SubscribeEventsRequest::set_component_id(int64_t value) {
   _internal_set_component_id(value);
-  // @@protoc_insertion_point(field_set:sdv.platform.GetEventQueueRequest.component_id)
+  // @@protoc_insertion_point(field_set:sdv.platform.SubscribeEventsRequest.component_id)
 }
 
 // -------------------------------------------------------------------
@@ -1623,75 +1451,9 @@ inline void EventMessage::set_allocated_message(std::string* message) {
   // @@protoc_insertion_point(field_set_allocated:sdv.platform.EventMessage.message)
 }
 
-// -------------------------------------------------------------------
-
-// GetEventQueueResponse
-
-// int64 component_id = 1;
-inline void GetEventQueueResponse::clear_component_id() {
-  _impl_.component_id_ = int64_t{0};
-}
-inline int64_t GetEventQueueResponse::_internal_component_id() const {
-  return _impl_.component_id_;
-}
-inline int64_t GetEventQueueResponse::component_id() const {
-  // @@protoc_insertion_point(field_get:sdv.platform.GetEventQueueResponse.component_id)
-  return _internal_component_id();
-}
-inline void GetEventQueueResponse::_internal_set_component_id(int64_t value) {
-  
-  _impl_.component_id_ = value;
-}
-inline void GetEventQueueResponse::set_component_id(int64_t value) {
-  _internal_set_component_id(value);
-  // @@protoc_insertion_point(field_set:sdv.platform.GetEventQueueResponse.component_id)
-}
-
-// repeated .sdv.platform.EventMessage events = 2;
-inline int GetEventQueueResponse::_internal_events_size() const {
-  return _impl_.events_.size();
-}
-inline int GetEventQueueResponse::events_size() const {
-  return _internal_events_size();
-}
-inline void GetEventQueueResponse::clear_events() {
-  _impl_.events_.Clear();
-}
-inline ::sdv::platform::EventMessage* GetEventQueueResponse::mutable_events(int index) {
-  // @@protoc_insertion_point(field_mutable:sdv.platform.GetEventQueueResponse.events)
-  return _impl_.events_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sdv::platform::EventMessage >*
-GetEventQueueResponse::mutable_events() {
-  // @@protoc_insertion_point(field_mutable_list:sdv.platform.GetEventQueueResponse.events)
-  return &_impl_.events_;
-}
-inline const ::sdv::platform::EventMessage& GetEventQueueResponse::_internal_events(int index) const {
-  return _impl_.events_.Get(index);
-}
-inline const ::sdv::platform::EventMessage& GetEventQueueResponse::events(int index) const {
-  // @@protoc_insertion_point(field_get:sdv.platform.GetEventQueueResponse.events)
-  return _internal_events(index);
-}
-inline ::sdv::platform::EventMessage* GetEventQueueResponse::_internal_add_events() {
-  return _impl_.events_.Add();
-}
-inline ::sdv::platform::EventMessage* GetEventQueueResponse::add_events() {
-  ::sdv::platform::EventMessage* _add = _internal_add_events();
-  // @@protoc_insertion_point(field_add:sdv.platform.GetEventQueueResponse.events)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sdv::platform::EventMessage >&
-GetEventQueueResponse::events() const {
-  // @@protoc_insertion_point(field_list:sdv.platform.GetEventQueueResponse.events)
-  return _impl_.events_;
-}
-
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
-// -------------------------------------------------------------------
-
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

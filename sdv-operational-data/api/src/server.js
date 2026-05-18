@@ -1,12 +1,17 @@
 "use strict";
 
 const express = require("express");
+const { randomUUID } = require("crypto");
 const { Pool } = require("pg");
 
 const PORT = Number(process.env.PORT || 8090);
 const DATABASE_URL =
   process.env.DATABASE_URL ||
   "postgres://sdv:sdv@localhost:5435/sdv_operational";
+const MAX_BATCH_SIZE = Math.min(
+  Math.max(Number(process.env.SDV_INGEST_BATCH_MAX || 100), 1),
+  100,
+);
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -15,7 +20,7 @@ const pool = new Pool({
 });
 
 const app = express();
-app.use(express.json({ limit: "512kb" }));
+app.use(express.json({ limit: "2mb" }));
 
 function parseOccurredAt(value) {
   if (!value || typeof value !== "string") {
@@ -72,6 +77,30 @@ function normalizeIngestBody(body) {
   };
 }
 
+async function insertOperationalEvent(client, norm, ingestBatchId) {
+  const params = [
+    norm.vehicleId,
+    norm.feature,
+    norm.eventType,
+    norm.level,
+    norm.role,
+    norm.occurredAt,
+    norm.payload != null ? JSON.stringify(norm.payload) : null,
+    norm.rawJson != null ? JSON.stringify(norm.rawJson) : null,
+  ];
+  let sql = `INSERT INTO operational_events
+         (vehicle_id, feature, event_type, level, role, occurred_at, payload, raw_json`;
+  if (ingestBatchId) {
+    sql += `, ingest_batch_id) VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::jsonb, $8::jsonb, $9::uuid)
+       RETURNING id, received_at`;
+    params.push(ingestBatchId);
+  } else {
+    sql += `) VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::jsonb, $8::jsonb)
+       RETURNING id, received_at`;
+  }
+  return client.query(sql, params);
+}
+
 app.get("/health", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -99,22 +128,7 @@ app.post("/v1/ingest", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `INSERT INTO operational_events
-         (vehicle_id, feature, event_type, level, role, occurred_at, payload, raw_json)
-       VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::jsonb, $8::jsonb)
-       RETURNING id, received_at`,
-      [
-        norm.vehicleId,
-        norm.feature,
-        norm.eventType,
-        norm.level,
-        norm.role,
-        norm.occurredAt,
-        norm.payload != null ? JSON.stringify(norm.payload) : null,
-        norm.rawJson != null ? JSON.stringify(norm.rawJson) : null,
-      ],
-    );
+    const result = await insertOperationalEvent(pool, norm, null);
 
     res.status(201).json({
       ok: true,
@@ -124,6 +138,67 @@ app.post("/v1/ingest", async (req, res) => {
   } catch (err) {
     console.error("[ingest]", err);
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * Batch ingest: body { "events": [ {...}, ... ] } or a top-level JSON array.
+ * DataCollector OperationalDbExporter posts here when batch size > 1.
+ */
+app.post("/v1/ingest/batch", async (req, res) => {
+  const events = Array.isArray(req.body) ? req.body : req.body?.events;
+  if (!Array.isArray(events)) {
+    res.status(400).json({ ok: false, error: "events array required" });
+    return;
+  }
+  if (events.length === 0) {
+    res.status(400).json({ ok: false, error: "events must not be empty" });
+    return;
+  }
+  if (events.length > MAX_BATCH_SIZE) {
+    res.status(400).json({
+      ok: false,
+      error: `max ${MAX_BATCH_SIZE} events per batch`,
+    });
+    return;
+  }
+
+  const ingestBatchId = randomUUID();
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const ids = [];
+    for (let i = 0; i < events.length; i += 1) {
+      const norm = normalizeIngestBody(events[i]);
+      if (norm.error) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          ok: false,
+          error: norm.error,
+          index: i,
+        });
+        return;
+      }
+      const result = await insertOperationalEvent(client, norm, ingestBatchId);
+      ids.push(String(result.rows[0].id));
+    }
+
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      ok: true,
+      ingest_batch_id: ingestBatchId,
+      inserted: ids.length,
+      ids,
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[ingest/batch]", err);
+    res.status(500).json({ ok: false, error: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -156,7 +231,7 @@ app.get("/v1/events", async (req, res) => {
   params.push(limit);
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const sql = `SELECT id, vehicle_id, feature, event_type, level, role, occurred_at, payload, raw_json, received_at
+  const sql = `SELECT id, vehicle_id, feature, event_type, level, role, occurred_at, payload, raw_json, received_at, ingest_batch_id
                FROM ${table}
                ${where}
                ORDER BY COALESCE(occurred_at, received_at) DESC

@@ -9,6 +9,8 @@
 #include "CenterCommunication/telemetry/OperationalDbExporter.h"
 #include "CenterCommunication/telemetry/OtlpLogsExporter.h"
 #include "CenterCommunication/telemetry/TelemetryRecord.h"
+
+#include <vector>
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
 
@@ -23,6 +25,38 @@ std::string resolveOperationalDbIngestUrl() {
         }
     }
     return "http://127.0.0.1:8090/v1/ingest";
+}
+
+std::size_t resolveTelemetryBatchMax() {
+    constexpr std::size_t kDefault = 50;
+    constexpr std::size_t kMin = 1;
+    constexpr std::size_t kMax = 100;
+    if (const char* env = std::getenv("SDV_TELEMETRY_BATCH_MAX")) {
+        try {
+            const long parsed = std::strtol(env, nullptr, 10);
+            if (parsed >= static_cast<long>(kMin) && parsed <= static_cast<long>(kMax)) {
+                return static_cast<std::size_t>(parsed);
+            }
+        } catch (...) {
+        }
+    }
+    return kDefault;
+}
+
+int resolveTelemetryFlushMs() {
+    constexpr int kDefault = 1000;
+    constexpr int kMin = 500;
+    constexpr int kMax = 2000;
+    if (const char* env = std::getenv("SDV_TELEMETRY_FLUSH_MS")) {
+        try {
+            const long parsed = std::strtol(env, nullptr, 10);
+            if (parsed >= kMin && parsed <= kMax) {
+                return static_cast<int>(parsed);
+            }
+        } catch (...) {
+        }
+    }
+    return kDefault;
 }
 
 }  // namespace
@@ -64,24 +98,68 @@ DataCollector::~DataCollector() {
 }
 
 void DataCollector::dispatchTelemetry(const std::string& telemetryJson) {
-    const TelemetryRecord record = TelemetryRecord::fromRaw(telemetryJson, carId_);
+    dispatchTelemetryBatch({TelemetryRecord::fromRaw(telemetryJson, carId_)});
+}
+
+void DataCollector::dispatchTelemetryBatch(const std::vector<TelemetryRecord>& records) {
+    if (records.empty()) {
+        return;
+    }
     for (const auto& exporter : exporters_) {
         if (!exporter) {
             continue;
         }
-        if (!exporter->exportRecord(record)) {
-            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' failed" << std::endl;
+        if (!exporter->exportRecords(records)) {
+            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' batch export failed"
+                      << std::endl;
+        }
+    }
+}
+
+void DataCollector::flushExporters() {
+    for (const auto& exporter : exporters_) {
+        if (!exporter) {
+            continue;
+        }
+        if (!exporter->flush()) {
+            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' flush failed"
+                      << std::endl;
         }
     }
 }
 
 void DataCollector::exportWorkerLoop() {
+    const std::size_t batchMax = resolveTelemetryBatchMax();
+    const auto flushInterval = std::chrono::milliseconds(resolveTelemetryFlushMs());
+
+    std::vector<std::string> pending;
+    pending.reserve(batchMax);
+
+    auto flushPending = [this, &pending]() {
+        if (pending.empty()) {
+            return;
+        }
+        std::vector<TelemetryRecord> records;
+        records.reserve(pending.size());
+        for (const std::string& payload : pending) {
+            records.push_back(TelemetryRecord::fromRaw(payload, carId_));
+        }
+        dispatchTelemetryBatch(records);
+        pending.clear();
+    };
+
     while (true) {
         std::string payload;
-        if (telemetryQueue_.pop(payload, std::chrono::milliseconds(200))) {
-            dispatchTelemetry(payload);
+        if (telemetryQueue_.pop(payload, flushInterval)) {
+            pending.push_back(std::move(payload));
+            if (pending.size() >= batchMax) {
+                flushPending();
+            }
             continue;
         }
+
+        flushPending();
+
         if (telemetryQueue_.isClosed()) {
             break;
         }
@@ -89,8 +167,13 @@ void DataCollector::exportWorkerLoop() {
 
     std::string payload;
     while (telemetryQueue_.tryPop(payload)) {
-        dispatchTelemetry(payload);
+        pending.push_back(std::move(payload));
+        if (pending.size() >= batchMax) {
+            flushPending();
+        }
     }
+    flushPending();
+    flushExporters();
 }
 
 void DataCollector::run() {
@@ -115,6 +198,8 @@ void DataCollector::run() {
               << " component_id=" << cid
               << " carId=" << carId_
               << " queueCapacity=" << queueCapacity_
+              << " batchMax=" << resolveTelemetryBatchMax()
+              << " flushMs=" << resolveTelemetryFlushMs()
               << " exporters=" << exporters_.size();
     for (const auto& exporter : exporters_) {
         if (exporter) {
@@ -123,17 +208,14 @@ void DataCollector::run() {
     }
     std::cout << std::endl;
 
-    while (running_.load(std::memory_order_acquire)) {
-        auto q = proxy.getEventQueue(cid);
-        while (q.getSize() > 0) {
-            auto ev = q.getEvent();
+    proxy.consumeEventStream(
+        cid,
+        [this]() { return running_.load(std::memory_order_acquire); },
+        [this](const sdv::platform::communications::eventbus::Event& ev) {
             if (ev.getEventId() == sdv::platform::communications::eventbus::EventId::TelemetryData) {
                 telemetryQueue_.push(ev.getMessage());
             }
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
+        });
 
     telemetryQueue_.close();
     if (exporterThread_.joinable()) {
