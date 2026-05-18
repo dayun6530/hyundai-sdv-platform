@@ -309,25 +309,35 @@ void MainWindow::onCarComboChanged(int idx) {
     }
 }
 
-void MainWindow::onCockpitCarSelected(const QString& carId) {
+void MainWindow::selectVehicle(const QString& carId) {
     const QString next = carId.trimmed().isEmpty() ? QStringLiteral("car_1") : carId.trimmed();
     const int idx = carCombo_->findText(next);
     if (idx >= 0 && idx != carCombo_->currentIndex()) {
         carCombo_->setCurrentIndex(idx);
-        return;
+    } else {
+        carId_ = next;
+        hub_->setCarId(carId_);
+        ota_->setCarId(carId_);
+        if (idx >= 0) {
+            const QSignalBlocker blocker(carCombo_);
+            carCombo_->setCurrentIndex(idx);
+        }
+        const QJsonObject car = pickCar(lastFleet_, carId_);
+        syncCockpitState(car);
+        if (!car.isEmpty()) {
+            features_->updateCards(car, lastMqtt_);
+            ota_->updateFromCarState(car);
+            shadow_->updateFromCarState(car);
+            health_->updateFromCarState(car);
+        }
     }
 
-    carId_ = next;
-    hub_->setCarId(carId_);
-    ota_->setCarId(carId_);
-    const QJsonObject car = pickCar(lastFleet_, carId_);
-    syncCockpitState(car);
-    if (!car.isEmpty()) {
-        features_->updateCards(car, lastMqtt_);
-        ota_->updateFromCarState(car);
-        shadow_->updateFromCarState(car);
-        health_->updateFromCarState(car);
-    }
+    raise();
+    activateWindow();
+}
+
+void MainWindow::onCockpitCarSelected(const QString& carId) {
+    selectVehicle(carId);
 }
 
 void MainWindow::onTrafficAnimTick() {

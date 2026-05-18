@@ -30,6 +30,9 @@ public:
                             const QString& mqttHost,
                             int mqttPort);
 
+    /// Switch fleet/MQTT/OTA focus to another car (used by launch scripts via IPC).
+    void selectVehicle(const QString& carId);
+
 private slots:
     void onFleetStates(const QJsonArray& states);
     void onMqttFeatures(const QJsonObject& env);

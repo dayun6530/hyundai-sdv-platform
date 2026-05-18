@@ -3,7 +3,54 @@
 #include <QApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include <QPalette>
+
+namespace {
+
+constexpr char kIpcServerName[] = "SDV_Dashboard_ipc_v1";
+
+bool tryForwardCarToRunningInstance(const QString& carId) {
+    QLocalSocket socket;
+    socket.connectToServer(QString::fromLatin1(kIpcServerName));
+    if (!socket.waitForConnected(500)) {
+        return false;
+    }
+
+    const QByteArray msg = QByteArray("car:") + carId.toUtf8() + '\n';
+    socket.write(msg);
+    if (!socket.waitForBytesWritten(1000)) {
+        return false;
+    }
+    if (!socket.waitForReadyRead(1000)) {
+        return true;
+    }
+    socket.readAll();
+    return true;
+}
+
+void attachIpcServer(QLocalServer* server, sdv::dash::MainWindow* win) {
+    QObject::connect(server, &QLocalServer::newConnection, server, [server, win]() {
+        QLocalSocket* client = server->nextPendingConnection();
+        if (!client) {
+            return;
+        }
+
+        QObject::connect(client, &QLocalSocket::readyRead, client, [client, win]() {
+            const QByteArray raw = client->readAll().trimmed();
+            const QString line = QString::fromUtf8(raw);
+            if (line.startsWith(QStringLiteral("car:"))) {
+                win->selectVehicle(line.mid(4));
+            }
+            client->write("ok\n");
+            client->flush();
+            client->disconnectFromServer();
+        });
+    });
+}
+
+}  // namespace
 
 static void applyDarkTheme(QApplication& app) {
     app.setStyle(QStringLiteral("Fusion"));
@@ -57,8 +104,22 @@ int main(int argc, char* argv[]) {
     parser.addOption(carOpt);
     parser.process(app);
 
+    const QString carId = parser.value(carOpt).trimmed().isEmpty() ? QStringLiteral("car_1")
+                                                                    : parser.value(carOpt).trimmed();
+
+    if (tryForwardCarToRunningInstance(carId)) {
+        return 0;
+    }
+
+    QLocalServer::removeServer(QString::fromLatin1(kIpcServerName));
+    auto* ipcServer = new QLocalServer(&app);
+    if (!ipcServer->listen(QString::fromLatin1(kIpcServerName))) {
+        qWarning("SDV_Dashboard: IPC listen failed (%s)", qPrintable(ipcServer->errorString()));
+    }
+
     sdv::dash::MainWindow win;
-    win.applyLaunchOptions(parser.value(apiOpt), parser.value(carOpt), parser.value(mqttHost),
+    attachIpcServer(ipcServer, &win);
+    win.applyLaunchOptions(parser.value(apiOpt), carId, parser.value(mqttHost),
                            parser.value(mqttPort).toInt());
 
     win.show();
