@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdv-ota-manager/platform/deploy/schemas/campaign_run.schema.json",
+  "title": "Fleet campaign run record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "run_id",
+    "campaign_id",
+    "phase",
+    "status",
+    "started_at",
+    "resolved_targets",
+    "aggregate",
+    "per_vehicle"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "campaign_id": { "type": "string" },
+    "campaign_file": { "type": "string" },
+    "rollout_policy_id": { "type": "string" },
+    "phase": { "type": "string", "enum": ["candidate", "promote"] },
+    "policy_stage_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed", "partial", "pending", "running", "paused", "cancelled"]
+    },
+    "started_at": { "type": "string" },
+    "finished_at": { "type": "string" },
+    "feature": { "type": "string" },
+    "target_version": { "type": "string" },
+    "target_role": { "type": "string", "enum": ["candidate", "primary"] },
+    "legacy_slot": { "type": "string", "enum": ["A", "B"] },
+    "docker_runtime": {
+      "type": "object",
+      "properties": {
+        "requested": { "type": "boolean" },
+        "mode": { "type": "string" },
+        "pull_requested": { "type": "boolean" },
+        "pull_policy": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "resolved_targets": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["total", "success", "failed"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "success": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "per_vehicle": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["car_id", "result"],
+        "properties": {
+          "car_id": { "type": "string" },
+          "result": { "type": "string", "enum": ["success", "failed"] },
+          "reason": { "type": "string" },
+          "deploy_id": { "type": "string" },
+          "state_updated": { "type": "boolean" },
+          "config_synced": { "type": "boolean" },
+          "fleet_deploy_command": { "type": "string" },
+          "docker_runtime_result": { "type": "string" },
+          "docker_runtime_mode": { "type": "string" },
+          "docker_runtime_action": { "type": "string" },
+          "docker_runtime_image": { "type": "string" },
+          "docker_runtime_container": { "type": "string" },
+          "state_file": { "type": "string" },
+          "config_file": { "type": "string" },
+          "history_path": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failures": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

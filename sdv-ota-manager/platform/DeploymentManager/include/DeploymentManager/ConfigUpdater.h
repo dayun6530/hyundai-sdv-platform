@@ -26,7 +26,7 @@ public:
     /// Applies \p selection to \p configPath (reads whole file, writes atomically via temp file).
     static bool applyToConfig(const std::string& configPath, const Selection& s);
 
-    /// Rewrites only managed `feature` lines from per-domain active slots in \p state (independent ADAS / Navigation / Energy).
+    /// Rewrites managed `feature` lines and the fleet deploy mirror block from \p state.
     /// On success, replaces \p configPath via temp file and writes a \p configPath + ".bak" copy of the previous file.
     /// On failure, \p error is set (open/validation/backup/rename).
     static bool applyStateToCarConfig(const std::string& configPath, const StateManager::VehicleState& state,

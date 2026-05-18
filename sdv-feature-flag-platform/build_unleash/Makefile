@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-feature-flag-platform/build_unleash
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform/build_unleash/CMakeFiles /mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform/build_unleash//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-feature-flag-platform/build_unleash/CMakeFiles /mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-feature-flag-platform/build_unleash//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/hyundai/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -362,6 +362,19 @@ EventBus: cmake_check_build_system
 EventBus/fast:
 	$(MAKE) $(MAKESILENT) -f src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/build.make src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/build
 .PHONY : EventBus/fast
+
+#=============================================================================
+# Target rules for targets named FleetVersionResolveLib
+
+# Build rule for target.
+FleetVersionResolveLib: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 FleetVersionResolveLib
+.PHONY : FleetVersionResolveLib
+
+# fast build rule for target.
+FleetVersionResolveLib/fast:
+	$(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build
+.PHONY : FleetVersionResolveLib/fast
 
 #=============================================================================
 # Target rules for targets named LifeCycleManagerLib
@@ -1107,6 +1120,7 @@ help:
 	@echo "... EventBus"
 	@echo "... EventBusHost"
 	@echo "... FeatureEvaluator"
+	@echo "... FleetVersionResolveLib"
 	@echo "... LifeCycleManagerLib"
 	@echo "... MqttVehicleAgentHost"
 	@echo "... NavigationFeature"

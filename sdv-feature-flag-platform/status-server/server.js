@@ -5,10 +5,20 @@ const path = require("path");
 const { execFile } = require("child_process");
 const http = require("http");
 const https = require("https");
+const {
+  SUPPORTED_COMMAND_PREVIEW_ACTIONS,
+  previewDeploymentCommand,
+  validateCommandPreviewBody,
+} = require("./services/commandPreviewService");
+const { registerReadOnlyDeployRoutes } = require("./services/readOnlyDeployApi");
+const { registerCampaignValidateRoutes } = require("./services/campaignValidateApi");
+const { registerCampaignRunRoutes } = require("./services/campaignRunApi");
+const { registerVehicleSafetyRoutes } = require("./services/vehicleSafetyApi");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
 const REPO_ROOT = process.env.SDV_ROOT || path.resolve(__dirname, "..");
+const PROJECT_ROOT = path.resolve(REPO_ROOT, "..");
 const DOMAINS = ["ADAS", "NAV", "ENERGY"];
 /** `sdv-ota-manager` (sibling of `sdv-feature-flag-platform`) — Docker Primary/Shadow demo */
 const OTA_MANAGER_ROOT = path.resolve(REPO_ROOT, "..", "sdv-ota-manager");
@@ -1079,8 +1089,22 @@ app.post("/api/unleash/deploy/ratio-versions", async (req, res) => {
   });
 });
 
-function toWslPath(winPath) {
-  const normalized = path.resolve(winPath);
+function toWslPath(inputPath) {
+  const raw = String(inputPath || "").trim();
+  if (!raw) {
+    throw new Error("Unsupported path for WSL conversion: empty path");
+  }
+  if (raw.startsWith("/")) {
+    return raw.replace(/\\/g, "/");
+  }
+  if (/^[A-Za-z]:[\\/]/.test(raw)) {
+    const normalized = path.resolve(raw);
+    const driveLetter = normalized[0].toLowerCase();
+    const rest = normalized.slice(2).replace(/\\/g, "/");
+    return `/mnt/${driveLetter}${rest}`;
+  }
+
+  const normalized = path.resolve(raw);
   const parsed = path.parse(normalized);
   const drive = (parsed.root || "").slice(0, 2);
   if (!/^[A-Za-z]:$/.test(drive)) {
@@ -1091,8 +1115,18 @@ function toWslPath(winPath) {
   return `/mnt/${driveLetter}${rest}`;
 }
 
+function isWslRuntime() {
+  return (
+    process.platform === "linux" &&
+    (Boolean(process.env.WSL_DISTRO_NAME) ||
+      fs.existsSync("/proc/sys/fs/binfmt_misc/WSLInterop") ||
+      fs.existsSync("/run/WSL"))
+  );
+}
+
 function execWslBash(args, options = {}) {
   const { wslDistro, ...execOpts } = options;
+  const runDirectBash = process.platform !== "win32" || isWslRuntime();
   const envDistro = process.env.SDV_WSL_DISTRO && String(process.env.SDV_WSL_DISTRO).trim();
   const distro =
     wslDistro && String(wslDistro).trim().length > 0
@@ -1102,9 +1136,9 @@ function execWslBash(args, options = {}) {
         : "Ubuntu";
   return new Promise((resolve, reject) => {
     execFile(
-      "wsl.exe",
-      ["-d", distro, "--", "bash", "-lc", args],
-      { windowsHide: true, maxBuffer: 5 * 1024 * 1024, ...execOpts },
+      runDirectBash ? "bash" : "wsl.exe",
+      runDirectBash ? ["-lc", args] : ["-d", distro, "--", "bash", "-lc", args],
+      { ...(runDirectBash ? {} : { windowsHide: true }), maxBuffer: 5 * 1024 * 1024, ...execOpts },
       (err, stdout, stderr) => {
         // Non-zero exit codes are expected for "partial failures" (fleet deploy),
         // so we always resolve with the captured output.
@@ -2402,9 +2436,44 @@ function notifyCarVersionChange(carId, fleetFeatureLabel, opts) {
   }
 }
 
+app.post("/api/fleet/command-preview", async (req, res) => {
+  const validation = validateCommandPreviewBody(req.body || {});
+  if (!validation.ok) {
+    res.status(400).json({
+      success: false,
+      error: validation.error,
+      supported_actions: SUPPORTED_COMMAND_PREVIEW_ACTIONS,
+    });
+    return;
+  }
+
+  try {
+    const result = await previewDeploymentCommand({
+      body: req.body || {},
+      projectRoot: PROJECT_ROOT,
+    });
+    res.json({
+      success: true,
+      preview: result.preview,
+      adapter: result.adapter,
+      stderr: result.stderr || undefined,
+      note: "Dry-run preview only. No DeploymentMgr, ota_vehicle.sh, Signal_I_F API, Docker runtime, or state JSON is modified.",
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: err.message || String(err),
+      supported_actions: err.supported_actions || SUPPORTED_COMMAND_PREVIEW_ACTIONS,
+      stdout: err.stdout,
+      stderr: err.stderr,
+      preview: err.preview,
+    });
+  }
+});
+
 app.post("/api/fleet/action", async (req, res) => {
   const action = String(req.body?.action || "").trim();
-  const car_id = String(req.body?.car_id || "").trim();
+  const car_id = String(req.body?.car_id || req.body?.vehicle_id || "").trim();
   const feature = String(req.body?.feature || "").trim();
 
   if (!CAR_ID_RE.test(car_id)) {
@@ -2430,6 +2499,8 @@ app.post("/api/fleet/action", async (req, res) => {
     const sync_config = req.body?.sync_config === true;
     cmd += `fleet-rollback vehicle ${car_id} ${feature}`;
     if (sync_config) cmd += " --sync-config";
+  } else if (action === "promote-shadow") {
+    cmd += `fleet-promote-shadow vehicle ${car_id} ${feature}`;
   } else if (action === "flag") {
     const flag = String(req.body?.flag || "").trim().toUpperCase();
     if (flag !== "ON" && flag !== "OFF") {
@@ -2441,12 +2512,12 @@ app.post("/api/fleet/action", async (req, res) => {
     if (sync_config) cmd += " --sync-config";
   } else if (action === "kill") {
     const reason = String(req.body?.reason || "").trim();
-    if (!reason || !/^[a-zA-Z0-9_-]+$/.test(reason)) {
-      res.status(400).json({ ok: false, error: "reason is required (single token: [a-zA-Z0-9_-]+)" });
+    if (!reason) {
+      res.status(400).json({ ok: false, error: "reason is required" });
       return;
     }
     const sync_config = req.body?.sync_config === true;
-    cmd += `fleet-kill vehicle ${car_id} ${feature} ${reason}`;
+    cmd += `fleet-kill vehicle ${car_id} ${feature} ${bashSingleQuote(reason)}`;
     if (sync_config) cmd += " --sync-config";
   } else if (action === "shadow") {
     const shadow_action = String(req.body?.shadow_action || "").trim().toUpperCase();
@@ -2463,7 +2534,7 @@ app.post("/api/fleet/action", async (req, res) => {
     }
     cmd += `fleet-shadow vehicle ${car_id} ${feature} ${shadow_action}`;
   } else {
-    res.status(400).json({ ok: false, error: "action must be rollback, flag, kill, or shadow" });
+    res.status(400).json({ ok: false, error: "action must be rollback, promote-shadow, flag, kill, or shadow" });
     return;
   }
 
@@ -2475,6 +2546,8 @@ app.post("/api/fleet/action", async (req, res) => {
       let msg = "";
       if (action === "rollback") {
         msg = `Fleet rollback completed for ${feature}.`;
+      } else if (action === "promote-shadow") {
+        msg = `Fleet shadow candidate promoted to Primary for ${feature}.`;
       } else if (action === "flag") {
         const flag = String(req.body?.flag || "").trim().toUpperCase();
         msg = `Fleet feature flag set to ${flag} for ${feature}.`;
@@ -3194,6 +3267,32 @@ app.post("/api/fleet/docker-feature-versions/apply", async (req, res) => {
     res.status(500).json({ ok: false, error: err.message || String(err) });
   }
 });
+
+registerReadOnlyDeployRoutes(app, {
+  DEPLOY_ROOT,
+  PLATFORM_DEPLOY_ROOT,
+  OTA_VEHICLE_RUNTIME_DIR,
+});
+
+registerCampaignValidateRoutes(app, {
+  DEPLOY_ROOT,
+  PLATFORM_DEPLOY_ROOT,
+  execWslBash,
+  detectDeploymentMgrPath,
+  toWslPath,
+  bashSingleQuote,
+});
+
+registerCampaignRunRoutes(app, {
+  DEPLOY_ROOT,
+  PLATFORM_DEPLOY_ROOT,
+  execWslBash,
+  detectDeploymentMgrPath,
+  toWslPath,
+  bashSingleQuote,
+});
+
+registerVehicleSafetyRoutes(app, { DEPLOY_ROOT });
 
 app.listen(PORT, () => {
   console.log(`[STATUS] server started on http://localhost:${PORT}`);

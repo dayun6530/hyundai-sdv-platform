@@ -209,16 +209,21 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
         </label>
       </div>
 
-      <DockerVehicleRuntimePanel
-        vehicles={vehicles}
-        embed
-        integrationMode
-        integrationCompact
-        queueMutatingDockerOps
-        integrationFeature={feature}
-        integrationVersion={version}
-        integrationCarId={deployCarId}
-      />
+      <details className="campaign-advanced-details" style={{ marginTop: 12 }}>
+        <summary className="tiny subtle" style={{ cursor: "pointer", padding: "8px 0" }}>
+          Advanced · Docker debug (ota_vehicle.sh direct) — use Campaign Management for demo
+        </summary>
+        <DockerVehicleRuntimePanel
+          vehicles={vehicles}
+          embed
+          integrationMode
+          integrationCompact
+          queueMutatingDockerOps
+          integrationFeature={feature}
+          integrationVersion={version}
+          integrationCarId={deployCarId}
+        />
+      </details>
 
       <div className="pkg-form-grid">
         <label className="pkg-field pkg-field-wide">

@@ -29,6 +29,7 @@ import PackageRegistryTable from "./fleet/PackageRegistryTable.jsx";
 import PackageUploadPanel from "./fleet/PackageUploadPanel.jsx";
 import FleetDashboard from "./fleet/FleetDashboard.jsx";
 import FleetDeployPanel from "./fleet/FleetDeployPanel.jsx";
+import CampaignManagementPanel from "./fleet/CampaignManagementPanel.jsx";
 import VehicleDetailPanel from "./fleet/VehicleDetailPanel.jsx";
 
 function formatDate(value) {
@@ -72,7 +73,10 @@ function Header({ warningCount, connected, lastUpdated, updating }) {
     <header className="page-header">
       <div>
         <h1>SDV Deployment / Release Dashboard</h1>
-        <p>Fleet-focused dashboard: car_1–car_10 state, version map, packages, deploy, and command history.</p>
+        <p>
+          Campaign-first OTA demo (Validate → Candidate → Promote). Fleet overview and legacy tools are under Advanced
+          sections below.
+        </p>
         <div className="header-meta">
           <span>Last refreshed: <span className="mono">{formatDate(lastUpdated)}</span></span>
           {updating ? <span className="updating-text">updating...</span> : null}
@@ -639,26 +643,60 @@ export default function App() {
       {fleetError ? <section className="error-banner">Fleet API error: {fleetError}</section> : null}
       <WarningBanner warnings={fleetApiWarnings} />
 
-      <FleetDashboard
-        vehicles={fleetVehicles}
-        stateByCar={stateByCar}
-        loading={fleetBootLoading}
-        onToggleApproval={toggleApproval}
-        selectedCarId={selectedCarId}
-        onSelectCarId={setSelectedCarId}
-      />
-
-      <section className="card" style={{ marginTop: 12 }}>
+      <section className="card fleet-overview-section fleet-overview-section-first">
         <div className="card-header">
           <div>
-            <h2>SDV Version Rollout Controller</h2>
+            <h2>Fleet overview</h2>
             <p className="tiny subtle">
-              원하는 기능을 고른 뒤, KR/US/EU별로 배포할 버전을 입력하고 <strong>배포</strong>를 누르면 해당 국가 차량들만 각각 promote 됩니다.
+              Select a vehicle — detail appears directly below. Campaign demo uses the campaign target (e.g. car_1).
+            </p>
+          </div>
+        </div>
+        <div style={{ padding: "0 16px 8px" }}>
+          <FleetDashboard
+            vehicles={fleetVehicles}
+            stateByCar={stateByCar}
+            loading={fleetBootLoading}
+            onToggleApproval={toggleApproval}
+            selectedCarId={selectedCarId}
+            onSelectCarId={setSelectedCarId}
+          />
+        </div>
+        {selectedCarId ? (
+          <div className="fleet-selected-detail-wrap" style={{ padding: "0 16px 16px" }}>
+            <VehicleDetailPanel
+              carId={selectedCarId}
+              vehicles={fleetVehicles}
+              stateByCar={stateByCar}
+              historyRecords={fleetHistoryRecords}
+              versionMap={versionMap}
+              onFleetRefresh={refreshAllFleetAndStatus}
+              onClear={() => setSelectedCarId("")}
+            />
+          </div>
+        ) : (
+          <p className="tiny subtle" style={{ padding: "0 16px 16px" }}>
+            Click a vehicle row to open detail here.
+          </p>
+        )}
+      </section>
+
+      <CampaignManagementPanel />
+
+      <details className="card legacy-advanced-section" style={{ marginTop: 12 }}>
+        <summary className="card-header legacy-advanced-summary">
+          <div>
+            <h2>SDV Version Rollout Controller</h2>
+            <span className="status-badge status-gray" style={{ marginTop: 6 }}>
+              Advanced · Unleash / feature flags
+            </span>
+            <p className="tiny subtle">
+              Unleash rollout (not campaign demo). 원하는 기능을 고른 뒤, KR/US/EU별로 배포할 버전을 입력하고 <strong>배포</strong>를 누르면 해당 국가 차량들만 각각 promote 됩니다.
               빈칸은 이번 배포에서 제외됩니다. 마지막에 “전체 배포”로 전 차량을 특정 버전으로 맞출 수 있습니다.
             </p>
           </div>
           <span className="subtle">status-server → Unleash Admin API</span>
-        </div>
+        </summary>
 
         {unleashError ? <div className="error-banner">Unleash control error: {unleashError}</div> : null}
 
@@ -988,17 +1026,7 @@ export default function App() {
             <div className="json-box mono">{JSON.stringify(unleashResult, null, 2)}</div>
           </div>
         ) : null}
-      </section>
-
-      <VehicleDetailPanel
-        carId={selectedCarId}
-        vehicles={fleetVehicles}
-        stateByCar={stateByCar}
-        historyRecords={fleetHistoryRecords}
-        versionMap={versionMap}
-        onFleetRefresh={refreshAllFleetAndStatus}
-        onClear={() => setSelectedCarId("")}
-      />
+      </details>
 
       <PackageUploadPanel onRegistered={reloadFleetData} vehicles={fleetVehicles} />
 
@@ -1011,7 +1039,17 @@ export default function App() {
         />
       </section>
 
-      <FleetHistoryJsonlPanel records={fleetHistoryRecords} meta={fleetHistoryMeta} />
+      <details className="card legacy-advanced-section" style={{ marginTop: 12 }}>
+        <summary className="card-header legacy-advanced-summary">
+          <h2 style={{ display: "inline" }}>Fleet command history (raw JSONL)</h2>
+          <span className="status-badge status-gray" style={{ marginLeft: 10 }}>
+            Advanced · duplicate of Campaign Logs → Fleet History
+          </span>
+        </summary>
+        <div style={{ padding: "0 8px 8px" }}>
+          <FleetHistoryJsonlPanel records={fleetHistoryRecords} meta={fleetHistoryMeta} />
+        </div>
+      </details>
 
       <FleetDataDebugDetails
         vehicles={fleetVehicles}
@@ -1021,7 +1059,20 @@ export default function App() {
         canaryIds={canaryVehicleIds}
       />
 
-      <section className="fleet-grid">
+      <section className="fleet-grid legacy-advanced-section">
+        <details className="card" style={{ gridColumn: "1 / -1", marginBottom: 0 }}>
+          <summary className="card-header" style={{ cursor: "pointer", listStyle: "none" }}>
+            <div>
+              <h2 style={{ display: "inline" }}>Legacy fleet-deploy</h2>
+              <span className="status-badge status-gray" style={{ marginLeft: 10 }}>
+                Advanced · direct DeploymentMgr
+              </span>
+              <p className="tiny subtle" style={{ marginTop: 6 }}>
+                Prefer Deployment Campaigns above for ADAS v0.5 demo. Expand only for low-level fleet-deploy tests.
+              </p>
+            </div>
+          </summary>
+          <div style={{ padding: "0 16px 16px" }}>
         <FleetDeployPanel
           vehicles={fleetVehicles}
           versionMap={versionMap}
@@ -1031,6 +1082,8 @@ export default function App() {
           deployError={fleetDeployError}
         />
         <FleetSummary summary={fleetSummary} rawStdout={fleetDeployStdout} rawStderr={fleetDeployStderr} />
+          </div>
+        </details>
       </section>
     </main>
   );

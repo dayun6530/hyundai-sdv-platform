@@ -166,6 +166,14 @@ bool parseSlotObject(JsonLite& p, VersionManager::SlotData& out, std::string& er
         } else if (key == "binary") {
             out.binary = std::move(val);
             haveBinary = true;
+        } else if (key == "package_id") {
+            out.package_id = std::move(val);
+        } else if (key == "package_path") {
+            out.package_path = std::move(val);
+        } else if (key == "docker_image") {
+            out.docker_image = std::move(val);
+        } else if (key == "artifact_type") {
+            out.artifact_type = std::move(val);
         } else {
             // ignore unknown string fields
         }
@@ -377,6 +385,10 @@ std::optional<VersionManager::VersionInfo> VersionManager::getInfo(const std::st
     info.version = sd->version;
     info.role = sd->role;
     info.binary = sd->binary;
+    info.package_id = sd->package_id;
+    info.package_path = sd->package_path;
+    info.docker_image = sd->docker_image;
+    info.artifact_type = sd->artifact_type;
     return info;
 }
 

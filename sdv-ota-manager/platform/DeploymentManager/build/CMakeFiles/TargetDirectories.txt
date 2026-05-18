@@ -1,0 +1,3 @@
+/mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/DeploymentMgr.dir
+/mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/USER/Desktop/feature-flag-platform2/sdv-ota-manager/platform/DeploymentManager/build/CMakeFiles/rebuild_cache.dir

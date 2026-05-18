@@ -19,9 +19,9 @@ mkdir -p "$STATE_DIR"
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  ota_vehicle.sh bootstrap   --car <car_N> --domain <DOMAIN> --version <x.y>
-  ota_vehicle.sh deploy-shadow --car <car_N> --domain <DOMAIN> --version <x.y>
-  ota_vehicle.sh promote     --car <car_N> --domain <DOMAIN> --version <x.y> [--sync-shadow]
+  ota_vehicle.sh bootstrap   --car <car_N> --domain <DOMAIN> --version <x.y> [--image <ref>] [--pull missing|always]
+  ota_vehicle.sh deploy-shadow --car <car_N> --domain <DOMAIN> --version <x.y> [--image <ref>] [--pull missing|always]
+  ota_vehicle.sh promote     --car <car_N> --domain <DOMAIN> --version <x.y> [--sync-shadow] [--image <ref>] [--pull missing|always]
   ota_vehicle.sh status      --car <car_N> --domain <DOMAIN>
   ota_vehicle.sh logs-primary --car <car_N> --domain <DOMAIN>
   ota_vehicle.sh logs-shadow  --car <car_N> --domain <DOMAIN>
@@ -36,6 +36,9 @@ Notes:
   - 컨테이너 이름: <car>_agent_<domain> (Primary), <car>_agent_<domain>_shadow (Shadow)
   - 상태 JSON: deploy/vehicle_runtime/<car>.json
   - 배포 전 이미지 존재 확인, 기동 후 Running 검사; 실패 시 이전 컨테이너 유지 또는 롤백.
+  - Optional --image: explicit docker ref (local or remote registry host); overrides domain/version rule.
+  - Examples: localhost:5000/sdv/adas-feature:v0.5, docker.io/<user>/adas-feature:v0.5, ghcr.io/<owner>/adas-feature:v0.5
+  - Optional --pull missing|always: pull before deploy when local image is missing (missing) or always (always).
 USAGE
   exit 1
 }
@@ -51,12 +54,25 @@ CAR=""
 DOMAIN=""
 VERSION=""
 SYNC_SHADOW="0"
+IMAGE=""
+PULL_POLICY=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --car) CAR="${2:-}"; shift 2 ;;
     --domain) DOMAIN="${2:-}"; shift 2 ;;
     --version) VERSION="${2:-}"; shift 2 ;;
+    --image) IMAGE="${2:-}"; shift 2 ;;
+    --pull)
+      PULL_POLICY="${2:-}"
+      if [[ -z "$PULL_POLICY" ]]; then
+        PULL_POLICY="missing"
+        shift 1
+      else
+        shift 2
+      fi
+      ;;
+    --pull=*) PULL_POLICY="${1#--pull=}"; shift 1 ;;
     --sync-shadow) SYNC_SHADOW="1"; shift 1 ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1" >&2; usage ;;
@@ -73,9 +89,17 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 if ! docker info >/dev/null 2>&1; then
-  echo "[DEPLOY-ABORT] Docker 데몬에 연결할 수 없습니다. WSL에서 'docker ps'가 되는지 확인하세요 (Docker Desktop → Settings → Resources → WSL integration)." >&2
+  echo "[DEPLOY-ABORT] Docker daemon not running. Open Docker Desktop and check docker ps in WSL." >&2
   exit 1
 fi
+
+case "${PULL_POLICY,,}" in
+  ""|missing|always) ;;
+  *)
+    echo "[DEPLOY-ABORT] Invalid --pull policy: $PULL_POLICY (expected missing or always)" >&2
+    exit 1
+    ;;
+esac
 
 DOMAIN_LOWER="$(echo "${DOMAIN:-}" | tr '[:upper:]' '[:lower:]')"
 case "$DOMAIN_LOWER" in
@@ -99,12 +123,60 @@ image_for_version() {
   echo "sdv/${DOMAIN_LOWER}-feature:v${ver}"
 }
 
-verify_target_image_or_exit() {
+resolve_target_image() {
+  if [[ -n "$IMAGE" ]]; then
+    echo "$IMAGE"
+    return 0
+  fi
+  if [[ -z "$VERSION" ]]; then
+    echo ""
+    return 0
+  fi
+  image_for_version "$VERSION"
+}
+
+report_docker_pull_failure() {
   local img="$1"
-  if ! docker image inspect "$img" >/dev/null 2>&1; then
-    echo "[DEPLOY-ABORT] Docker 이미지가 없습니다: $img (build_standalone_demo.sh 등으로 빌드 후 재시도)" >&2
+  echo "[DEPLOY-ABORT] Docker pull failed for $img" >&2
+  echo "[DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first." >&2
+}
+
+ensure_target_image_or_exit() {
+  local img="$1"
+  if [[ -z "$img" ]]; then
+    echo "[DEPLOY-ABORT] missing docker_image in manifest/state" >&2
     exit 1
   fi
+
+  local pull="${PULL_POLICY,,}"
+
+  if [[ "$pull" == "always" ]]; then
+    echo "[PULL] policy=always image=$img"
+    if ! docker pull "$img"; then
+      report_docker_pull_failure "$img"
+      exit 1
+    fi
+  fi
+
+  if docker image inspect "$img" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ "$pull" == "missing" ]]; then
+    echo "[PULL] policy=missing image=$img (local image missing, pulling)"
+    if ! docker pull "$img"; then
+      report_docker_pull_failure "$img"
+      exit 1
+    fi
+    if docker image inspect "$img" >/dev/null 2>&1; then
+      return 0
+    fi
+    echo "[DEPLOY-ABORT] Docker pull completed but image not found: $img" >&2
+    exit 1
+  fi
+
+  echo "[DEPLOY-ABORT] Docker image not found locally: $img (build locally or use --pull missing)" >&2
+  exit 1
 }
 
 read_domain_versions_from_state() {
@@ -243,18 +315,36 @@ for dom, fk in m.items():
     pv_raw = str(cur.get("primary_version") or "").strip()
     sv_raw = str(cur.get("shadow_version") or "").strip()
     pv = vfmt(pv_raw) if pv_raw else ""
+    sv = vfmt(sv_raw) if sv_raw else ""
+    shadow_active = bool(sv) and norm_token(pv_raw) != norm_token(sv_raw)
     if pv:
         blk["active_version"] = pv
-        repo = repo_for(dom)
-        blk["primary_image"] = f"{repo}:{pv}"
+        blk["primary_version"] = pv
+        if not shadow_active:
+            repo = repo_for(dom)
+            computed = f"{repo}:{pv}"
+            existing = str(blk.get("primary_image") or "").strip()
+            if not existing:
+                blk["primary_image"] = computed
+            elif "/" in existing or existing.startswith("localhost:"):
+                blk["primary_image"] = (existing.rsplit(":", 1)[0] + ":" + pv) if ":" in existing else computed
+            else:
+                blk["primary_image"] = computed
     if sv_raw == "":
         blk["shadow_version"] = ""
+        blk["shadow_image"] = ""
     else:
-        sv = vfmt(sv_raw)
         if sv:
             blk["shadow_version"] = sv
             repo = repo_for(dom)
-            blk["shadow_image"] = f"{repo}:{sv}"
+            computed = f"{repo}:{sv}"
+            existing = str(blk.get("shadow_image") or "").strip()
+            if not existing:
+                blk["shadow_image"] = computed
+            elif "/" in existing or existing.startswith("localhost:"):
+                blk["shadow_image"] = (existing.rsplit(":", 1)[0] + ":" + sv) if ":" in existing else computed
+            else:
+                blk["shadow_image"] = computed
     se = cur.get("shadow_enabled")
     if isinstance(se, bool):
         blk["shadow_enabled"] = se
@@ -383,8 +473,8 @@ case "$CMD" in
       echo "bootstrap: --domain, --version 필요" >&2
       exit 1
     fi
-    IMG="$(image_for_version "$VERSION")"
-    verify_target_image_or_exit "$IMG"
+    IMG="$(resolve_target_image)"
+    ensure_target_image_or_exit "$IMG"
     echo "== [bootstrap] $CAR  Primary+Shadow → $IMG ($VERSION) (검증 후 전환) =="
     NEXT_P="${PRIMARY_NAME}_deploynext"
     NEXT_S="${SHADOW_NAME}_deploynext"
@@ -427,8 +517,8 @@ case "$CMD" in
       echo "deploy-shadow: --domain, --version 필요" >&2
       exit 1
     fi
-    IMG="$(image_for_version "$VERSION")"
-    verify_target_image_or_exit "$IMG"
+    IMG="$(resolve_target_image)"
+    ensure_target_image_or_exit "$IMG"
     echo "== [deploy-shadow] $CAR  Shadow 만 → $IMG ($VERSION) (검증 후 전환) =="
     if ! docker ps -a --format '{{.Names}}' | grep -qx "$PRIMARY_NAME"; then
       echo "Primary 컨테이너가 없습니다. 먼저 bootstrap 하세요: $PRIMARY_NAME" >&2
@@ -463,8 +553,8 @@ case "$CMD" in
       exit 1
     fi
     read_domain_versions_from_state
-    IMG="$(image_for_version "$VERSION")"
-    verify_target_image_or_exit "$IMG"
+    IMG="$(resolve_target_image)"
+    ensure_target_image_or_exit "$IMG"
     echo "== [promote] $CAR  Primary → $IMG ($VERSION) (검증 후 전환) =="
     NEXT_P="${PRIMARY_NAME}_deploynext"
     docker rm -f "$NEXT_P" >/dev/null 2>&1 || true

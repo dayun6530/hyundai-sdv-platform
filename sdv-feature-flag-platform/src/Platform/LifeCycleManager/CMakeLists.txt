@@ -1,3 +1,11 @@
+# Shared fleet version helpers (Feature.cpp + *Shadow executables that compile Feature.cpp separately).
+add_library(FleetVersionResolveLib STATIC src/FleetVersionResolve.cpp)
+
+target_include_directories(FleetVersionResolveLib
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 add_library(LifeCycleManagerLib
     src/Feature.cpp
     src/Flag.cpp
@@ -12,6 +20,7 @@ target_include_directories(LifeCycleManagerLib
 target_link_libraries(LifeCycleManagerLib
     PUBLIC
         EventBus
+        FleetVersionResolveLib
 )
 
 find_package(nlohmann_json 3.2.0 QUIET CONFIG)

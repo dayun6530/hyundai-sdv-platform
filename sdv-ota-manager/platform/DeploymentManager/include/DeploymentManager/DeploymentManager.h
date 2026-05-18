@@ -33,6 +33,15 @@ namespace sdv::platform::deployment {
 /// - Staging artifacts are intentionally retained (pre-validation / approval expansion).
 class DeploymentManager {
 public:
+    /// Optional Docker runtime integration via \c scripts/ota_vehicle.sh (fleet-deploy trailing flag).
+    struct FleetDockerRuntimeOptions {
+        bool requested{false};
+        /// \c candidate (default) runs deploy-shadow; \c promote runs ota_vehicle.sh promote.
+        std::string mode{"candidate"};
+        /// \c missing | \c always | empty (no pull; local image inspect only).
+        std::string pull_policy;
+    };
+
     struct DeployResult {
         std::string car_id;
         std::string feature;
@@ -40,6 +49,18 @@ public:
         std::string target_version;
         bool success{false};
         std::string reason;  // empty if success
+        bool docker_runtime_requested{false};
+        std::string docker_runtime_mode;
+        std::string docker_runtime_action;
+        std::string docker_runtime_result;  // success | failed | skipped | empty
+        std::string docker_runtime_reason;
+        std::string docker_runtime_container;
+        std::string docker_runtime_image;
+        std::string docker_runtime_pull_policy;
+        bool docker_pull_requested{false};
+        /// Before fleet-deploy to candidate slot (legacy B): primary selection preserved for Docker reconcile.
+        std::string staged_primary_slot;
+        std::string staged_primary_version;
         /// True when fleet state JSON was updated by a successful deploy for this vehicle.
         bool state_updated{false};
         /// True when the caller requested \c --sync-config (per-target row still shows request intent).
@@ -77,6 +98,10 @@ public:
         std::vector<DeployResult> results;
         /// Set when \c fleet-deploy is invoked with \c --sync-config.
         bool sync_config_requested{false};
+        bool docker_runtime_requested{false};
+        std::string docker_runtime_mode;
+        bool docker_pull_requested{false};
+        std::string docker_pull_policy;
     };
 
     /// \p workingDirectory Repository root (contains deploy/, config/). Usually current working directory.
@@ -131,15 +156,17 @@ public:
         const std::string& target_slot, const std::string& target_version);
 
     DeploySummary deployToGroupWithSummary(const std::string& group, const std::string& feature,
-        const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false);
+        const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false,
+        const FleetDockerRuntimeOptions* docker_runtime = nullptr);
     DeploySummary deployToRegionWithSummary(const std::string& region, const std::string& feature,
-        const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false);
+        const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false,
+        const FleetDockerRuntimeOptions* docker_runtime = nullptr);
     DeploySummary deployToGroupAndRegionWithSummary(const std::string& group, const std::string& region,
         const std::string& feature, const std::string& target_slot, const std::string& target_version,
-        bool sync_config_after_success = false);
+        bool sync_config_after_success = false, const FleetDockerRuntimeOptions* docker_runtime = nullptr);
     DeploySummary deployToVehicleWithSummary(const std::string& car_id, const std::string& feature,
         const std::string& target_slot, const std::string& target_version, bool sync_config_after_success = false,
-        bool defer_native_until_restart = false);
+        bool defer_native_until_restart = false, const FleetDockerRuntimeOptions* docker_runtime = nullptr);
 
     /// For \p car_id: for each feature with non-empty pending version, \c deployExecutable from \c version_map,
     /// then promote pending → active in \c deploy/state. No-op when nothing pending. CWD must be platform root.
@@ -295,6 +322,9 @@ public:
 
 private:
     void applyPostDeployConfigSync(DeployResult& r, bool sync_requested);
+    void resyncCarConfigAfterDockerRuntime(DeployResult& r);
+    void applyPostDeployDockerRuntime(DeployResult& r, bool defer_native_deploy,
+        const FleetDockerRuntimeOptions& options);
 
     struct ValidationInfo {
         std::string result;  // "success" | "failed"

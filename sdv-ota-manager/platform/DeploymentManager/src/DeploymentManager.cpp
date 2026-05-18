@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -12,6 +13,7 @@
 #include <array>
 #include <regex>
 #include <sstream>
+#include <sys/wait.h>
 #include <unordered_set>
 #include <vector>
 
@@ -234,6 +236,343 @@ std::string dockerRepoForFleetFeatureLocal(const std::string& feature) {
     return "sdv/" + (f.empty() ? std::string("feature") : f) + "-feature";
 }
 
+struct ManifestResolveHints {
+    std::string package_id;
+    std::string package_path;
+    std::string docker_image;
+    std::string artifact_type;
+};
+
+struct ResolvedPackageManifest {
+    std::string abs_path;
+    std::string rel_path;
+    std::string artifact_type;
+    std::string docker_image;
+    std::string image_digest;
+    std::string checksum_file;
+    std::string package_id;
+};
+
+struct RegistryPackagePaths {
+    std::string package_path;
+    std::string manifest_path;
+};
+
+std::string resolvePlatformPath(const std::string& platformRoot, const std::string& path) {
+    if (path.empty()) {
+        return {};
+    }
+    std::filesystem::path p(path);
+    if (p.is_absolute()) {
+        return p.lexically_normal().generic_string();
+    }
+    return (std::filesystem::path(platformRoot) / p).lexically_normal().generic_string();
+}
+
+void setManifestRelPath(ResolvedPackageManifest& out, const std::string& platformRoot, const std::string& absPath) {
+    out.abs_path = absPath;
+    std::error_code rec;
+    const auto rel =
+        std::filesystem::relative(std::filesystem::path(absPath), std::filesystem::path(platformRoot), rec);
+    if (!rec) {
+        out.rel_path = rel.generic_string();
+    } else {
+        out.rel_path = absPath;
+    }
+}
+
+std::optional<ResolvedPackageManifest> tryManifestAtPlatformPath(const std::string& platformRoot,
+    const std::string& pathOrDir) {
+    if (pathOrDir.empty()) {
+        return std::nullopt;
+    }
+    const std::string abs = resolvePlatformPath(platformRoot, pathOrDir);
+    std::error_code ec;
+    std::filesystem::path candidate(abs);
+    std::filesystem::path manifestPath;
+    if (candidate.filename() == "manifest.json") {
+        if (std::filesystem::exists(candidate, ec) && !ec) {
+            manifestPath = candidate;
+        }
+    } else if (std::filesystem::is_directory(candidate, ec) && !ec) {
+        const auto nested = candidate / "manifest.json";
+        if (std::filesystem::exists(nested, ec) && !ec) {
+            manifestPath = nested;
+        }
+    }
+    if (manifestPath.empty()) {
+        return std::nullopt;
+    }
+    ResolvedPackageManifest out;
+    setManifestRelPath(out, platformRoot, manifestPath.generic_string());
+    return out;
+}
+
+std::optional<RegistryPackagePaths> lookupPackageInRegistry(const std::string& registryAbs,
+    const std::string& package_id) {
+    if (package_id.empty()) {
+        return std::nullopt;
+    }
+    const std::string json = readFileTextBestEffortLocal(registryAbs);
+    if (json.empty()) {
+        return std::nullopt;
+    }
+    const std::string needle = "\"package_id\": \"" + package_id + "\"";
+    const std::size_t pos = json.find(needle);
+    if (pos == std::string::npos) {
+        return std::nullopt;
+    }
+    const std::size_t start = pos > 80 ? pos - 80 : 0;
+    const std::size_t end = std::min(json.size(), pos + 2500);
+    const std::string block = json.substr(start, end - start);
+    RegistryPackagePaths out;
+    if (const auto p = parseJsonStringFieldLooseLocal(block, "package_path")) {
+        out.package_path = *p;
+    }
+    if (const auto m = parseJsonStringFieldLooseLocal(block, "manifest_path")) {
+        out.manifest_path = *m;
+    }
+    if (out.package_path.empty() && out.manifest_path.empty()) {
+        return std::nullopt;
+    }
+    return out;
+}
+
+std::optional<ResolvedPackageManifest> resolvePackageManifestByFeatureVersion(const std::string& packagesDir,
+    const std::string& platformRoot,
+    const std::string& feature,
+    const std::string& target_version) {
+    const std::string tvRaw = trim(target_version);
+    const std::string tvNoV = stripLeadingVTokenLocal(tvRaw);
+    const std::vector<std::string> candidates = {
+        packagesDir + "/" + feature + "/" + tvRaw + "/manifest.json",
+        packagesDir + "/" + feature + "/v" + tvNoV + "/manifest.json",
+        packagesDir + "/" + feature + "/" + tvNoV + "/manifest.json",
+    };
+    for (const auto& abs : candidates) {
+        std::error_code ec;
+        if (!std::filesystem::exists(abs, ec) || ec) {
+            continue;
+        }
+        ResolvedPackageManifest out;
+        setManifestRelPath(out, platformRoot, abs);
+        return out;
+    }
+    return std::nullopt;
+}
+
+std::optional<ResolvedPackageManifest> resolvePackageManifest(const std::string& packagesDir,
+    const std::string& platformRoot,
+    const std::string& feature,
+    const std::string& target_version,
+    const ManifestResolveHints* hints) {
+    if (hints != nullptr) {
+        if (!hints->package_path.empty()) {
+            if (const auto fromPath = tryManifestAtPlatformPath(platformRoot, hints->package_path)) {
+                return fromPath;
+            }
+        }
+        if (!hints->package_id.empty()) {
+            const std::string registryAbs = platformRoot + "/deploy/package_registry.json";
+            if (const auto reg = lookupPackageInRegistry(registryAbs, hints->package_id)) {
+                if (!reg->manifest_path.empty()) {
+                    if (const auto fromManifest = tryManifestAtPlatformPath(platformRoot, reg->manifest_path)) {
+                        return fromManifest;
+                    }
+                }
+                if (!reg->package_path.empty()) {
+                    if (const auto fromRegPath = tryManifestAtPlatformPath(platformRoot, reg->package_path)) {
+                        return fromRegPath;
+                    }
+                }
+            }
+        }
+    }
+    return resolvePackageManifestByFeatureVersion(packagesDir, platformRoot, feature, target_version);
+}
+
+void parsePackageManifestFields(const std::string& manifestJson, ResolvedPackageManifest& out) {
+    out.artifact_type =
+        parseJsonStringFieldLooseLocal(manifestJson, "artifact_type")
+            .value_or(parseJsonStringFieldLooseLocal(manifestJson, "package_type").value_or(std::string()));
+    out.docker_image = parseJsonStringFieldLooseLocal(manifestJson, "docker_image").value_or("");
+    out.image_digest = parseJsonStringFieldLooseLocal(manifestJson, "image_digest").value_or("");
+    out.checksum_file = parseJsonStringFieldLooseLocal(manifestJson, "checksum_file").value_or("");
+    out.package_id = parseJsonStringFieldLooseLocal(manifestJson, "package_id").value_or("");
+}
+
+StateManager::FeaturePackageMetadata featureMetadataFromResolved(const ResolvedPackageManifest& m,
+    const ManifestResolveHints& hints) {
+    StateManager::FeaturePackageMetadata meta;
+    meta.primary_image = !m.docker_image.empty() ? m.docker_image : hints.docker_image;
+    meta.artifact_type = !m.artifact_type.empty() ? m.artifact_type : hints.artifact_type;
+    meta.image_digest = m.image_digest;
+    meta.manifest_path = m.rel_path;
+    meta.package_id = !hints.package_id.empty() ? hints.package_id : m.package_id;
+    return meta;
+}
+
+ManifestResolveHints manifestHintsFromVersionInfo(const VersionManager::VersionInfo& info) {
+    ManifestResolveHints hints;
+    hints.package_id = info.package_id;
+    hints.package_path = info.package_path;
+    hints.docker_image = info.docker_image;
+    hints.artifact_type = info.artifact_type;
+    return hints;
+}
+
+DeploymentManager::FleetDockerRuntimeOptions fleetDockerRuntimeOrDefault(
+    const DeploymentManager::FleetDockerRuntimeOptions* opts) {
+    if (opts != nullptr) {
+        return *opts;
+    }
+    return DeploymentManager::FleetDockerRuntimeOptions{};
+}
+
+std::string bashSingleQuoteLocal(const std::string& value) {
+    std::string out = "'";
+    for (const char c : value) {
+        if (c == '\'') {
+            out += "'\\''";
+        } else {
+            out.push_back(c);
+        }
+    }
+    out += "'";
+    return out;
+}
+
+std::optional<std::string> findOtaVehicleScriptPath(const std::string& platformRoot) {
+    const std::vector<std::string> candidates = {
+        platformRoot + "/../scripts/ota_vehicle.sh",
+        platformRoot + "/../../scripts/ota_vehicle.sh",
+    };
+    for (const auto& candidate : candidates) {
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec) && !ec) {
+            return std::filesystem::path(candidate).lexically_normal().generic_string();
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<std::string> fleetFeatureToOtaVehicleDomain(const std::string& feature) {
+    if (feature == "ADAS") {
+        return std::string("ADAS");
+    }
+    if (feature == "Navigation") {
+        return std::string("Navigation");
+    }
+    if (feature == "Energy") {
+        return std::string("EvEnergy");
+    }
+    return std::nullopt;
+}
+
+std::string fleetSlotRoleLabel(const std::string& slot) {
+    if (slot == "B") {
+        return "candidate";
+    }
+    if (slot == "A") {
+        return "primary";
+    }
+    return slot;
+}
+
+std::string candidateShadowContainerForCarFeature(const std::string& car_id, const std::string& feature) {
+    const auto domain = fleetFeatureToOtaVehicleDomain(feature);
+    if (!domain) {
+        return {};
+    }
+    std::string domLower = toLower(*domain);
+    return car_id + "_agent_" + domLower + "_shadow";
+}
+
+std::string primaryContainerForCarFeature(const std::string& car_id, const std::string& feature) {
+    const auto domain = fleetFeatureToOtaVehicleDomain(feature);
+    if (!domain) {
+        return {};
+    }
+    return car_id + "_agent_" + toLower(*domain);
+}
+
+struct ShellCaptureResult {
+    int exit_code{-1};
+    std::string output;
+};
+
+ShellCaptureResult runShellCapture(const std::string& command) {
+    ShellCaptureResult out;
+    FILE* pipe = popen(command.c_str(), "r");
+    if (!pipe) {
+        out.exit_code = -1;
+        out.output = "popen failed";
+        return out;
+    }
+    std::array<char, 4096> buf{};
+    while (std::fgets(buf.data(), static_cast<int>(buf.size()), pipe) != nullptr) {
+        out.output.append(buf.data());
+    }
+    const int status = pclose(pipe);
+    if (status == -1) {
+        out.exit_code = -1;
+    } else if (WIFEXITED(status)) {
+        out.exit_code = WEXITSTATUS(status);
+    } else {
+        out.exit_code = -1;
+    }
+    return out;
+}
+
+std::string summarizeShellOutput(const std::string& output, std::size_t maxLen = 400) {
+    std::string s = trim(output);
+    for (char& c : s) {
+        if (c == '\n' || c == '\r' || c == '\t') {
+            c = ' ';
+        }
+    }
+    if (s.size() > maxLen) {
+        s.resize(maxLen);
+        s += "...";
+    }
+    return s;
+}
+
+bool dockerContainerNameExists(const std::string& containerName) {
+    if (containerName.empty()) {
+        return false;
+    }
+    const std::string cmd = std::string("docker ps -a --format '{{.Names}}' 2>/dev/null | grep -Fxq ")
+        + bashSingleQuoteLocal(containerName);
+    return runShellCapture(cmd).exit_code == 0;
+}
+
+bool looksLikeRegistryAuthFailure(const std::string& reason) {
+    const std::string r = toLower(reason);
+    return r.find("unauthorized") != std::string::npos || r.find("authentication required") != std::string::npos
+        || r.find("denied") != std::string::npos || r.find("incorrect username") != std::string::npos
+        || r.find("no basic auth") != std::string::npos;
+}
+
+void emitDockerRuntimeFailureHints(const std::string& reason, const std::string& imageRef) {
+    if (reason.find("daemon not running") != std::string::npos || reason.find("docker ps") != std::string::npos
+        || reason.find("데몬") != std::string::npos || reason.find("daemon") != std::string::npos) {
+        std::cout << "[DOCKER_RUNTIME] hint=\"Open Docker Desktop and check docker ps in WSL\"\n";
+        return;
+    }
+    if (reason.find("Docker pull failed") != std::string::npos || looksLikeRegistryAuthFailure(reason)) {
+        if (!imageRef.empty()) {
+            std::cout << "[DOCKER_RUNTIME] image_ref=" << imageRef << "\n";
+        }
+        std::cout << "[DOCKER_RUNTIME] hint=\"Pull failed. If this is a private registry, run docker login first "
+                     "(e.g. docker login, docker login ghcr.io, docker login registry.example.com)\"\n";
+        return;
+    }
+    if (reason.find("not found locally") != std::string::npos || reason.find("이미지가 없습니다") != std::string::npos) {
+        std::cout << "[DOCKER_RUNTIME] hint=\"Build the image locally, push to a registry, or use --docker-pull=missing\"\n";
+    }
+}
+
 }  // namespace
 
 DeploymentManager::DeploymentManager(std::string workingDirectory)
@@ -363,7 +702,16 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
 
     RollbackFileGuard rb;
 
+    auto recordOutcome = [&](const std::string& result, const std::string& reason) {
+        StateManager rec(workDir_);
+        std::string recErr;
+        (void)rec.recordLastDeploy(car_id, feature, target_slot, target_version, result, reason, recErr);
+    };
+
     auto fail = [&](const std::string& reason) -> DeployResult {
+        if (isValidFleetFeature(feature) && isValidFleetSlot(target_slot)) {
+            recordOutcome("failed", reason);
+        }
         r.success = false;
         r.reason = reason;
         std::cout << "[DEPLOY] target=" << car_id << " feature=" << feature << " slot=" << target_slot
@@ -464,6 +812,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         r.rollback_metadata_saved = true;
         r.success = true;
         r.reason.clear();
+        recordOutcome("pending", "deferred until apply-pending-native-car");
         std::cout << "[DEPLOY] target=" << car_id << " feature=" << feature << " slot=" << target_slot
                   << " version=" << target_version << " result=SUCCESS (pending until restart)\n";
         return r;
@@ -485,6 +834,20 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         (void)sm.updateOtaPhase(car_id, "CHECKSUM_FAILED", versionReason, err);
         std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
         return fail(versionReason);
+    }
+
+    ManifestResolveHints manifestHints{};
+    {
+        std::string slotErr;
+        if (const auto slotInfo = vmOpt->getInfo(feature, target_slot[0], slotErr)) {
+            manifestHints = manifestHintsFromVersionInfo(*slotInfo);
+            if (!manifestHints.package_path.empty() || !manifestHints.package_id.empty()) {
+                std::cout << "[FLEET] version_map slot hints"
+                          << (manifestHints.package_id.empty() ? "" : (" package_id=" + manifestHints.package_id))
+                          << (manifestHints.package_path.empty() ? "" : (" package_path=" + manifestHints.package_path))
+                          << "\n";
+            }
+        }
     }
 
     // Rollback metadata MUST succeed before any on-disk state mutation for this deploy.
@@ -569,63 +932,50 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         return fail(reason);
     };
     auto verifyDockerMetadataIfDetected = [&]() -> bool {
-        // Apply docker manifest checks ONLY when a manifest is present under deploy/packages/<FEATURE>/... .
-        // This avoids breaking legacy A/B slot deploy flows (no docker manifest expected there).
-        const std::string tvRaw = trim(target_version);
-        const std::string tvNoV = stripLeadingVTokenLocal(tvRaw);
-        const std::vector<std::string> candidates = {
-            packagesDir_ + "/" + feature + "/" + tvRaw + "/manifest.json",
-            packagesDir_ + "/" + feature + "/v" + tvNoV + "/manifest.json",
-            packagesDir_ + "/" + feature + "/" + tvNoV + "/manifest.json",
-        };
-        std::string manifestAbs;
-        for (const auto& p : candidates) {
-            std::error_code ec;
-            if (std::filesystem::exists(p, ec) && !ec) {
-                manifestAbs = p;
-                break;
-            }
-        }
-        if (manifestAbs.empty()) {
-            return true;  // treat as legacy/executable package
+        const auto resolvedOpt =
+            resolvePackageManifest(packagesDir_, workDir_, feature, target_version, &manifestHints);
+        if (!resolvedOpt) {
+            return true;  // no manifest: legacy/native package path
         }
 
-        const std::string manifestJson = readFileTextBestEffortLocal(manifestAbs);
+        ResolvedPackageManifest m = *resolvedOpt;
+        const std::string manifestJson = readFileTextBestEffortLocal(m.abs_path);
         if (manifestJson.empty()) {
             return false;
         }
+        parsePackageManifestFields(manifestJson, m);
 
-        const std::string artifactType =
-            parseJsonStringFieldLooseLocal(manifestJson, "artifact_type")
-                .value_or(parseJsonStringFieldLooseLocal(manifestJson, "package_type").value_or(std::string()));
-        if (!artifactType.empty() && artifactType != "docker_image") {
+        const bool explicitDocker = (m.artifact_type == "docker_image");
+        const bool hasDockerImage = !m.docker_image.empty();
+        if (!explicitDocker && !hasDockerImage) {
+            return true;  // registry-style manifest without docker deployment metadata
+        }
+        if (!explicitDocker && m.artifact_type == "executable") {
+            return true;
+        }
+        if (!explicitDocker && !m.artifact_type.empty() && m.artifact_type != "docker_image") {
             return false;
         }
 
-        const std::string dockerImage = parseJsonStringFieldLooseLocal(manifestJson, "docker_image").value_or("");
-        const std::string checksumFile = parseJsonStringFieldLooseLocal(manifestJson, "checksum_file").value_or("");
-        const std::string imageDigest = parseJsonStringFieldLooseLocal(manifestJson, "image_digest").value_or("");
-
-        if (dockerImage.empty()) {
+        if (m.docker_image.empty()) {
             return false;
         }
 
-        // Prefer having checksum_file or image_digest (or both).
-        if (checksumFile.empty() && imageDigest.empty()) {
+        if (m.checksum_file.empty() && m.image_digest.empty()) {
             return false;
         }
 
-        if (!checksumFile.empty()) {
-            const auto baseDir = std::filesystem::path(manifestAbs).parent_path();
-            const auto checksumAbs = (baseDir / checksumFile).generic_string();
+        if (!m.checksum_file.empty()) {
+            const auto baseDir = std::filesystem::path(m.abs_path).parent_path();
+            const auto checksumAbs = (baseDir / m.checksum_file).generic_string();
             std::error_code ec;
             const bool checksumExists = std::filesystem::exists(checksumAbs, ec) && !ec;
-            if (!checksumExists && imageDigest.empty()) {
+            if (!checksumExists && m.image_digest.empty()) {
                 return false;
             }
         }
 
-        if (imageDigest.empty() && !checksumFile.empty()) {
+        if (m.image_digest.empty() && !m.checksum_file.empty()) {
             std::cout << "[VERIFY] warning: image_digest missing (metadata-only); checksum_file present, continue\n";
         }
         return true;
@@ -657,6 +1007,12 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
     // NOTE: This is metadata only; it does not change rollback behavior yet.
     std::string prev_slot;
     std::string prev_version;
+    if (target_slot == "B") {
+        r.staged_primary_slot =
+            prevSnapshot.primary_slot.empty() ? prevSnapshot.active_slot : prevSnapshot.primary_slot;
+        r.staged_primary_version = prevSnapshot.primary_version.empty() ? prevSnapshot.active_version
+                                                                        : prevSnapshot.primary_version;
+    }
     {
         auto stPrev = sm.loadState(car_id, err);
         if (stPrev) {
@@ -677,6 +1033,32 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         (void)sm.updateOtaPhase(car_id, "INSTALL_FAILED", "unable to update feature slot", err);
         std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
         return fail(err.empty() ? "deploy failed: unable to update feature slot" : err);
+    }
+
+    if (const auto resolvedOpt =
+            resolvePackageManifest(packagesDir_, workDir_, feature, target_version, &manifestHints)) {
+        ResolvedPackageManifest resolved = *resolvedOpt;
+        const std::string manifestJson = readFileTextBestEffortLocal(resolved.abs_path);
+        if (!manifestJson.empty()) {
+            parsePackageManifestFields(manifestJson, resolved);
+            const StateManager::FeaturePackageMetadata meta = featureMetadataFromResolved(resolved, manifestHints);
+            const bool hasMeta = !meta.primary_image.empty() || !meta.artifact_type.empty() || !meta.image_digest.empty()
+                || !meta.manifest_path.empty() || !meta.package_id.empty();
+            if (hasMeta) {
+                std::string metaErr;
+                if (!sm.applyFeaturePackageMetadata(car_id, feature, meta, metaErr)) {
+                    std::cerr << "[FLEET] warning: unable to apply package metadata to state: "
+                              << (metaErr.empty() ? "unknown" : metaErr) << "\n";
+                } else {
+                    std::cout << "[FLEET] package metadata applied"
+                              << (meta.package_id.empty() ? "" : (" package_id=" + meta.package_id))
+                              << (meta.primary_image.empty() ? "" : (" primary_image=" + meta.primary_image))
+                              << (meta.artifact_type.empty() ? "" : (" artifact_type=" + meta.artifact_type))
+                              << (meta.manifest_path.empty() ? "" : (" manifest_path=" + meta.manifest_path))
+                              << "\n";
+                }
+            }
+        }
     }
 
     // Record the previous stable primary into rollback_stack (most-recent-first), capped to 3.
@@ -709,6 +1091,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
 
     r.success = true;
     r.reason.clear();
+    recordOutcome("success", "");
     std::cout << "[DEPLOY] target=" << car_id << " feature=" << feature << " slot=" << target_slot
               << " version=" << target_version << " result=SUCCESS\n";
     return r;
@@ -733,6 +1116,24 @@ void DeploymentManager::finalizeFleetRollbackMetadata(DeployResult& r) {
     }
 }
 
+void DeploymentManager::resyncCarConfigAfterDockerRuntime(DeployResult& r) {
+    if (!r.config_sync_requested) {
+        return;
+    }
+    std::string msg;
+    if (syncCarConfigFromState(r.car_id, msg, true)) {
+        r.config_synced = true;
+        r.config_sync_error.clear();
+        std::cout << "[DOCKER_RUNTIME] config_sync_after_runtime=ok car_id=" << r.car_id << " feature=" << r.feature
+                  << "\n";
+    } else {
+        r.config_synced = false;
+        r.config_sync_error = msg;
+        std::cerr << "[DOCKER_RUNTIME] warning: config sync after runtime failed car_id=" << r.car_id << " feature="
+                  << r.feature << ": " << (msg.empty() ? "unknown" : msg) << "\n";
+    }
+}
+
 void DeploymentManager::applyPostDeployConfigSync(DeployResult& r, bool sync_requested) {
     r.config_sync_requested = sync_requested;
     r.state_updated = r.success;
@@ -750,6 +1151,254 @@ void DeploymentManager::applyPostDeployConfigSync(DeployResult& r, bool sync_req
         }
     }
     finalizeFleetRollbackMetadata(r);
+}
+
+void DeploymentManager::applyPostDeployDockerRuntime(DeployResult& r, bool defer_native_deploy,
+    const FleetDockerRuntimeOptions& options) {
+    r.docker_runtime_requested = options.requested;
+    r.docker_runtime_mode = options.mode;
+    const std::string pullPolicy = toLower(trim(options.pull_policy));
+    r.docker_runtime_pull_policy = pullPolicy;
+    r.docker_pull_requested = !pullPolicy.empty();
+    if (!options.requested) {
+        return;
+    }
+    if (!r.success) {
+        return;
+    }
+
+    const std::string slotRole = fleetSlotRoleLabel(r.target_slot);
+    const std::string mode = toLower(trim(options.mode.empty() ? std::string("candidate") : options.mode));
+
+    auto persistDockerRuntime = [&](const std::string& result, const std::string& action, const std::string& reason,
+                                    const std::string& container, const std::string& image) {
+        r.docker_runtime_result = result;
+        r.docker_runtime_action = action;
+        r.docker_runtime_reason = reason;
+        r.docker_runtime_container = container;
+        r.docker_runtime_image = image;
+        StateManager sm(workDir_);
+        StateManager::FeatureDockerRuntimeRecord rec;
+        rec.result = result;
+        rec.mode = mode;
+        rec.action = action;
+        rec.time = currentTimestamp();
+        rec.reason = reason;
+        rec.container = container;
+        rec.image = image;
+        rec.pull_policy = pullPolicy;
+        std::string perr;
+        if (!sm.applyFeatureDockerRuntime(r.car_id, r.feature, rec, perr)) {
+            std::cerr << "[DOCKER_RUNTIME] warning: unable to persist docker runtime fields to state: "
+                      << (perr.empty() ? "unknown" : perr) << "\n";
+        }
+    };
+
+    std::cout << "[DOCKER_RUNTIME] requested=true mode=" << mode;
+    if (mode == "promote") {
+        std::cout << " action=promote";
+    } else if (mode == "candidate") {
+        std::cout << " action=deploy-shadow";
+    }
+    std::cout << " car_id=" << r.car_id << " feature=" << r.feature << " version=" << r.target_version;
+    if (r.docker_pull_requested) {
+        std::cout << " pull_policy=" << pullPolicy;
+    }
+
+    if (defer_native_deploy) {
+        r.docker_runtime_action = "skipped";
+        persistDockerRuntime("skipped", "skipped",
+            "deferred native deploy; docker runtime requires --no-defer-native", "", "");
+        std::cout << "\n[DOCKER_RUNTIME] result=skipped reason=\"deferred native deploy\"\n";
+        return;
+    }
+
+    if (mode == "promote") {
+        StateManager sm(workDir_);
+        std::string loadErr;
+        const auto stateOpt = sm.loadState(r.car_id, loadErr);
+        std::string dockerImage;
+        if (stateOpt) {
+            const auto* fs = StateManager::featureRef(*stateOpt, r.feature);
+            if (fs) {
+                dockerImage = fs->primary_image;
+            }
+        }
+        if (dockerImage.empty()) {
+            persistDockerRuntime("failed", "promote", "missing docker_image in manifest/state", "", "");
+            std::cout << "\n[DOCKER_RUNTIME] result=failed reason=\"missing docker_image in manifest/state\"\n";
+            return;
+        }
+        r.docker_runtime_image = dockerImage;
+
+        const auto scriptOpt = findOtaVehicleScriptPath(workDir_);
+        if (!scriptOpt) {
+            persistDockerRuntime("failed", "promote", "ota_vehicle.sh not found under sdv-ota-manager/scripts", "", "");
+            std::cout << "\n[DOCKER_RUNTIME] result=failed reason=\"ota_vehicle.sh not found\"\n";
+            return;
+        }
+
+        const auto domainOpt = fleetFeatureToOtaVehicleDomain(r.feature);
+        if (!domainOpt) {
+            persistDockerRuntime("failed", "promote", "unsupported feature for docker runtime: " + r.feature, "", "");
+            std::cout << "\n[DOCKER_RUNTIME] result=failed reason=\"unsupported feature\"\n";
+            return;
+        }
+
+        const std::string candidateContainer = candidateShadowContainerForCarFeature(r.car_id, r.feature);
+        const std::string primaryContainer = primaryContainerForCarFeature(r.car_id, r.feature);
+        r.docker_runtime_action = "promote";
+        std::cout << "\n";
+
+        if (!dockerContainerNameExists(candidateContainer)) {
+            persistDockerRuntime("failed", "promote", "candidate container not found", primaryContainer, dockerImage);
+            std::cout << "[DOCKER_RUNTIME] result=failed reason=\"candidate container not found\"\n";
+            std::cout << "[DOCKER_RUNTIME] hint=\"Run deploy-shadow first (e.g. --docker-runtime=candidate) and verify "
+                      << candidateContainer << " is running\"\n";
+            return;
+        }
+
+        std::cout << "[DOCKER_RUNTIME] action=promote domain=" << *domainOpt << " script=" << *scriptOpt << "\n";
+
+        std::string cmd = std::string("bash ") + bashSingleQuoteLocal(*scriptOpt) + " promote --car "
+            + bashSingleQuoteLocal(r.car_id) + " --domain " + bashSingleQuoteLocal(*domainOpt) + " --version "
+            + bashSingleQuoteLocal(r.target_version) + " --image " + bashSingleQuoteLocal(dockerImage);
+        if (r.docker_pull_requested) {
+            cmd += " --pull " + bashSingleQuoteLocal(pullPolicy);
+        }
+        cmd += " 2>&1";
+
+        const ShellCaptureResult shell = runShellCapture(cmd);
+        if (shell.exit_code == 0) {
+            persistDockerRuntime("success", "promote", "", primaryContainer, dockerImage);
+            std::string alignErr;
+            if (!sm.reconcileFeatureWithVehicleRuntime(r.car_id, r.feature, true, dockerImage, r.target_version, "",
+                    r.staged_primary_version, alignErr)) {
+                std::cerr << "[DOCKER_RUNTIME] warning: unable to reconcile deploy/state after promote: "
+                          << (alignErr.empty() ? "unknown" : alignErr) << "\n";
+            } else {
+                std::cout << "[DOCKER_RUNTIME] state_reconcile=ok phase=promote car_id=" << r.car_id
+                          << " feature=" << r.feature << "\n";
+            }
+            resyncCarConfigAfterDockerRuntime(r);
+            std::cout << "[DOCKER_RUNTIME] result=success container=" << primaryContainer << "\n";
+            if (!shell.output.empty()) {
+                const std::string tail = summarizeShellOutput(shell.output, 240);
+                if (!tail.empty()) {
+                    std::cout << "[DOCKER_RUNTIME] output=" << tail << "\n";
+                }
+            }
+            return;
+        }
+
+        std::string reason = summarizeShellOutput(shell.output);
+        if (reason.empty()) {
+            reason = "ota_vehicle.sh promote exited with code " + std::to_string(shell.exit_code);
+        }
+        if (reason.find("candidate container not found") == std::string::npos
+            && (reason.find("Shadow") != std::string::npos || reason.find("shadow") != std::string::npos)
+            && reason.find("없") != std::string::npos) {
+            reason = "candidate container not found";
+        }
+        persistDockerRuntime("failed", "promote", reason, primaryContainer, dockerImage);
+        std::cout << "[DOCKER_RUNTIME] result=failed reason=\"" << reason << "\"\n";
+        emitDockerRuntimeFailureHints(reason, dockerImage);
+        return;
+    }
+
+    if (r.target_slot != "B") {
+        r.docker_runtime_action = "skipped";
+        persistDockerRuntime("skipped", "skipped",
+            "docker runtime for primary slot is not enabled in this step; use candidate slot with --docker-runtime",
+            "", "");
+        std::cout << "\n[DOCKER_RUNTIME] result=skipped reason=\"primary slot docker runtime not enabled\"\n";
+        return;
+    }
+
+    StateManager sm(workDir_);
+    std::string loadErr;
+    const auto stateOpt = sm.loadState(r.car_id, loadErr);
+    std::string dockerImage;
+    if (stateOpt) {
+        const auto* fs = StateManager::featureRef(*stateOpt, r.feature);
+        if (fs) {
+            dockerImage = fs->primary_image;
+        }
+    }
+    if (dockerImage.empty()) {
+        persistDockerRuntime("failed", "deploy-shadow", "missing docker_image in manifest/state", "", "");
+        std::cout << " image=(missing)\n";
+        std::cout << "[DOCKER_RUNTIME] result=failed reason=\"missing docker_image in manifest/state\"\n";
+        std::cout << "[DOCKER_RUNTIME] hint=\"Ensure manifest docker_image is set and fleet-deploy package metadata step succeeded\"\n";
+        return;
+    }
+    r.docker_runtime_image = dockerImage;
+    std::cout << " image=" << dockerImage << "\n";
+
+    const auto scriptOpt = findOtaVehicleScriptPath(workDir_);
+    if (!scriptOpt) {
+        persistDockerRuntime("failed", "deploy-shadow", "ota_vehicle.sh not found under sdv-ota-manager/scripts", "", "");
+        std::cout << "[DOCKER_RUNTIME] result=failed reason=\"ota_vehicle.sh not found\"\n";
+        std::cout << "[DOCKER_RUNTIME] hint=\"Expected sdv-ota-manager/scripts/ota_vehicle.sh relative to platform workDir\"\n";
+        return;
+    }
+
+    const auto domainOpt = fleetFeatureToOtaVehicleDomain(r.feature);
+    if (!domainOpt) {
+        persistDockerRuntime("failed", "deploy-shadow", "unsupported feature for docker runtime: " + r.feature, "", "");
+        std::cout << "[DOCKER_RUNTIME] result=failed reason=\"unsupported feature\"\n";
+        return;
+    }
+
+    const std::string container = candidateShadowContainerForCarFeature(r.car_id, r.feature);
+    r.docker_runtime_action = "deploy-shadow";
+    std::cout << "\n";
+    std::cout << "[DOCKER_RUNTIME] action=deploy-shadow domain=" << *domainOpt << " script=" << *scriptOpt << "\n";
+
+    std::string cmd = std::string("bash ") + bashSingleQuoteLocal(*scriptOpt) + " deploy-shadow --car "
+        + bashSingleQuoteLocal(r.car_id) + " --domain " + bashSingleQuoteLocal(*domainOpt) + " --version "
+        + bashSingleQuoteLocal(r.target_version) + " --image " + bashSingleQuoteLocal(dockerImage);
+    if (r.docker_pull_requested) {
+        cmd += " --pull " + bashSingleQuoteLocal(pullPolicy);
+    }
+    cmd += " 2>&1";
+
+    const ShellCaptureResult shell = runShellCapture(cmd);
+    if (shell.exit_code == 0) {
+        persistDockerRuntime("success", "deploy-shadow", "", container, dockerImage);
+        std::string alignErr;
+        if (!sm.reconcileFeatureWithVehicleRuntime(r.car_id, r.feature, false, dockerImage, r.target_version,
+                r.staged_primary_slot, r.staged_primary_version, alignErr)) {
+            std::cerr << "[DOCKER_RUNTIME] warning: unable to reconcile deploy/state after candidate deploy: "
+                      << (alignErr.empty() ? "unknown" : alignErr) << "\n";
+        } else {
+            std::cout << "[DOCKER_RUNTIME] state_reconcile=ok phase=candidate car_id=" << r.car_id
+                      << " feature=" << r.feature << "\n";
+        }
+        resyncCarConfigAfterDockerRuntime(r);
+        std::cout << "[DOCKER_RUNTIME] result=success container=" << container << "\n";
+        if (!shell.output.empty()) {
+            const std::string tail = summarizeShellOutput(shell.output, 240);
+            if (!tail.empty()) {
+                std::cout << "[DOCKER_RUNTIME] output=" << tail << "\n";
+            }
+        }
+        return;
+    }
+
+    std::string reason = summarizeShellOutput(shell.output);
+    if (reason.empty()) {
+        reason = "ota_vehicle.sh deploy-shadow exited with code " + std::to_string(shell.exit_code);
+    }
+    if (reason.find("Docker 데몬") != std::string::npos || reason.find("docker ps") != std::string::npos
+        || reason.find("DEPLOY-ABORT") != std::string::npos && reason.find("이미지가 없습니다") != std::string::npos) {
+        // keep message as-is
+    } else if (reason.find("Docker") != std::string::npos && reason.find("데몬") != std::string::npos) {
+        // already Korean daemon hint from script
+    }
+    persistDockerRuntime("failed", "deploy-shadow", reason, container, dockerImage);
+    std::cout << "[DOCKER_RUNTIME] result=failed reason=\"" << reason << "\"\n";
+    emitDockerRuntimeFailureHints(reason, dockerImage);
 }
 
 void DeploymentManager::printDeploySummary(const DeploySummary& summary) const {
@@ -786,6 +1435,16 @@ void DeploymentManager::printDeploySummary(const DeploySummary& summary) const {
 
     std::string successList;
     std::string failedList;
+    if (summary.docker_runtime_requested) {
+        std::cout << "[SUMMARY] docker_runtime_requested=true docker_runtime_mode="
+                  << (summary.docker_runtime_mode.empty() ? "candidate" : summary.docker_runtime_mode);
+        if (summary.docker_pull_requested) {
+            std::cout << " docker_pull_requested=true docker_pull_policy="
+                      << (summary.docker_pull_policy.empty() ? "missing" : summary.docker_pull_policy);
+        }
+        std::cout << "\n";
+    }
+
     for (const auto& r : summary.results) {
         if (r.success) {
             if (!successList.empty()) successList += ",";
@@ -839,6 +1498,19 @@ void DeploymentManager::printDeploySummary(const DeploySummary& summary) const {
             }
             if (!r.rollback_metadata_error.empty()) {
                 std::cout << " rollback_metadata_error=" << r.rollback_metadata_error;
+            }
+            if (r.docker_runtime_requested) {
+                std::cout << " docker_runtime_result=" << (r.docker_runtime_result.empty() ? "unknown" : r.docker_runtime_result);
+                if (!r.docker_runtime_image.empty()) {
+                    std::cout << " docker_runtime_image=" << r.docker_runtime_image;
+                }
+                if (r.docker_pull_requested) {
+                    std::cout << " docker_pull_requested=true docker_pull_policy="
+                              << (r.docker_runtime_pull_policy.empty() ? "missing" : r.docker_runtime_pull_policy);
+                }
+                if (!r.docker_runtime_reason.empty()) {
+                    std::cout << " docker_runtime_reason=" << r.docker_runtime_reason;
+                }
             }
             std::cout << "\n";
         }
@@ -918,6 +1590,16 @@ std::string DeploymentManager::deploySummaryToJson(const DeploySummary& summary)
     os << "\"slot\":\"" << jsonEscape(summary.target_slot) << "\",";
     os << "\"version\":\"" << jsonEscape(summary.target_version) << "\",";
     os << "\"sync_config_requested\":" << (summary.sync_config_requested ? "true" : "false") << ",";
+    os << "\"docker_runtime_requested\":" << (summary.docker_runtime_requested ? "true" : "false") << ",";
+    if (summary.docker_runtime_requested) {
+        os << "\"docker_runtime_mode\":\"" << jsonEscape(summary.docker_runtime_mode.empty() ? "candidate" : summary.docker_runtime_mode)
+           << "\",";
+    }
+    if (summary.docker_pull_requested) {
+        os << "\"docker_pull_requested\":true,";
+        os << "\"docker_pull_policy\":\"" << jsonEscape(summary.docker_pull_policy.empty() ? "missing" : summary.docker_pull_policy)
+           << "\",";
+    }
     os << "\"total\":" << summary.total << ",";
     os << "\"success\":" << summary.success << ",";
     os << "\"failed\":" << summary.failed << ",";
@@ -975,8 +1657,22 @@ std::string DeploymentManager::deploySummaryToJson(const DeploySummary& summary)
            << "\"config_file\":\"" << jsonEscape(std::string("config/car/") + r.car_id + ".conf") << "\","
            << "\"rollback_metadata_saved\":" << (r.rollback_metadata_saved ? "true" : "false") << ","
            << "\"rollback_metadata_path\":\"" << jsonEscape(r.rollback_metadata_path) << "\","
-           << "\"rollback_metadata_error\":\"" << jsonEscape(r.rollback_metadata_error) << "\""
-           << "}";
+           << "\"rollback_metadata_error\":\"" << jsonEscape(r.rollback_metadata_error) << "\","
+           << "\"docker_runtime_requested\":" << (r.docker_runtime_requested ? "true" : "false") << ","
+           << "\"docker_runtime_mode\":\"" << jsonEscape(r.docker_runtime_mode.empty() ? "candidate" : r.docker_runtime_mode)
+           << "\","
+           << "\"docker_runtime_result\":\"" << jsonEscape(r.docker_runtime_result) << "\","
+           << "\"docker_runtime_action\":\"" << jsonEscape(r.docker_runtime_action) << "\","
+           << "\"docker_runtime_reason\":\"" << jsonEscape(r.docker_runtime_reason) << "\"";
+        if (!r.docker_runtime_image.empty()) {
+            os << ",\"docker_runtime_image\":\"" << jsonEscape(r.docker_runtime_image) << "\"";
+        }
+        if (r.docker_pull_requested) {
+            os << ",\"docker_pull_requested\":true"
+               << ",\"docker_pull_policy\":\"" << jsonEscape(r.docker_runtime_pull_policy.empty() ? "missing" : r.docker_runtime_pull_policy)
+               << "\"";
+        }
+        os << "}";
     }
     os << "]";
 
@@ -1003,7 +1699,9 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupWithSummary(con
     const std::string& feature,
     const std::string& target_slot,
     const std::string& target_version,
-    bool sync_config_after_success) {
+    bool sync_config_after_success,
+    const FleetDockerRuntimeOptions* docker_runtime) {
+    const FleetDockerRuntimeOptions dockerOpts = fleetDockerRuntimeOrDefault(docker_runtime);
     DeploySummary s;
     s.deploy_id = generateDeployId();
     s.timestamp = currentTimestamp();
@@ -1013,6 +1711,10 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupWithSummary(con
     s.target_slot = target_slot;
     s.target_version = target_version;
     s.sync_config_requested = sync_config_after_success;
+    s.docker_runtime_requested = dockerOpts.requested;
+    s.docker_runtime_mode = dockerOpts.mode;
+    s.docker_pull_requested = !dockerOpts.pull_policy.empty();
+    s.docker_pull_policy = dockerOpts.pull_policy;
 
     std::string err;
     const auto registryOpt = VehicleRegistry::loadFromFile(workDir_ + "/config/fleet/vehicles.json", err);
@@ -1031,6 +1733,7 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupWithSummary(con
     for (const auto& v : targets) {
         auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success, false);
         applyPostDeployConfigSync(r, sync_config_after_success);
+        applyPostDeployDockerRuntime(r, false, dockerOpts);
         if (r.success) ++s.success; else ++s.failed;
         if (!r.success) {
             const std::string key = r.reason.empty() ? "unknown" : r.reason;
@@ -1045,7 +1748,9 @@ DeploymentManager::DeploySummary DeploymentManager::deployToRegionWithSummary(co
     const std::string& feature,
     const std::string& target_slot,
     const std::string& target_version,
-    bool sync_config_after_success) {
+    bool sync_config_after_success,
+    const FleetDockerRuntimeOptions* docker_runtime) {
+    const FleetDockerRuntimeOptions dockerOpts = fleetDockerRuntimeOrDefault(docker_runtime);
     DeploySummary s;
     s.deploy_id = generateDeployId();
     s.timestamp = currentTimestamp();
@@ -1055,6 +1760,10 @@ DeploymentManager::DeploySummary DeploymentManager::deployToRegionWithSummary(co
     s.target_slot = target_slot;
     s.target_version = target_version;
     s.sync_config_requested = sync_config_after_success;
+    s.docker_runtime_requested = dockerOpts.requested;
+    s.docker_runtime_mode = dockerOpts.mode;
+    s.docker_pull_requested = !dockerOpts.pull_policy.empty();
+    s.docker_pull_policy = dockerOpts.pull_policy;
 
     std::string err;
     const auto registryOpt = VehicleRegistry::loadFromFile(workDir_ + "/config/fleet/vehicles.json", err);
@@ -1073,6 +1782,7 @@ DeploymentManager::DeploySummary DeploymentManager::deployToRegionWithSummary(co
     for (const auto& v : targets) {
         auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success, false);
         applyPostDeployConfigSync(r, sync_config_after_success);
+        applyPostDeployDockerRuntime(r, false, dockerOpts);
         if (r.success) ++s.success; else ++s.failed;
         if (!r.success) {
             const std::string key = r.reason.empty() ? "unknown" : r.reason;
@@ -1088,7 +1798,9 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupAndRegionWithSu
     const std::string& feature,
     const std::string& target_slot,
     const std::string& target_version,
-    bool sync_config_after_success) {
+    bool sync_config_after_success,
+    const FleetDockerRuntimeOptions* docker_runtime) {
+    const FleetDockerRuntimeOptions dockerOpts = fleetDockerRuntimeOrDefault(docker_runtime);
     DeploySummary s;
     s.deploy_id = generateDeployId();
     s.timestamp = currentTimestamp();
@@ -1099,6 +1811,10 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupAndRegionWithSu
     s.target_slot = target_slot;
     s.target_version = target_version;
     s.sync_config_requested = sync_config_after_success;
+    s.docker_runtime_requested = dockerOpts.requested;
+    s.docker_runtime_mode = dockerOpts.mode;
+    s.docker_pull_requested = !dockerOpts.pull_policy.empty();
+    s.docker_pull_policy = dockerOpts.pull_policy;
 
     std::string err;
     const auto registryOpt = VehicleRegistry::loadFromFile(workDir_ + "/config/fleet/vehicles.json", err);
@@ -1117,6 +1833,7 @@ DeploymentManager::DeploySummary DeploymentManager::deployToGroupAndRegionWithSu
     for (const auto& v : targets) {
         auto r = deployToVehicleInternal(v.car_id, feature, target_slot, target_version, sync_config_after_success, false);
         applyPostDeployConfigSync(r, sync_config_after_success);
+        applyPostDeployDockerRuntime(r, false, dockerOpts);
         if (r.success) ++s.success; else ++s.failed;
         if (!r.success) {
             const std::string key = r.reason.empty() ? "unknown" : r.reason;
@@ -1132,7 +1849,9 @@ DeploymentManager::DeploySummary DeploymentManager::deployToVehicleWithSummary(c
     const std::string& target_slot,
     const std::string& target_version,
     bool sync_config_after_success,
-    bool defer_native_until_restart) {
+    bool defer_native_until_restart,
+    const FleetDockerRuntimeOptions* docker_runtime) {
+    const FleetDockerRuntimeOptions dockerOpts = fleetDockerRuntimeOrDefault(docker_runtime);
     DeploySummary s;
     s.deploy_id = generateDeployId();
     s.timestamp = currentTimestamp();
@@ -1141,11 +1860,16 @@ DeploymentManager::DeploySummary DeploymentManager::deployToVehicleWithSummary(c
     s.target_slot = target_slot;
     s.target_version = target_version;
     s.sync_config_requested = sync_config_after_success;
+    s.docker_runtime_requested = dockerOpts.requested;
+    s.docker_runtime_mode = dockerOpts.mode;
+    s.docker_pull_requested = !dockerOpts.pull_policy.empty();
+    s.docker_pull_policy = dockerOpts.pull_policy;
     s.total = 1;
 
     auto r = deployToVehicleInternal(car_id, feature, target_slot, target_version, sync_config_after_success,
         defer_native_until_restart);
     applyPostDeployConfigSync(r, sync_config_after_success);
+    applyPostDeployDockerRuntime(r, defer_native_until_restart, dockerOpts);
     s.results.push_back(r);
     if (r.success) {
         s.success = 1;

@@ -210,6 +210,165 @@ std::string normalizeVersionToken(std::string_view in) {
 }
 
 /// `candidate` only when shadow lane is enabled and shadow version differs from active.
+std::string fleetFeatureToRuntimeDomainKey(const std::string& feature) {
+    if (feature == "ADAS") {
+        return "adas";
+    }
+    if (feature == "Navigation") {
+        return "navigation";
+    }
+    if (feature == "Energy") {
+        return "evenergy";
+    }
+    return {};
+}
+
+std::string formatFleetVersionTag(std::string v) {
+    v.erase(std::remove_if(v.begin(), v.end(), [](unsigned char c) { return std::isspace(c); }), v.end());
+    if (v.empty()) {
+        return v;
+    }
+    if (v[0] == 'v' || v[0] == 'V') {
+        return std::string("v") + v.substr(1);
+    }
+    return std::string("v") + v;
+}
+
+std::optional<std::string> extractBalancedJsonObject(std::string_view json, std::size_t startBrace) {
+    if (startBrace >= json.size() || json[startBrace] != '{') {
+        return std::nullopt;
+    }
+    int depth = 0;
+    bool inStr = false;
+    for (std::size_t i = startBrace; i < json.size(); ++i) {
+        const char c = json[i];
+        if (inStr) {
+            if (c == '\\' && i + 1 < json.size()) {
+                ++i;
+                continue;
+            }
+            if (c == '"') {
+                inStr = false;
+            }
+            continue;
+        }
+        if (c == '"') {
+            inStr = true;
+            continue;
+        }
+        if (c == '{') {
+            ++depth;
+        } else if (c == '}') {
+            --depth;
+            if (depth == 0) {
+                return std::string(json.substr(startBrace, i - startBrace + 1));
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<std::string> jsonObjectStringFieldLoose(const std::string& obj, const std::string& key) {
+    const std::string needle = "\"" + key + "\"";
+    const auto kpos = obj.find(needle);
+    if (kpos == std::string::npos) {
+        return std::nullopt;
+    }
+    auto colon = obj.find(':', kpos + needle.size());
+    if (colon == std::string::npos) {
+        return std::nullopt;
+    }
+    JsonLite p(std::string_view(obj).substr(colon + 1));
+    std::string val;
+    std::string err;
+    if (!p.parseString(val, err)) {
+        return std::nullopt;
+    }
+    return val;
+}
+
+std::optional<bool> jsonObjectBoolFieldLoose(const std::string& obj, const std::string& key) {
+    const std::string needle = "\"" + key + "\"";
+    const auto kpos = obj.find(needle);
+    if (kpos == std::string::npos) {
+        return std::nullopt;
+    }
+    auto colon = obj.find(':', kpos + needle.size());
+    if (colon == std::string::npos) {
+        return std::nullopt;
+    }
+    JsonLite p(std::string_view(obj).substr(colon + 1));
+    bool val = false;
+    std::string err;
+    if (!p.parseBool(val, err)) {
+        return std::nullopt;
+    }
+    return val;
+}
+
+struct VehicleRuntimeDomainView {
+    std::string primary_version;
+    std::string shadow_version;
+    bool shadow_enabled{false};
+};
+
+bool readVehicleRuntimeDomainFromFile(const std::string& path, const std::string& domainKey,
+    VehicleRuntimeDomainView& out, std::string& error) {
+    error.clear();
+    std::ifstream in(path);
+    if (!in) {
+        error = "vehicle_runtime file not found: " + path;
+        return false;
+    }
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    const std::string json = ss.str();
+
+    const std::string domainsNeedle = "\"domains\"";
+    const auto dpos = json.find(domainsNeedle);
+    if (dpos == std::string::npos) {
+        error = "vehicle_runtime missing domains object";
+        return false;
+    }
+    const auto domainsBrace = json.find('{', dpos);
+    if (domainsBrace == std::string::npos) {
+        error = "vehicle_runtime domains object malformed";
+        return false;
+    }
+    const auto domainsObj = extractBalancedJsonObject(json, domainsBrace);
+    if (!domainsObj) {
+        error = "vehicle_runtime domains object malformed";
+        return false;
+    }
+
+    const std::string domNeedle = "\"" + domainKey + "\"";
+    const auto kpos = domainsObj->find(domNeedle);
+    if (kpos == std::string::npos) {
+        error = "vehicle_runtime missing domain: " + domainKey;
+        return false;
+    }
+    const auto domBrace = domainsObj->find('{', kpos);
+    if (domBrace == std::string::npos) {
+        error = "vehicle_runtime domain object malformed: " + domainKey;
+        return false;
+    }
+    const auto domObj = extractBalancedJsonObject(*domainsObj, domBrace);
+    if (!domObj) {
+        error = "vehicle_runtime domain object malformed: " + domainKey;
+        return false;
+    }
+
+    out.primary_version = jsonObjectStringFieldLoose(*domObj, "primary_version").value_or("");
+    out.shadow_version = jsonObjectStringFieldLoose(*domObj, "shadow_version").value_or("");
+    if (const auto se = jsonObjectBoolFieldLoose(*domObj, "shadow_enabled")) {
+        out.shadow_enabled = *se;
+    } else {
+        out.shadow_enabled = !out.shadow_version.empty()
+            && normalizeVersionToken(out.primary_version) != normalizeVersionToken(out.shadow_version);
+    }
+    return true;
+}
+
 std::string deriveShadowMode(const StateManager::FeatureState& f) {
     if (!f.shadow_enabled) {
         return "inactive";
@@ -388,6 +547,30 @@ bool parseFeature(JsonLite& p, StateManager::FeatureState& out, const std::strin
             if (out.active_version.empty()) out.active_version = out.primary_version;
         } else if (key == "primary_image") {
             if (!p.parseString(out.primary_image, err)) return false;
+        } else if (key == "artifact_type") {
+            if (!p.parseString(out.artifact_type, err)) return false;
+        } else if (key == "image_digest") {
+            if (!p.parseString(out.image_digest, err)) return false;
+        } else if (key == "manifest_path") {
+            if (!p.parseString(out.manifest_path, err)) return false;
+        } else if (key == "package_id") {
+            if (!p.parseString(out.package_id, err)) return false;
+        } else if (key == "docker_runtime_result") {
+            if (!p.parseString(out.docker_runtime_result, err)) return false;
+        } else if (key == "docker_runtime_mode") {
+            if (!p.parseString(out.docker_runtime_mode, err)) return false;
+        } else if (key == "docker_runtime_action") {
+            if (!p.parseString(out.docker_runtime_action, err)) return false;
+        } else if (key == "docker_runtime_time") {
+            if (!p.parseString(out.docker_runtime_time, err)) return false;
+        } else if (key == "docker_runtime_reason") {
+            if (!p.parseString(out.docker_runtime_reason, err)) return false;
+        } else if (key == "docker_runtime_container") {
+            if (!p.parseString(out.docker_runtime_container, err)) return false;
+        } else if (key == "docker_runtime_image") {
+            if (!p.parseString(out.docker_runtime_image, err)) return false;
+        } else if (key == "docker_runtime_pull_policy") {
+            if (!p.parseString(out.docker_runtime_pull_policy, err)) return false;
         } else if (key == "pending_active_slot") {
             if (!p.parseString(out.pending_active_slot, err)) return false;
         } else if (key == "pending_active_version") {
@@ -626,6 +809,20 @@ bool parseVehicleState(std::string_view json, StateManager::VehicleState& out, s
             StateManager::AckRecord ack{};
             if (!parseAck(p, ack, err)) return false;
             out.last_ack = std::move(ack);
+        } else if (key == "last_deploy_id") {
+            if (!p.parseString(out.last_deploy_id, err)) return false;
+        } else if (key == "last_deploy_result") {
+            if (!p.parseString(out.last_deploy_result, err)) return false;
+        } else if (key == "last_deploy_time") {
+            if (!p.parseString(out.last_deploy_time, err)) return false;
+        } else if (key == "last_deploy_feature") {
+            if (!p.parseString(out.last_deploy_feature, err)) return false;
+        } else if (key == "last_deploy_slot") {
+            if (!p.parseString(out.last_deploy_slot, err)) return false;
+        } else if (key == "last_deploy_version") {
+            if (!p.parseString(out.last_deploy_version, err)) return false;
+        } else if (key == "last_deploy_reason") {
+            if (!p.parseString(out.last_deploy_reason, err)) return false;
         } else {
             p.skipValue(err);
             if (!err.empty()) return false;
@@ -655,6 +852,42 @@ void writeFeature(std::ostream& out, const StateManager::FeatureState& f, const 
     indent(out, ind + 2); out << "\"primary_version\": " << quote(f.primary_version.empty() ? f.active_version : f.primary_version) << ",\n";
     if (!f.primary_image.empty()) {
         indent(out, ind + 2); out << "\"primary_image\": " << quote(f.primary_image) << ",\n";
+    }
+    if (!f.artifact_type.empty()) {
+        indent(out, ind + 2); out << "\"artifact_type\": " << quote(f.artifact_type) << ",\n";
+    }
+    if (!f.image_digest.empty()) {
+        indent(out, ind + 2); out << "\"image_digest\": " << quote(f.image_digest) << ",\n";
+    }
+    if (!f.manifest_path.empty()) {
+        indent(out, ind + 2); out << "\"manifest_path\": " << quote(f.manifest_path) << ",\n";
+    }
+    if (!f.package_id.empty()) {
+        indent(out, ind + 2); out << "\"package_id\": " << quote(f.package_id) << ",\n";
+    }
+    if (!f.docker_runtime_result.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_result\": " << quote(f.docker_runtime_result) << ",\n";
+    }
+    if (!f.docker_runtime_mode.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_mode\": " << quote(f.docker_runtime_mode) << ",\n";
+    }
+    if (!f.docker_runtime_action.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_action\": " << quote(f.docker_runtime_action) << ",\n";
+    }
+    if (!f.docker_runtime_time.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_time\": " << quote(f.docker_runtime_time) << ",\n";
+    }
+    if (!f.docker_runtime_reason.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_reason\": " << quote(f.docker_runtime_reason) << ",\n";
+    }
+    if (!f.docker_runtime_container.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_container\": " << quote(f.docker_runtime_container) << ",\n";
+    }
+    if (!f.docker_runtime_image.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_image\": " << quote(f.docker_runtime_image) << ",\n";
+    }
+    if (!f.docker_runtime_pull_policy.empty()) {
+        indent(out, ind + 2); out << "\"docker_runtime_pull_policy\": " << quote(f.docker_runtime_pull_policy) << ",\n";
     }
     indent(out, ind + 2); out << "\"pending_active_slot\": " << quote(f.pending_active_slot) << ",\n";
     indent(out, ind + 2); out << "\"pending_active_version\": " << quote(f.pending_active_version) << ",\n";
@@ -831,13 +1064,49 @@ std::string writeVehicleStateJson(const StateManager::VehicleState& s) {
         out << ",\n";
         indent(out, 2); out << "\"last_ack\": ";
         writeAck(out, *s.last_ack, 2);
-        out << "\n";
-    } else {
-        out << "\n";
     }
+    if (!s.last_deploy_result.empty()) {
+        out << ",\n";
+        indent(out, 2); out << "\"last_deploy_id\": " << quote(s.last_deploy_id) << ",\n";
+        indent(out, 2); out << "\"last_deploy_result\": " << quote(s.last_deploy_result) << ",\n";
+        indent(out, 2); out << "\"last_deploy_time\": " << quote(s.last_deploy_time) << ",\n";
+        indent(out, 2); out << "\"last_deploy_feature\": " << quote(s.last_deploy_feature) << ",\n";
+        indent(out, 2); out << "\"last_deploy_slot\": " << quote(s.last_deploy_slot) << ",\n";
+        indent(out, 2); out << "\"last_deploy_version\": " << quote(s.last_deploy_version) << ",\n";
+        indent(out, 2); out << "\"last_deploy_reason\": " << quote(s.last_deploy_reason);
+    }
+    out << "\n";
 
     out << "}\n";
     return out.str();
+}
+
+std::string fleetDeployTimestampLocal() {
+    using clock = std::chrono::system_clock;
+    const auto t = clock::to_time_t(clock::now());
+    std::tm tm{};
+#if defined(_WIN32)
+    localtime_s(&tm, &t);
+#else
+    localtime_r(&t, &tm);
+#endif
+    std::ostringstream os;
+    os << std::put_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    return os.str();
+}
+
+std::string makeFleetDeployId(const std::string& car_id, const std::string& feature) {
+    using clock = std::chrono::system_clock;
+    const auto t = clock::to_time_t(clock::now());
+    std::tm tm{};
+#if defined(_WIN32)
+    localtime_s(&tm, &t);
+#else
+    localtime_r(&t, &tm);
+#endif
+    std::ostringstream os;
+    os << "deploy_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << "_" << car_id << "_" << feature;
+    return os.str();
 }
 
 }  // namespace
@@ -1014,6 +1283,182 @@ bool StateManager::updateFeatureSlot(const std::string& car_id, const std::strin
     fs->active_version = version;
     fs->primary_slot = slot;
     fs->primary_version = version;
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::applyFeaturePackageMetadata(const std::string& car_id, const std::string& feature,
+    const FeaturePackageMetadata& metadata, std::string& error) const {
+    error.clear();
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature + " (expected ADAS|Navigation|Energy)";
+        return false;
+    }
+
+    auto s = loadState(car_id, error);
+    if (!s) {
+        return false;
+    }
+    auto* fs = featureRef(*s, feature);
+    if (!fs) {
+        error = "StateManager: internal error: featureRef failed";
+        return false;
+    }
+
+    if (!metadata.primary_image.empty()) {
+        fs->primary_image = metadata.primary_image;
+    }
+    if (!metadata.artifact_type.empty()) {
+        fs->artifact_type = metadata.artifact_type;
+    }
+    if (!metadata.image_digest.empty()) {
+        fs->image_digest = metadata.image_digest;
+    }
+    if (!metadata.manifest_path.empty()) {
+        fs->manifest_path = metadata.manifest_path;
+    }
+    if (!metadata.package_id.empty()) {
+        fs->package_id = metadata.package_id;
+    }
+
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::reconcileFeatureWithVehicleRuntime(const std::string& car_id, const std::string& feature,
+    bool after_promote, const std::string& docker_image_ref, const std::string& fleet_target_version,
+    const std::string& preserved_primary_slot, const std::string& preserved_primary_version,
+    std::string& error) const {
+    error.clear();
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature;
+        return false;
+    }
+
+    const std::string domainKey = fleetFeatureToRuntimeDomainKey(feature);
+    if (domainKey.empty()) {
+        error = "StateManager: no vehicle_runtime domain mapping for feature: " + feature;
+        return false;
+    }
+
+    const std::filesystem::path rtPath =
+        std::filesystem::path(workDir_) / ".." / "deploy" / "vehicle_runtime" / (car_id + ".json");
+    VehicleRuntimeDomainView rt{};
+    if (!readVehicleRuntimeDomainFromFile(rtPath.generic_string(), domainKey, rt, error)) {
+        return false;
+    }
+
+    auto s = loadState(car_id, error);
+    if (!s) {
+        return false;
+    }
+    auto* fs = featureRef(*s, feature);
+    if (!fs) {
+        error = "StateManager: internal error: featureRef failed";
+        return false;
+    }
+
+    const std::string pkg_id = fs->package_id;
+    const std::string manifest_path = fs->manifest_path;
+    const std::string artifact_type = fs->artifact_type;
+    const std::string image_digest = fs->image_digest;
+
+    if (after_promote) {
+        std::string pv = formatFleetVersionTag(rt.primary_version);
+        if (pv.empty()) {
+            pv = formatFleetVersionTag(fleet_target_version);
+        }
+        if (!pv.empty()) {
+            fs->active_version = pv;
+            fs->primary_version = pv;
+        }
+        if (!docker_image_ref.empty()) {
+            fs->primary_image = docker_image_ref;
+        }
+        fs->shadow_version.clear();
+        fs->shadow_image.clear();
+        fs->shadow_enabled = false;
+        fs->shadow_slot.clear();
+        if (!fleet_target_version.empty()) {
+            fs->active_slot = "B";
+            fs->primary_slot = "B";
+        }
+    } else {
+        std::string primaryVer = formatFleetVersionTag(rt.primary_version);
+        if (primaryVer.empty()) {
+            primaryVer = formatFleetVersionTag(preserved_primary_version);
+        }
+        std::string candidateVer = formatFleetVersionTag(rt.shadow_version);
+        if (candidateVer.empty()) {
+            candidateVer = formatFleetVersionTag(fleet_target_version);
+        }
+
+        if (!primaryVer.empty()) {
+            fs->active_version = primaryVer;
+            fs->primary_version = primaryVer;
+        }
+        if (!preserved_primary_slot.empty()) {
+            fs->active_slot = preserved_primary_slot;
+            fs->primary_slot = preserved_primary_slot;
+        }
+        if (!candidateVer.empty()) {
+            fs->shadow_version = candidateVer;
+        }
+        fs->shadow_enabled = rt.shadow_enabled || !fs->shadow_version.empty();
+        if (fs->shadow_enabled && fs->shadow_slot.empty()) {
+            fs->shadow_slot = "B";
+        }
+        if (!docker_image_ref.empty()) {
+            fs->shadow_image = docker_image_ref;
+        }
+        // primary_image keeps package metadata (candidate package ref) until promote.
+    }
+
+    if (!pkg_id.empty()) {
+        fs->package_id = pkg_id;
+    }
+    if (!manifest_path.empty()) {
+        fs->manifest_path = manifest_path;
+    }
+    if (!artifact_type.empty()) {
+        fs->artifact_type = artifact_type;
+    }
+    if (!image_digest.empty()) {
+        fs->image_digest = image_digest;
+    }
+
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::alignFeatureStateAfterDockerPromote(const std::string& car_id, const std::string& feature,
+    const std::string& promoted_version, const std::string& promoted_image, std::string& error) const {
+    return reconcileFeatureWithVehicleRuntime(car_id, feature, true, promoted_image, promoted_version, "", "", error);
+}
+
+bool StateManager::applyFeatureDockerRuntime(const std::string& car_id, const std::string& feature,
+    const FeatureDockerRuntimeRecord& record, std::string& error) const {
+    error.clear();
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature + " (expected ADAS|Navigation|Energy)";
+        return false;
+    }
+
+    auto s = loadState(car_id, error);
+    if (!s) {
+        return false;
+    }
+    auto* fs = featureRef(*s, feature);
+    if (!fs) {
+        error = "StateManager: internal error: featureRef failed";
+        return false;
+    }
+
+    fs->docker_runtime_result = record.result;
+    fs->docker_runtime_mode = record.mode;
+    fs->docker_runtime_action = record.action;
+    fs->docker_runtime_time = record.time;
+    fs->docker_runtime_reason = record.reason;
+    fs->docker_runtime_container = record.container;
+    fs->docker_runtime_image = record.image;
+    fs->docker_runtime_pull_policy = record.pull_policy;
     return saveState(car_id, *s, error);
 }
 
@@ -1248,6 +1693,42 @@ bool StateManager::updateOtaPhase(const std::string& car_id,
     if (!s) return false;
     s->ota.ota_phase = ota_phase;
     s->ota.failure_reason = failure_reason;
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::recordLastDeploy(const std::string& car_id,
+    const std::string& feature,
+    const std::string& slot,
+    const std::string& version,
+    const std::string& result,
+    const std::string& reason,
+    std::string& error) const {
+    error.clear();
+    if (!isValidCarId(car_id)) {
+        error = "StateManager: invalid car_id: " + car_id;
+        return false;
+    }
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature;
+        return false;
+    }
+    if (result != "success" && result != "failed" && result != "pending") {
+        error = "StateManager: invalid last_deploy result: " + result;
+        return false;
+    }
+
+    auto s = loadState(car_id, error);
+    if (!s) {
+        return false;
+    }
+
+    s->last_deploy_id = makeFleetDeployId(car_id, feature);
+    s->last_deploy_result = result;
+    s->last_deploy_time = fleetDeployTimestampLocal();
+    s->last_deploy_feature = feature;
+    s->last_deploy_slot = slot;
+    s->last_deploy_version = version;
+    s->last_deploy_reason = reason;
     return saveState(car_id, *s, error);
 }
 

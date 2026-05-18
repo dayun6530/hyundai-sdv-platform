@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "policy_id": "policy_canary_then_stable",
+  "name": "Canary → beta → stable progressive rollout (reference)",
+  "description": "Reference policy for future multi-group expansion. Not executed by automation in 9-2; documents intended stage shape only.",
+  "stages": [
+    {
+      "stage_id": "canary_candidate",
+      "stage_name": "canary",
+      "deploy_action": "candidate",
+      "target_selector_override": {
+        "scope": "group",
+        "group": "canary"
+      },
+      "percentage": 10,
+      "require_ota_ready": true,
+      "require_manual_approval_before_next_stage": true,
+      "rollback_on_failure": true,
+      "docker_runtime": {
+        "enabled": true,
+        "pull_policy": "missing"
+      },
+      "success_criteria": {
+        "docker_runtime_result": "success",
+        "expected_log_patterns": ["Candidate Shadow version is running"]
+      }
+    },
+    {
+      "stage_id": "beta_candidate",
+      "stage_name": "beta",
+      "deploy_action": "candidate",
+      "target_selector_override": {
+        "scope": "group",
+        "group": "beta"
+      },
+      "percentage": 30,
+      "require_ota_ready": true,
+      "require_manual_approval_before_next_stage": true,
+      "rollback_on_failure": true,
+      "docker_runtime": {
+        "enabled": true,
+        "pull_policy": "missing"
+      }
+    },
+    {
+      "stage_id": "stable_promote",
+      "stage_name": "stable",
+      "deploy_action": "promote",
+      "target_selector_override": {
+        "scope": "group",
+        "group": "stable"
+      },
+      "percentage": 100,
+      "require_manual_approval_before_promote": true,
+      "promote_after_success": true,
+      "rollback_on_failure": true,
+      "success_criteria": {
+        "docker_runtime_result": "success",
+        "primary_log_patterns": ["Primary production path running"]
+      }
+    }
+  ],
+  "health_checks": {
+    "forbid_kill_switch": true,
+    "require_safe_update_mode": true,
+    "max_failure_rate_percent": 10
+  },
+  "pause_between_stages_sec": 0,
+  "on_failure": "pause_campaign"
+}

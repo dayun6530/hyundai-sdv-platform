@@ -1,3 +1,5 @@
+#include "DeploymentManager/CampaignManager.h"
+#include "DeploymentManager/CampaignRunManager.h"
 #include "DeploymentManager/DeploymentManager.h"
 #include "DeploymentManager/StateManager.h"
 
@@ -29,7 +31,7 @@ namespace {
             << "  apply-pending-native-car <car_id>\n"
             << "                      After a deferred fleet-deploy: copy packages → active for pending features, then promote pending→active in deploy/state.\n"
             << "                      Invoked automatically at car platform start when SDV_PLATFORM_DEPLOY_ROOT is set.\n"
-            << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n"
+            << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n"
             << "                      SCOPE=vehicle|group|region|group_region\n"
             << "                      vehicle: <car_id>\n"
             << "                      group: <group>\n"
@@ -37,6 +39,9 @@ namespace {
             << "                      group_region: <group> <region>\n"
             << "                      Optional trailing --sync-config: after successful state deploy, sync config/car/<id>.conf\n"
             << "                      vehicle only: default deferred native rollout (pending_active_*; active unchanged until apply-pending-native-car / restart). --no-defer-native restores immediate OTA-safety-gated active update.\n"
+            << "                      Optional --docker-runtime[=candidate|promote]: after successful fleet deploy, run ota_vehicle.sh deploy-shadow (candidate) or promote (primary).\n"
+            << "                      Promote requires an existing candidate container; it does not run deploy-shadow in the same command.\n"
+            << "                      Default: local image inspect only (no pull). Optional --docker-pull[=missing|always] requires --docker-runtime.\n"
             << "  fleet-set-approval <car_id> <true|false>\n"
             << "  fleet-rollback vehicle <car_id> <FEATURE> [--target-version <vX.Y>] [--sync-config]\n"
             << "                      FEATURE=ADAS|Navigation|Energy; car_id=car_1..car_10\n"
@@ -56,6 +61,12 @@ namespace {
             << "                      Does NOT execute docker containers (use scripts/ota_vehicle.sh promote for runtime).\n"
             << "  fleet-ack <car_id> <FEATURE> <ACK_STATUS> <message...> [--version <vX.Y>] [--deploy-id <id>]\n"
             << "                      Record a vehicle ACK into deploy/state/<car>.json (file-based; no MQTT/HTTP in this step).\n"
+            << "  campaign-validate <campaign_json_path>\n"
+            << "                      Read-only: validate campaign JSON, linked rollout policy, package/manifest,\n"
+            << "                      version_map, target vehicles, and runtime preconditions (no deploy, no state writes).\n"
+            << "  campaign-run <campaign_json_path> --phase candidate|promote\n"
+            << "                      candidate: fleet-deploy + Docker deploy-shadow (pull=missing when configured).\n"
+            << "                      promote: fleet-deploy + Docker promote (no pull; candidate container must exist).\n"
             << "\n"
             << "Terminology notes (compatibility):\n"
             << "  - In deploy/state: active_* is legacy alias for primary_* (Docker runtime terminology).\n"
@@ -438,9 +449,39 @@ int main(int argc, char* argv[]) {
         }
         return ok ? 0 : 1;
     }
+    if (cmd == "campaign-validate") {
+        if (positional.size() < 2) {
+            std::cerr << "Usage: DeploymentMgr campaign-validate <campaign_json_path>\n";
+            usage();
+            return 1;
+        }
+        sdv::platform::deployment::CampaignValidator validator(".");
+        return validator.validateCampaignFile(positional[1]);
+    }
+    if (cmd == "campaign-run") {
+        if (positional.size() < 2) {
+            std::cerr << "Usage: DeploymentMgr campaign-run <campaign_json_path> --phase candidate|promote\n";
+            usage();
+            return 1;
+        }
+        std::string phase;
+        for (std::size_t i = 2; i < positional.size(); ++i) {
+            const std::string& a = positional[i];
+            if (a == "--phase" && i + 1 < positional.size()) {
+                phase = positional[++i];
+                continue;
+            }
+            if (!a.empty() && a[0] == '-') {
+                std::cerr << "Unknown campaign-run option: " << a << "\n";
+                return 1;
+            }
+        }
+        sdv::platform::deployment::CampaignRunManager runner(".");
+        return runner.runCampaignFile(positional[1], phase, dm);
+    }
     if (cmd == "fleet-deploy") {
         if (positional.size() < 6) {
-            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
             return 1;
         }
         std::vector<std::string> fd;
@@ -450,6 +491,7 @@ int main(int argc, char* argv[]) {
         }
         bool sync_config = false;
         bool defer_native_vehicle = true;
+        sdv::platform::deployment::DeploymentManager::FleetDockerRuntimeOptions docker_runtime;
         for (;;) {
             if (fd.empty()) {
                 break;
@@ -464,45 +506,114 @@ int main(int argc, char* argv[]) {
                 fd.pop_back();
                 continue;
             }
+            if (fd.back() == "--docker-pull") {
+                docker_runtime.pull_policy = "missing";
+                fd.pop_back();
+                continue;
+            }
+            const std::string dockerPullPrefix = "--docker-pull=";
+            if (fd.back().size() >= dockerPullPrefix.size()
+                && fd.back().compare(0, dockerPullPrefix.size(), dockerPullPrefix) == 0) {
+                std::string policy = fd.back().substr(dockerPullPrefix.size());
+                if (policy.empty()) {
+                    policy = "missing";
+                }
+                docker_runtime.pull_policy = policy;
+                fd.pop_back();
+                continue;
+            }
+            if (fd.back() == "--docker-runtime") {
+                docker_runtime.requested = true;
+                docker_runtime.mode = "candidate";
+                fd.pop_back();
+                continue;
+            }
+            const std::string dockerPrefix = "--docker-runtime=";
+            if (fd.back().size() >= dockerPrefix.size()
+                && fd.back().compare(0, dockerPrefix.size(), dockerPrefix) == 0) {
+                docker_runtime.requested = true;
+                docker_runtime.mode = fd.back().substr(dockerPrefix.size());
+                if (docker_runtime.mode.empty()) {
+                    docker_runtime.mode = "candidate";
+                }
+                fd.pop_back();
+                continue;
+            }
             break;
         }
         for (const auto& a : fd) {
             if (!a.empty() && a[0] == '-') {
                 std::cerr << "Unknown or misplaced fleet-deploy option: " << a
-                          << " (only trailing --sync-config / --no-defer-native are supported)\n";
+                          << " (supported trailing: --sync-config, --no-defer-native, --docker-runtime[=candidate|promote], --docker-pull[=missing|always])\n";
                 return 1;
             }
         }
+        if (!docker_runtime.pull_policy.empty() && !docker_runtime.requested) {
+            std::cerr << "fleet-deploy: --docker-pull requires --docker-runtime\n";
+            return 1;
+        }
+        if (!docker_runtime.pull_policy.empty()) {
+            std::string policy = docker_runtime.pull_policy;
+            for (char& c : policy) {
+                if (c >= 'A' && c <= 'Z') {
+                    c = static_cast<char>(c - 'A' + 'a');
+                }
+            }
+            if (policy != "missing" && policy != "always") {
+                std::cerr << "fleet-deploy: invalid --docker-pull policy \"" << docker_runtime.pull_policy
+                          << "\" (expected missing or always)\n";
+                return 1;
+            }
+            docker_runtime.pull_policy = policy;
+        }
+        if (docker_runtime.requested) {
+            std::string runtimeMode = docker_runtime.mode;
+            for (char& c : runtimeMode) {
+                if (c >= 'A' && c <= 'Z') {
+                    c = static_cast<char>(c - 'A' + 'a');
+                }
+            }
+            if (runtimeMode != "candidate" && runtimeMode != "promote") {
+                std::cerr << "fleet-deploy: invalid --docker-runtime mode \"" << docker_runtime.mode
+                          << "\" (expected candidate or promote)\n";
+                return 1;
+            }
+            docker_runtime.mode = runtimeMode;
+        }
         if (fd.size() < 5) {
-            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
             return 1;
         }
         const std::string& scope = fd[0];
         sdv::platform::deployment::DeploymentManager::DeploySummary sum;
         if (scope == "vehicle") {
             if (fd.size() != 5) {
-                std::cerr << "Usage: DeploymentMgr fleet-deploy vehicle <car_id> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native]\n";
+                std::cerr << "Usage: DeploymentMgr fleet-deploy vehicle <car_id> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
                 return 1;
             }
-            sum = dm.deployToVehicleWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config, defer_native_vehicle);
+            sum = dm.deployToVehicleWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config, defer_native_vehicle,
+                docker_runtime.requested ? &docker_runtime : nullptr);
         } else if (scope == "group") {
             if (fd.size() != 5) {
-                std::cerr << "Usage: DeploymentMgr fleet-deploy group <group> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";
+                std::cerr << "Usage: DeploymentMgr fleet-deploy group <group> <FEATURE> <SLOT> <VERSION> [--sync-config] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
                 return 1;
             }
-            sum = dm.deployToGroupWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config);
+            sum = dm.deployToGroupWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config,
+                docker_runtime.requested ? &docker_runtime : nullptr);
         } else if (scope == "region") {
             if (fd.size() != 5) {
-                std::cerr << "Usage: DeploymentMgr fleet-deploy region <region> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";
+                std::cerr << "Usage: DeploymentMgr fleet-deploy region <region> <FEATURE> <SLOT> <VERSION> [--sync-config] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
                 return 1;
             }
-            sum = dm.deployToRegionWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config);
+            sum = dm.deployToRegionWithSummary(fd[1], fd[2], fd[3], fd[4], sync_config,
+                docker_runtime.requested ? &docker_runtime : nullptr);
         } else if (scope == "group_region") {
             if (fd.size() != 6) {
-                std::cerr << "Usage: DeploymentMgr fleet-deploy group_region <group> <region> <FEATURE> <SLOT> <VERSION> [--sync-config]\n";
+                std::cerr << "Usage: DeploymentMgr fleet-deploy group_region <group> <region> <FEATURE> <SLOT> <VERSION> [--sync-config] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
                 return 1;
             }
-            sum = dm.deployToGroupAndRegionWithSummary(fd[1], fd[2], fd[3], fd[4], fd[5], sync_config);
+            sum = dm.deployToGroupAndRegionWithSummary(fd[1], fd[2], fd[3], fd[4], fd[5], sync_config,
+                docker_runtime.requested ? &docker_runtime : nullptr);
         } else {
             std::cerr << "Invalid scope: " << scope << " (expected vehicle|group|region|group_region)\n";
             return 1;

@@ -1,4 +1,5 @@
 #include "LifeCycleManager/Feature.h"
+#include "LifeCycleManager/FleetVersionResolve.h"
 
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -482,22 +483,34 @@ int Feature::run() {
         return 1;
     }
     std::string distVer = distributionVersionLabelForLog();
-    // Prefer runtime JSON version for logs (docker/OTA demo truth source):
-    // deploy/vehicle_runtime/<car>.json domains.*.primary_version|shadow_version
     const char* car = std::getenv("SDV_CAR_INSTANCE");
     if (car != nullptr && car[0] != '\0') {
         carId_ = std::string(car);
-        std::string statePath;
-        if (const char* envRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
-            if (envRoot[0] != '\0') {
-                statePath = std::string(envRoot) + "/state/" + car + ".json";
+        std::string configPath;
+        if (const char* cfg = std::getenv("SDV_LIFECYCLE_CONFIG")) {
+            if (cfg[0] != '\0') {
+                configPath = cfg;
             }
         }
-        if (statePath.empty()) {
-            statePath = std::string("deploy/state/") + car + ".json";
-        }
-        if (auto v = readRuntimeVersionForStartedLine(statePath, car, name_, isShadowMode_)) {
-            distVer = *v;
+        if (auto info = resolveFleetVersionForProcess(name_, carId_, configPath)) {
+            if (info->version != "unknown") {
+                std::string v = info->version;
+                if (!v.empty() && (v[0] == 'v' || v[0] == 'V') && v.size() >= 2 &&
+                    std::isdigit(static_cast<unsigned char>(v[1]))) {
+                    v = v.substr(1);
+                }
+                if (distVer.empty()) {
+                    distVer = v;
+                }
+            }
+            const std::string verLine = formatVersionLogLine(*info, carId_);
+            const std::string startedLine = formatFeatureStartedLogLine(*info, carId_);
+            log(LogLevel::info, verLine);
+            log(LogLevel::info, startedLine);
+            std::cerr << verLine << std::endl;
+            std::cerr << startedLine << std::endl;
+            appendRunSdvVersionLog(carId_, verLine);
+            appendRunSdvVersionLog(carId_, startedLine);
         }
     }
     effectiveVersionLabelForLog_ = distVer;
@@ -513,8 +526,6 @@ int Feature::run() {
             ", PID:" + std::to_string(getpid()) +
             ") — FLAG_ON 대기 중" + verSuffix);
     }
-
-    maybeLogFleetFeatureDeployBanner();
 
     if (isShadowMode_) {
         log(LogLevel::info, std::string("Shadow observer — mirroring Primary: ") + primaryName_);

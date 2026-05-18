@@ -29,6 +29,12 @@ add_executable(DeploymentMgr
     src/VehicleRegistry.cpp
     src/VersionManager.cpp
     src/StateManager.cpp
+    src/CampaignManager.cpp
+    src/CampaignDocument.cpp
+    src/CampaignValidation.cpp
+    src/CampaignRunManager.cpp
+    src/CampaignRunRecorder.cpp
+    src/TargetingResolver.cpp
     src/DeploymentManagerMain.cpp
 )
 

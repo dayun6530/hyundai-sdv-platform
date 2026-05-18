@@ -4,6 +4,7 @@ set(LCM_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/LifeCycleManager/src)
 set(LCM_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/LifeCycleManager/include)
 
 # *Shadow binaries compile Feature.cpp again with SDV_SHADOW_ENTRY_MAIN (no LifeCycleManagerLib — avoids duplicate symbols).
+# Link FleetVersionResolveLib only (fleet version logging helpers used from Feature.cpp).
 macro(configure_shadow_executable target_name shadow_logical_name primary_logical_name)
     add_executable(${target_name}
         ${LCM_SRC_DIR}/Feature.cpp
@@ -14,7 +15,7 @@ macro(configure_shadow_executable target_name shadow_logical_name primary_logica
         SDV_SHADOW_ENTRY_MAIN=1
         "SDV_SHADOW_LOGICAL_NAME=\"${shadow_logical_name}\""
         "SDV_SHADOW_PRIMARY_NAME=\"${primary_logical_name}\"")
-    target_link_libraries(${target_name} PRIVATE EventBus)
+    target_link_libraries(${target_name} PRIVATE EventBus FleetVersionResolveLib)
     set_target_properties(${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endmacro()
 

@@ -1,4 +1,5 @@
 #include "LifeCycleManager/LifeCycleMgr.h"
+#include "LifeCycleManager/FleetVersionResolve.h"
 
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -422,6 +423,23 @@ void LifeCycleMgr::removeInactiveShadowFeaturesUsingFleetState() {
 
 void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
     const std::string want = trimExecToken(slot.execName);
+
+    if (!carInstanceId_.empty() && isFleetFeatureProcessName(want)) {
+        std::string gateLine;
+        std::string warnLine;
+        if (!shouldSpawnFleetProcess(want, carInstanceId_, lifecycleConfigPath_, gateLine, warnLine)) {
+            std::cout << gateLine << std::endl;
+            appendFleetSpawnGateLog(carInstanceId_, logRootDir_, want, gateLine);
+            slot.pid = 0;
+            slot.alive = false;
+            return;
+        }
+        if (!warnLine.empty()) {
+            std::cout << warnLine << std::endl;
+            appendFleetSpawnGateLog(carInstanceId_, logRootDir_, want, warnLine);
+        }
+    }
+
     std::string execPath = resolveExecPath(want);
     const std::string abArgv = resolveAbArgvForExec(want, launchAbVariant_);
     // Config uses a listen-friendly address (often 0.0.0.0:PORT). Feature clients must use a
@@ -464,6 +482,16 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
         slot.pid = pid;
         slot.alive = true;
         std::cout << "[LifeCycleMgr] Spawned " << want << " (PID:" << pid << ")" << std::endl;
+        if (!carInstanceId_.empty() && isFleetFeatureProcessName(want)) {
+            if (auto info = resolveFleetVersionForProcess(want, carInstanceId_, lifecycleConfigPath_)) {
+                const std::string verLine = formatVersionLogLine(*info, carInstanceId_);
+                const std::string startedLine = formatFeatureStartedLogLine(*info, carInstanceId_);
+                std::cout << verLine << std::endl;
+                std::cout << startedLine << std::endl;
+                appendRunSdvVersionLog(carInstanceId_, verLine);
+                appendRunSdvVersionLog(carInstanceId_, startedLine);
+            }
+        }
     } else {
         std::cerr << "[LifeCycleMgr] fork() failed for " << want << std::endl;
     }
@@ -833,10 +861,18 @@ void LifeCycleMgr::monitor() {
                 kill(f.pid, SIGTERM);
                 // Do not block here; status will flip on next iteration.
             } else if (wantAlive && !f.alive) {
-                std::cout << "[LifeCycleMgr]   [feat] " << exec
-                          << " : starting (FLAG_ON)" << std::endl;
-                f.pid = -1;
-                spawnProcess(f);
+                std::string gateLine;
+                std::string warnLine;
+                if (shouldSpawnFleetProcess(exec, carInstanceId_, lifecycleConfigPath_, gateLine, warnLine)) {
+                    if (!warnLine.empty()) {
+                        std::cout << warnLine << std::endl;
+                        appendFleetSpawnGateLog(carInstanceId_, logRootDir_, exec, warnLine);
+                    }
+                    std::cout << "[LifeCycleMgr]   [feat] " << exec
+                              << " : starting (FLAG_ON)" << std::endl;
+                    f.pid = -1;
+                    spawnProcess(f);
+                }
             }
 
             if (f.alive) {

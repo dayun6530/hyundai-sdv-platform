@@ -2,16 +2,42 @@
   "schema_version": 1,
   "features": {
     "ADAS": {
-      "A": { "version": "v0.1", "role": "stable",    "binary": "AdasFeature" },
-      "B": { "version": "v0.4", "role": "candidate", "binary": "AdasFeature" }
+      "A": {
+        "version": "v0.1",
+        "role": "stable",
+        "binary": "AdasFeature"
+      },
+      "B": {
+        "version": "v0.5",
+        "role": "candidate",
+        "binary": "AdasFeature",
+        "package_id": "ADAS_v0.5",
+        "package_path": "deploy/packages/ADAS/v0.5"
+      }
     },
     "Navigation": {
-      "A": { "version": "v1.0", "role": "stable",    "binary": "NavigationFeature" },
-      "B": { "version": "v1.1", "role": "candidate", "binary": "NavigationFeature" }
+      "A": {
+        "version": "v1.0",
+        "role": "stable",
+        "binary": "NavigationFeature"
+      },
+      "B": {
+        "version": "v1.1",
+        "role": "candidate",
+        "binary": "NavigationFeature"
+      }
     },
     "Energy": {
-      "A": { "version": "v0.5", "role": "stable",    "binary": "EvEnergyFeature" },
-      "B": { "version": "v0.6", "role": "candidate", "binary": "EvEnergyFeature" }
+      "A": {
+        "version": "v0.5",
+        "role": "stable",
+        "binary": "EvEnergyFeature"
+      },
+      "B": {
+        "version": "v0.6",
+        "role": "candidate",
+        "binary": "EvEnergyFeature"
+      }
     }
   }
 }

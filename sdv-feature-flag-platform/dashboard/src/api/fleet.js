@@ -104,6 +104,22 @@ export async function runFleetAction(payload) {
   return data;
 }
 
+export async function previewFleetCommand(payload) {
+  const res = await fetchNoStore("/api/fleet/command-preview", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => null);
+  if (!data) {
+    return {
+      success: false,
+      error: `Command preview failed: ${res.status}`,
+    };
+  }
+  return data;
+}
+
 export async function fleetDeploy(payload) {
   const body = { ...payload, sync_config: payload?.sync_config === true };
   const res = await fetch("/api/fleet/deploy", {

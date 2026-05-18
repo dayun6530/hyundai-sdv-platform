@@ -14,6 +14,10 @@ public:
         std::string version;  // e.g. v0.1
         std::string role;     // stable | candidate
         std::string binary;   // e.g. AdasFeature (package basename)
+        std::string package_id;     // optional (from version_map assign / registry)
+        std::string package_path;   // optional relative path under platform root
+        std::string docker_image;   // optional image tag override
+        std::string artifact_type;  // optional docker_image | executable
     };
 
     // Internal representation of each slot/feature in the JSON file.
@@ -21,6 +25,10 @@ public:
         std::string version;
         std::string role;
         std::string binary;
+        std::string package_id;
+        std::string package_path;
+        std::string docker_image;
+        std::string artifact_type;
     };
     struct FeatureData {
         std::optional<SlotData> a;

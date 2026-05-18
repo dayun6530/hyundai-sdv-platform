@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdv-ota-manager/platform/deploy/schemas/campaign.schema.json",
+  "title": "Fleet deployment campaign",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "name",
+    "feature",
+    "target_version",
+    "target_role",
+    "rollout_policy_id",
+    "target_selector"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "campaign_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "active", "paused", "completed", "cancelled"] },
+    "created_at": { "type": "string" },
+    "feature": { "type": "string", "enum": ["ADAS", "Navigation", "Energy"] },
+    "target_version": { "type": "string", "pattern": "^v" },
+    "target_role": { "type": "string", "enum": ["primary", "candidate"] },
+    "legacy_slot": { "type": "string", "enum": ["A", "B"], "description": "Internal fleet-deploy mapping only: A=primary, B=candidate" },
+    "package_id": { "type": "string" },
+    "package_path": { "type": "string" },
+    "manifest_path": { "type": "string" },
+    "docker_image": { "type": "string" },
+    "artifact_type": { "type": "string", "enum": ["docker_image", "executable"] },
+    "rollout_policy_id": { "type": "string" },
+    "target_selector": {
+      "type": "object",
+      "required": ["scope"],
+      "properties": {
+        "scope": { "type": "string", "enum": ["vehicle", "group", "region", "group_region"] },
+        "vehicle_ids": { "type": "array", "items": { "type": "string" } },
+        "group": { "type": "string" },
+        "region": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "safety_requirements": {
+      "type": "object",
+      "properties": {
+        "respect_kill_switch": { "type": "boolean" },
+        "require_ota_ready": { "type": "boolean" },
+        "require_driver_approval": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "execution_options": {
+      "type": "object",
+      "properties": {
+        "sync_config": { "type": "boolean" },
+        "no_defer_native": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "docker_runtime": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "candidate": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "const": "candidate" },
+            "pull_policy": { "type": "string", "enum": ["missing", "always"] }
+          }
+        },
+        "promote": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "const": "promote" },
+            "policy": { "type": "string", "enum": ["manual", "automatic"] },
+            "separate_run_required": { "type": "boolean" }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "approval_required": { "type": "boolean" }
+  }
+}

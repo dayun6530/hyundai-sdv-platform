@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { previewFleetCommand } from "../api/fleet.js";
 import { computeOtaSafetyFleet, getEffectiveVehicleStatus } from "./fleetDashboardModel.js";
 import {
   buildFleetDeployCliPreview,
@@ -33,6 +34,9 @@ export default function FleetDeployPanel({
   const [group, setGroup] = useState("canary");
   const [region, setRegion] = useState("KR");
   const [syncConfig, setSyncConfig] = useState(true);
+  const [commandPreviewBusy, setCommandPreviewBusy] = useState(false);
+  const [commandPreviewError, setCommandPreviewError] = useState("");
+  const [commandPreviewResult, setCommandPreviewResult] = useState(null);
 
   const raw = versionMap?.raw ?? versionMap;
   const slotEntry = useMemo(() => getVersionMapSlotEntry(raw, feature, slot), [raw, feature, slot]);
@@ -78,6 +82,51 @@ export default function FleetDeployPanel({
   const hasMissingState = useMemo(() => matched.some((v) => !stateByCar[v.car_id] || stateByCar[v.car_id].missing), [matched, stateByCar]);
 
   const canRollout = matched.length > 0 && Boolean(targetVersion);
+
+  const commandPreviewVehicleId = useMemo(() => {
+    if (scope === "vehicle") return carId;
+    // TODO: extend command-preview API/UI to preview group/region targets directly.
+    return matched[0]?.car_id || carsForSelect[0] || carId || "car_1";
+  }, [scope, carId, matched, carsForSelect]);
+
+  const commandPreviewPayload = useMemo(
+    () => ({
+      action: "deploy-candidate",
+      vehicle_id: commandPreviewVehicleId,
+      feature,
+      version: targetVersion,
+    }),
+    [commandPreviewVehicleId, feature, targetVersion],
+  );
+
+  useEffect(() => {
+    setCommandPreviewError("");
+    setCommandPreviewResult(null);
+  }, [commandPreviewPayload]);
+
+  const commandPreview = commandPreviewResult?.preview || null;
+  const legacyCommandPreview = Array.isArray(commandPreview?.legacy_command_preview)
+    ? commandPreview.legacy_command_preview
+    : [];
+  const commandPreviewNotes = Array.isArray(commandPreview?.notes) ? commandPreview.notes : [];
+
+  const runCommandPreview = async () => {
+    if (!canRollout || !commandPreviewVehicleId || commandPreviewBusy) return;
+    setCommandPreviewBusy(true);
+    setCommandPreviewError("");
+    try {
+      const data = await previewFleetCommand(commandPreviewPayload);
+      setCommandPreviewResult(data);
+      if (data?.success === false || data?.preview?.ok === false) {
+        setCommandPreviewError(data?.error || data?.preview?.error || "command preview failed");
+      }
+    } catch (e) {
+      setCommandPreviewResult(null);
+      setCommandPreviewError(e.message || "command preview failed");
+    } finally {
+      setCommandPreviewBusy(false);
+    }
+  };
 
   const runRollout = () => {
     if (!canRollout || deploying) return;
@@ -323,11 +372,88 @@ export default function FleetDeployPanel({
           {!canRollout ? (
             <p className="rollout-empty subtle">No matched vehicles for selected scope.</p>
           ) : null}
-          <div className="rollout-action-row">
+          <div className="rollout-action-row" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={runCommandPreview}
+              disabled={!canRollout || !commandPreviewVehicleId || commandPreviewBusy}
+            >
+              {commandPreviewBusy ? "Previewing..." : "Preview Command"}
+            </button>
             <button type="button" className="btn btn-primary" onClick={runRollout} disabled={!canRollout || deploying}>
               {deploying ? "Running rollout…" : "Run Rollout"}
             </button>
           </div>
+          <p className="tiny rollout-hint" style={{ marginTop: 10 }}>
+            Command preview calls <code className="mono">POST /api/fleet/command-preview</code> only. This is a dry-run
+            preview. No deployment command is executed.
+          </p>
+          {scope !== "vehicle" ? (
+            <p className="tiny subtle">
+              Preview target uses the first matched vehicle <code className="mono">{commandPreviewVehicleId}</code> for this{" "}
+              <code className="mono">{scope}</code> rollout scope.
+            </p>
+          ) : null}
+          {commandPreviewError ? <div className="error-banner">{commandPreviewError}</div> : null}
+          {commandPreview ? (
+            <div className="va-result" style={{ marginTop: 12 }}>
+              <div className="rollout-banner warn">
+                <strong>This is a dry-run preview. No deployment command is executed.</strong>
+              </div>
+              <div className="rollout-readonly-grid" style={{ marginTop: 12 }}>
+                <div>
+                  <div className="label">dry_run</div>
+                  <span className={`status-badge ${commandPreview.dry_run === true ? "status-green" : "status-red"}`}>
+                    {String(commandPreview.dry_run)}
+                  </span>
+                </div>
+                <div>
+                  <div className="label">will_execute</div>
+                  <span className={`status-badge ${commandPreview.will_execute === false ? "status-green" : "status-red"}`}>
+                    {String(commandPreview.will_execute)}
+                  </span>
+                </div>
+                <div>
+                  <div className="label">action</div>
+                  <div className="value mono">{commandPreview.action || "—"}</div>
+                </div>
+                <div>
+                  <div className="label">vehicle_id</div>
+                  <div className="value mono">{commandPreview.vehicle_id || "—"}</div>
+                </div>
+                <div>
+                  <div className="label">feature</div>
+                  <div className="value mono">{commandPreview.feature || "—"}</div>
+                </div>
+                <div>
+                  <div className="label">version</div>
+                  <div className="value mono">{commandPreview.version || "—"}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <div className="label">legacy_command_preview</div>
+                <div className="json-box mono">
+                  {legacyCommandPreview.length
+                    ? legacyCommandPreview
+                        .map((item, idx) => {
+                          const command = item.command || `${item.method || ""} ${item.endpoint || ""}`.trim();
+                          const body = item.body ? `\n   body: ${JSON.stringify(item.body)}` : "";
+                          const note = item.note ? `\n   note: ${item.note}` : "";
+                          return `${idx + 1}. [${item.type || "legacy"}] ${command}${body}${note}`;
+                        })
+                        .join("\n\n")
+                    : "—"}
+                </div>
+              </div>
+              {commandPreviewNotes.length ? (
+                <div style={{ marginTop: 12 }}>
+                  <div className="label">notes</div>
+                  <div className="json-box mono">{commandPreviewNotes.map((n) => `- ${n}`).join("\n")}</div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <p className="tiny rollout-hint">
             10–11. After execution, <strong>Deploy Summary</strong> shows <code className="mono">[SUMMARY_JSON]</code> and stdout/stderr.
             Fleet command history reloads from <code className="mono">deploy/history/fleet_history.jsonl</code>; the Fleet Dashboard refreshes
