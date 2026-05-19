@@ -220,19 +220,20 @@ function Start-OptionalCmdWindow {
     Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $cmd) -WindowStyle Normal
 }
 
-# status-server=8080, dashboard=5173, test-ui=5174, sdv-cockpit-ui=5175
-Stop-ListenPorts @(8080, 5173, 5174, 5175)
+# status-server=8080, admin-portal=5170, dashboard=5173, test-ui=5174, sdv-cockpit-ui=5175
+Stop-ListenPorts @(8080, 5170, 5173, 5174, 5175)
 Start-Sleep -Milliseconds 800
 
 $viteDiag = Join-Path $ProjectRoot "scripts\diagnose_vite_ports.ps1"
 if (Test-Path -LiteralPath $viteDiag) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $viteDiag -Quiet
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Vite ports 5173-5175 may be blocked on this Windows host. Run: .\scripts\diagnose_vite_ports.ps1 -FixHint"
+        Write-Warning "Vite ports 5170, 5173-5175 may be blocked on this Windows host. Run: .\scripts\diagnose_vite_ports.ps1 -FixHint"
     }
 }
 
 Start-OptionalCmdWindow "status-server" "start"
+Start-OptionalCmdWindow "admin-portal"
 Start-OptionalCmdWindow "dashboard"
 Start-OptionalCmdWindow "test-ui"
 Start-OptionalCmdWindow "sdv-cockpit-ui"
@@ -262,30 +263,14 @@ if ($healthOk) {
     Write-Warning "[run_sdv] status-server not ready on :8080; skipped apply-pending (start status-server manually if needed)"
 }
 
-Write-Host "Done. dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:5174  cockpit-ui: http://127.0.0.1:5175  pgAdmin: http://127.0.0.1:5050"
+Write-Host "Done. admin-portal: http://127.0.0.1:5170  (dashboard, test-ui, pgAdmin, Grafana in one UI)"
+Write-Host "      dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:5174  cockpit-ui: http://127.0.0.1:5175  pgAdmin: http://127.0.0.1:5050  Grafana: http://127.0.0.1:3000"
+Write-Host "      Qt SDV Dashboard (Windows): .\open_qt_dashboard.bat  (not the web portal)"
 
-# --- Qt SDV Dashboard (Windows native UI; subscribe-only over HTTP + optional MQTT) ---
+# --- Qt SDV Dashboard (Windows native UI; optional — web Admin Portal is separate) ---
 if ($env:SDV_SKIP_QT_DASHBOARD -eq "1") {
     Write-Host "[run_sdv] SDV_SKIP_QT_DASHBOARD=1 — skipping native Qt dashboard launch."
 } else {
-    $dashCandidates = @(
-        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\Release\SDV_Dashboard.exe"),
-        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\RelWithDebInfo\SDV_Dashboard.exe"),
-        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\Debug\SDV_Dashboard.exe"),
-        (Join-Path $ProjectRoot "sdv-dashboard-qt\build\SDV_Dashboard.exe"),
-        (Join-Path $ProjectRoot "sdv-dashboard-qt\build-hotfix\Release\SDV_Dashboard.exe"),
-        (Join-Path $ProjectRoot "sdv-dashboard-qt\build-hotfix\x64\Release\SDV_Dashboard.exe")
-    )
-    $dashExe = $dashCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-    if ($dashExe) {
-        Write-Host "[run_sdv] Launching Qt SDV dashboard: $dashExe"
-        Start-Process -FilePath $dashExe -ArgumentList @(
-            "--api-base", "http://127.0.0.1:8080",
-            "--mqtt-host", "127.0.0.1",
-            "--mqtt-port", "1884",
-            "--car-id", "car_1"
-        ) -WorkingDirectory (Split-Path -Parent $dashExe)
-    } else {
-        Write-Warning "[run_sdv] SDV_Dashboard.exe not found. Build once on Windows: cmake -S sdv-dashboard-qt -B sdv-dashboard-qt/build -DCMAKE_PREFIX_PATH=<Qt6_DIR> && cmake --build sdv-dashboard-qt/build --config Release"
-    }
+    . (Join-Path $ProjectRoot "scripts\SdvRunCommon.ps1")
+    Start-SdvQtDashboard -ProjectRoot $ProjectRoot -CarId "car_1" -LogPrefix "run_sdv"
 }
