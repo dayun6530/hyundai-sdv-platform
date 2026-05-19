@@ -44,7 +44,7 @@ static std::string basenameOfPath(const std::string& path) {
 
 static std::string resolveSignalPath(const std::string& requested) {
     // Backward-compatible: many call sites pass "logs/<file>". When SDV_LOG_DIR is set
-    // (logs/A or logs/B), keep the file name but relocate to the per-car log root.
+    // (e.g. logs/car_1), keep the file name but relocate to the per-car log root.
     static constexpr const char kLogsPrefix[] = "logs/";
     if (requested.rfind(kLogsPrefix, 0) != 0) {
         return requested;
@@ -59,7 +59,7 @@ static std::string resolveSignalPath(const std::string& requested) {
 }
 
 static void ensureLogDirsExist(const std::string& path) {
-    // Minimal nested dir support for logs/A and logs/B.
+    // Minimal nested dir support for logs/car_<n>/.
     mkdir("logs", 0755);
     const std::size_t slash = path.find_last_of("/\\");
     if (slash == std::string::npos) return;

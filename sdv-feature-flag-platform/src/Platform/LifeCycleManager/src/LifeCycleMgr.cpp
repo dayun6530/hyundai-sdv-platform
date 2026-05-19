@@ -44,18 +44,6 @@ std::string trimExecToken(std::string s) {
     return s;
 }
 
-/// Car-line binaries use `Feature_A` / `Feature_B` in the exec name; others use \p configAb only.
-std::string resolveAbArgvForExec(const std::string& execName,
-                                 const std::string& configAb) {
-    if (execName.find("Feature_B") != std::string::npos) {
-        return "B";
-    }
-    if (execName.find("Feature_A") != std::string::npos) {
-        return "A";
-    }
-    return configAb;
-}
-
 #if SDV_LIFECYCLE_HAS_NJSON
 std::string normalizeFleetVersionToken(std::string_view in) {
     std::string s;
@@ -128,23 +116,6 @@ bool readProcCmdlineRaw(pid_t pid, std::string* out) {
     return true;
 }
 
-// Normalize feature exec name to its logical base:
-// - NavigationFeature_A / NavigationFeature_B -> NavigationFeature
-// - NavigationFeature_A_Shadow -> NavigationFeature
-// - AdasFeature_B_Shadow -> AdasFeature
-std::string featureLogicalBaseFromExecName(const std::string& execName) {
-    std::string s = trimExecToken(execName);
-    static constexpr const char* kShadow = "_Shadow";
-    if (s.size() > 7 && s.compare(s.size() - 7, 7, kShadow) == 0) {
-        s.resize(s.size() - 7);
-    }
-    if (s.size() > 2 && s[s.size() - 2] == '_' &&
-        (s.back() == 'A' || s.back() == 'B')) {
-        s.resize(s.size() - 2);
-    }
-    return s;
-}
-
 std::string stripShadowSuffix(const std::string& name) {
     std::string s = trimExecToken(name);
     static constexpr const char* kShadow = "_Shadow";
@@ -154,25 +125,13 @@ std::string stripShadowSuffix(const std::string& name) {
     return s;
 }
 
-bool hasCarLineSuffix(const std::string& primaryName) {
-    return primaryName.size() >= 2 && primaryName[primaryName.size() - 2] == '_' &&
-        (primaryName.back() == 'A' || primaryName.back() == 'B');
-}
-
-/// Match EventBus main-flag message to a spawned feature executable name.
-/// Applies to Navigation / Adas / EvEnergy (any `*Feature_A|B` + optional `_Shadow`).
-/// - `AdasFeature` (logical) matches `AdasFeature_A`, `AdasFeature_B`, and their `*_Shadow` rows in config.
-/// - `AdasFeature_B` matches `AdasFeature_B` and `AdasFeature_B_Shadow` only.
+/// Match EventBus main-flag message to a spawned feature executable name (Shadow suffix ignored).
 bool featureExecMatchesMainFlagMessage(const std::string& execName, const std::string& msg) {
     const std::string e = trimExecToken(execName);
-    const std::string mPrimary = stripShadowSuffix(msg);
     if (e == trimExecToken(msg)) {
         return true;
     }
-    if (hasCarLineSuffix(mPrimary)) {
-        return stripShadowSuffix(e) == mPrimary;
-    }
-    return featureLogicalBaseFromExecName(e) == mPrimary;
+    return stripShadowSuffix(e) == stripShadowSuffix(msg);
 }
 
 // Convert server bind address (0.0.0.0:PORT) to connect target (127.0.0.1:PORT).
@@ -267,14 +226,6 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
 
         if (key == "address") {
             address_ = value;
-        } else if (key == "ab_mode") {
-            if (value == "A" || value == "B") {
-                launchAbVariant_ = value;
-                std::cout << "[LifeCycleMgr] ab_mode (A|B Flag seed): " << value << std::endl;
-            } else {
-                std::cerr << "[LifeCycleMgr] Ignoring invalid ab_mode (use A or B): " << value
-                          << std::endl;
-            }
         } else if (key == "communication") {
             communications_.push_back({value, -1, false});
             std::cout << "[LifeCycleMgr] Communication: " << value << std::endl;
@@ -301,15 +252,7 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
 
     // Derive per-instance log root. This avoids crosstalk/cleanup issues when multiple platforms run together.
     // Keep backward-compatible fallback if instance id is missing.
-    if (!carInstanceId_.empty()) {
-        logRootDir_ = "logs/" + carInstanceId_;
-    } else if (launchAbVariant_ == "A") {
-        logRootDir_ = "logs/A";
-    } else if (launchAbVariant_ == "B") {
-        logRootDir_ = "logs/B";
-    } else {
-        logRootDir_ = "logs";
-    }
+    logRootDir_ = carInstanceId_.empty() ? "logs" : ("logs/" + carInstanceId_);
     std::cout << "[LifeCycleMgr] Log root: " << logRootDir_ << std::endl;
     return true;
 }
@@ -441,7 +384,6 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
     }
 
     std::string execPath = resolveExecPath(want);
-    const std::string abArgv = resolveAbArgvForExec(want, launchAbVariant_);
     // Config uses a listen-friendly address (often 0.0.0.0:PORT). Feature clients must use a
     // connect-friendly address; 0.0.0.0 is not a valid gRPC client target.
     // EventBusHost is the server: keep the config address (0.0.0.0:PORT) so it binds all interfaces.
@@ -464,17 +406,9 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
         // Always append instance id as the last argv to allow safe cleanup without
         // killing other concurrently running car instances.
         if (!carInstanceId_.empty()) {
-            if (!abArgv.empty()) {
-                execl(execPath.c_str(), want.c_str(), argv1Addr, abArgv.c_str(), carInstanceId_.c_str(), nullptr);
-            } else {
-                execl(execPath.c_str(), want.c_str(), argv1Addr, carInstanceId_.c_str(), nullptr);
-            }
+            execl(execPath.c_str(), want.c_str(), argv1Addr, carInstanceId_.c_str(), nullptr);
         } else {
-            if (!abArgv.empty()) {
-                execl(execPath.c_str(), want.c_str(), argv1Addr, abArgv.c_str(), nullptr);
-            } else {
-                execl(execPath.c_str(), want.c_str(), argv1Addr, nullptr);
-            }
+            execl(execPath.c_str(), want.c_str(), argv1Addr, nullptr);
         }
         std::cerr << "Failed to exec " << execPath << std::endl;
         _exit(1);
@@ -591,8 +525,7 @@ void LifeCycleMgr::killExistingProcesses() {
                 continue;
             }
 
-            // Exact argv0 basename only. Substring match wrongly kills e.g. AdasFeature_B_Shadow
-            // when cleaning up AdasFeature_B (B-line Shadow names contain the Primary name).
+            // Exact argv0 basename only (Shadow names are distinct executables).
             pid_t targetPid = static_cast<pid_t>(pidVal);
             std::cout << "[LifeCycleMgr] Killing stale process: " << name
                       << " (PID:" << targetPid << ", carId=" << instance << ")" << std::endl;

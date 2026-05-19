@@ -18,7 +18,7 @@ public class KillSignalEvent extends ApplicationEvent {
 
     private final Instant requestedAt;
     private final String source;
-    private final String car;       // "A" or "B"
+    private final String car;       // e.g. "car_1" .. "car_10"
     private final String command;   // e.g. "KILL:AdasFeature" or "KILL:NavigationFeature:REASON"
 
     public KillSignalEvent(Object publisherSource,

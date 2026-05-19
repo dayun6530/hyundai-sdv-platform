@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +40,7 @@ public class SystemKillController {
     @PostMapping("/kill")
     public ResponseEntity<Map<String, Object>> requestKill(@RequestBody KillRequest request) {
         final String car = normalizeCar(request.car());
-        final String command = normalizeCommandForCar(normalizeCommand(request.command()), car);
+        final String command = normalizeCommand(request.command());
 
         eventPublisher.publishEvent(new KillSignalEvent(this, Instant.now(), "web-api", car, command));
         return ResponseEntity
@@ -57,29 +56,23 @@ public class SystemKillController {
     /**
      * Web payload:
      * <ul>
-     *   <li>car: "A" | "B" | "car_1".."car_10"</li>
-     *   <li>command: e.g. "KILL:AdasFeature" / "KILL:NavigationFeature:REASON"</li>
+     *   <li>car: {@code car_1} .. {@code car_10}</li>
+     *   <li>command: e.g. {@code KILL:AdasFeature} / {@code KILL:NavigationFeature:REASON}</li>
      * </ul>
      */
     public record KillRequest(String car, String command) {}
 
     private static String normalizeCar(String car) {
         final String raw = (car == null) ? "" : car.trim();
-        final String c = raw.toUpperCase();
-        if (Objects.equals(c, "A") || Objects.equals(c, "B")) {
-            return c;
-        }
-
         final Matcher m = CAR_ID_PATTERN.matcher(raw);
-        if (m.matches()) {
-            final int n = Integer.parseInt(m.group(1));
-            if (n < 1 || n > 10) {
-                throw new IllegalArgumentException("car must be 'A', 'B', or 'car_1'..'car_10'");
-            }
-            return "car_" + n;
+        if (!m.matches()) {
+            throw new IllegalArgumentException("car must be 'car_1'..'car_10'");
         }
-
-        throw new IllegalArgumentException("car must be 'A', 'B', or 'car_1'..'car_10'");
+        final int n = Integer.parseInt(m.group(1));
+        if (n < 1 || n > 10) {
+            throw new IllegalArgumentException("car must be 'car_1'..'car_10'");
+        }
+        return "car_" + n;
     }
 
     private static String normalizeCommand(String command) {
@@ -91,33 +84,5 @@ public class SystemKillController {
             throw new IllegalArgumentException("command must start with 'KILL:'");
         }
         return cmd;
-    }
-
-    private static String normalizeCommandForCar(String command, String car) {
-        // Legacy A/B mode: Map "KILL:AdasFeature" to "KILL:AdasFeature_A|_B" to match the
-        // platform's car-line executables (AdasFeature_A, AdasFeature_B, ...).
-        // For car_1..car_10 mode, keep the command as-is (caller may send full name if needed).
-        if (!Objects.equals(car, "A") && !Objects.equals(car, "B")) {
-            return command;
-        }
-
-        final String v = car; // "A" or "B"
-
-        final String raw = command.trim();
-        final int first = raw.indexOf(':');
-        if (first < 0) return raw;
-
-        final String action = raw.substring(0, first).trim(); // "KILL"
-        final String rest = raw.substring(first + 1);
-
-        final int second = rest.indexOf(':'); // optional reason segment
-        final String feature = ((second >= 0) ? rest.substring(0, second) : rest).trim();
-        final String extra = (second >= 0) ? rest.substring(second) : "";
-
-        if (feature.isEmpty()) return raw;
-        if (feature.contains("_A") || feature.contains("_B")) return raw;
-
-        final String mapped = feature + "_" + v;
-        return action + ":" + mapped + extra;
     }
 }

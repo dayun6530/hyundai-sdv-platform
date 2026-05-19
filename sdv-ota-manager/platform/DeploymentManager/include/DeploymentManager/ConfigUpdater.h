@@ -7,7 +7,7 @@
 namespace sdv::platform::deployment {
 
 /// Rewrites the `feature` section of a LifeCycleMgr config while preserving
-/// address / ab_mode / communication lines and overall formatting style.
+/// address / communication lines and overall formatting style.
 class ConfigUpdater {
 public:
     /// Domain codes: ADAS, NAV, ENERGY — values must be "A" or "B".

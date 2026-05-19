@@ -59,18 +59,6 @@ bool isPlatformKillSwitchTriggerText(const std::string& text) {
     return containsIgnoreCase(text, "Kill switch activated");
 }
 
-/// Primary base name → paired Shadow logical name (legacy `Foo`+`Shadow`, car-line `Foo_A`+`Foo_A_Shadow`).
-std::string shadowLogicalNameForPrimaryBase(const std::string& base) {
-    if (base.size() >= 2) {
-        const bool endsA = (base.compare(base.size() - 2, 2, "_A") == 0);
-        const bool endsB = (base.compare(base.size() - 2, 2, "_B") == 0);
-        if (endsA || endsB) {
-            return base + "_Shadow";
-        }
-    }
-    return base + "Shadow";
-}
-
 #ifdef SDV_WITH_UNLEASH
 struct VehicleMeta {
     std::string model;
@@ -192,49 +180,6 @@ FeatureEvaluator::FeatureEvaluator(EventBusInterface& eventBus,
 
 namespace {
 
-static bool containsCarLineSuffix(const std::string& name) {
-    return (name.find("_A") != std::string::npos) || (name.find("_B") != std::string::npos);
-}
-
-static bool endsWith(const std::string& s, const std::string& suffix) {
-    return s.size() >= suffix.size() &&
-        s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
-// Convenience: when running a single-car platform (car_<n>),
-// allow signals like "KILL:AdasFeature" and map them to configured exec names (logical AdasFeature, or legacy *_A/*_B).
-static std::string normalizeCarLineTarget(const std::string& raw, std::optional<std::string> variantOpt) {
-    if (!variantOpt.has_value()) return raw;
-    const std::string& vs = *variantOpt;
-    if (vs.size() != 1) return raw;
-    const char v = vs[0];
-    if (v != 'A' && v != 'B') return raw;
-    if (raw.empty() || containsCarLineSuffix(raw)) return raw;
-
-    // Car-line shadow: "Foo_Shadow" where Foo has no _A/_B -> "Foo_A_Shadow" / "Foo_B_Shadow".
-    // Must run before the legacy "…Shadow" suffix rule, otherwise "AdasFeature_Shadow" is parsed
-    // as legacy base "AdasFeature_" and becomes "AdasFeature__A_Shadow" (wrong).
-    static constexpr const char kCarLineShadowSuffix[] = "_Shadow";
-    if (endsWith(raw, kCarLineShadowSuffix)) {
-        const std::string base =
-            raw.substr(0, raw.size() - (sizeof(kCarLineShadowSuffix) - 1));
-        if (base.empty() || containsCarLineSuffix(base)) {
-            return raw;
-        }
-        return base + "_" + std::string(1, v) + kCarLineShadowSuffix;
-    }
-
-    // Handle legacy shadow names "FooShadow" -> "Foo_A_Shadow"
-    if (endsWith(raw, "Shadow")) {
-        const std::string base = raw.substr(0, raw.size() - std::string("Shadow").size());
-        if (base.empty()) return raw;
-        return base + "_" + std::string(1, v) + "_Shadow";
-    }
-
-    // Plain feature base name "Foo" -> "Foo_A"
-    return raw + "_" + std::string(1, v);
-}
-
 /// Reads \c feature lines from the config path in \c SDV_LIFECYCLE_CONFIG (set by LifeCycleMgr).
 static std::unordered_set<std::string> loadFeatureExecNamesFromLifecycleConfig() {
     std::unordered_set<std::string> names;
@@ -268,90 +213,6 @@ static std::unordered_set<std::string> loadFeatureExecNamesFromLifecycleConfig()
     return names;
 }
 
-/// Maps shorthand KILL targets (e.g. \c AdasFeature) to concrete exec names present in config.
-/// Returns empty if \p raw is not a known shorthand or nothing from the shorthand matches config.
-static std::vector<std::string> resolveCarLineKillTargetsUsingConfig(
-    const std::string& raw,
-    const std::unordered_set<std::string>& deployed) {
-    std::vector<std::string> matches;
-    static constexpr const char* kDomains[] = {
-        "NavigationFeature",
-        "AdasFeature",
-        "EvEnergyFeature",
-    };
-    for (const char* d : kDomains) {
-        const std::string dom(d);
-        if (raw == dom) {
-            if (deployed.count(dom)) {
-                matches.push_back(dom);
-            }
-            const std::string a = dom + "_A";
-            const std::string b = dom + "_B";
-            if (deployed.count(a)) {
-                matches.push_back(a);
-            }
-            if (deployed.count(b)) {
-                matches.push_back(b);
-            }
-            return matches;
-        }
-        if (raw == dom + "_Shadow") {
-            const std::string leg = dom + "Shadow";
-            if (deployed.count(leg)) {
-                matches.push_back(leg);
-            }
-            const std::string as = dom + "_A_Shadow";
-            const std::string bs = dom + "_B_Shadow";
-            if (deployed.count(as)) {
-                matches.push_back(as);
-            }
-            if (deployed.count(bs)) {
-                matches.push_back(bs);
-            }
-            return matches;
-        }
-        if (raw == dom + "Shadow") {
-            const std::string leg = dom + "Shadow";
-            if (deployed.count(leg)) {
-                matches.push_back(leg);
-            }
-            const std::string as = dom + "_A_Shadow";
-            const std::string bs = dom + "_B_Shadow";
-            if (deployed.count(as)) {
-                matches.push_back(as);
-            }
-            if (deployed.count(bs)) {
-                matches.push_back(bs);
-            }
-            return matches;
-        }
-    }
-    return {};
-}
-
-/// Fallback when \c SDV_LIFECYCLE_CONFIG is unset/unreadable or shorthand matched nothing in config:
-/// KILL both A and B car-line names for the domain.
-static std::vector<std::string> expandAmbiguousCarLineKillTargets(const std::string& raw) {
-    static constexpr const char* kDomains[] = {
-        "NavigationFeature",
-        "AdasFeature",
-        "EvEnergyFeature",
-    };
-    for (const char* d : kDomains) {
-        const std::string dom(d);
-        if (raw == dom) {
-            return {dom};
-        }
-        if (raw == dom + "_Shadow") {
-            return {dom + "Shadow"};
-        }
-        if (raw == dom + "Shadow") {
-            return {dom + "Shadow"};
-        }
-    }
-    return {};
-}
-
 }  // namespace
 
 void FeatureEvaluator::emitAutoShadowModeForAllPrimaries() {
@@ -375,18 +236,6 @@ void FeatureEvaluator::broadcastKillSwitchToAllTargetFeatures() {
         "AdasFeatureShadow",
         "EvEnergyFeature",
         "EvEnergyFeatureShadow",
-        "NavigationFeature_A",
-        "NavigationFeature_A_Shadow",
-        "AdasFeature_A",
-        "AdasFeature_A_Shadow",
-        "EvEnergyFeature_A",
-        "EvEnergyFeature_A_Shadow",
-        "NavigationFeature_B",
-        "NavigationFeature_B_Shadow",
-        "AdasFeature_B",
-        "AdasFeature_B_Shadow",
-        "EvEnergyFeature_B",
-        "EvEnergyFeature_B_Shadow",
         "WatchDog",
     };
     // 요구사항: 이벤트 전송 직전에 해당 로그를 남김

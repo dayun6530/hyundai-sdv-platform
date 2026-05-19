@@ -70,19 +70,10 @@ static std::vector<std::string> expandKillTarget(const std::string& target,
     if (declaredFeatures.empty()) return {target};
     if (declaredFeatures.find(target) != declaredFeatures.end()) return {target};
 
-    // Shorthand: "AdasFeature" → prefer exact configured name, else legacy *_A / *_B variants.
-    std::vector<std::string> expanded;
-    const std::string a = target + "_A";
-    const std::string b = target + "_B";
-    if (declaredFeatures.find(a) != declaredFeatures.end()) expanded.push_back(a);
-    if (declaredFeatures.find(b) != declaredFeatures.end()) expanded.push_back(b);
-    if (!expanded.empty()) return expanded;
-
-    // Also support "NavigationFeature" etc where actual name might be already suffixed differently.
     return {target};
 }
 
-/// e.g. `AdasFeature.FCA` -> configured primary name(s) (e.g. `AdasFeature.FCA`, or legacy `AdasFeature_A.FCA`).
+/// e.g. `AdasFeature.FCA` -> configured primary name (e.g. `AdasFeature.FCA`).
 static std::vector<std::string> expandFlagOrSubTarget(const std::string& rest,
                                                     const std::unordered_set<std::string>& declaredFeatures) {
     const std::string t = trim(rest);

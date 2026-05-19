@@ -12,7 +12,7 @@
 
 - 관제 REST API로 `KILL_SWITCH`를 요청한다.
 - MQTT 제어 메시지가 `/sdv/vehicle/001/control`로 전달된다.
-- 차량 측 `MqttVehicleAgentHost`가 대상 feature를 `ExternalSignals_A.cmd` 또는 `ExternalSignals_B.cmd`로 라우팅한다.
+- 차량 측 `MqttVehicleAgentHost`가 대상 feature를 `config/signals/ExternalSignals_<car_id>.cmd`로 라우팅한다.
 - `FeatureEvaluator`가 KillSwitch를 처리해 대상 프로세스를 종료한다.
 - 차량 측 telemetry `/sdv/vehicle/001/telemetry`로 `KILL_ACK`를 반환한다.
 
@@ -21,7 +21,7 @@
 ## 데모 대상 예시
 
 - Vehicle ID: `001`
-- Target feature: `AdasFeature_B`
+- Target feature: `AdasFeature`
 - MQTT broker: `tcp://127.0.0.1:1884`
 - REST endpoint: `http://127.0.0.1:18080/api/v1/control/kill-switch`
 
@@ -34,7 +34,7 @@
 1. `sdv-feature-flag-platform/build/MqttVehicleAgentHost`가 빌드되어 있어야 한다.
 2. `kill-control-service`가 빌드 가능해야 한다.
 3. WSL에 `mosquitto`, `mosquitto-clients`가 설치되어 있어야 한다.
-4. 플랫폼 실행 시 `FeatureEvaluator`, `SignalReceiver`, `SignalSender`, `AdasFeature_B`가 올라와 있어야 한다.
+4. 플랫폼 실행 시 `FeatureEvaluator`, `SignalReceiver`, `SignalSender`, `AdasFeature`가 올라와 있어야 한다.
 
 ---
 
@@ -70,7 +70,7 @@ cd "c:\Users\82107\Desktop\Team\sdv-feature-flag-platform"
 - `FeatureEvaluator`
 - `SignalReceiver`
 - `SignalSender`
-- `AdasFeature_B`
+- `AdasFeature`
 
 `[LifeCycleMgr] --- Process Status ---` 로그에서 대상 프로세스가 `running`인지 먼저 확인한다.
 
@@ -114,7 +114,7 @@ mvn spring-boot:run
 ```powershell
 $body = @{
   vehicleId = "001"
-  targetFeature = "AdasFeature_B"
+  targetFeature = "AdasFeature"
   timeoutMs = 5000
 } | ConvertTo-Json -Compress
 
@@ -145,7 +145,7 @@ status    : KILL_ACK
 아래 흐름이 보여야 한다.
 
 - `/sdv/vehicle/001/control` 메시지 수신
-- `stopFeature routed to external signal: KILL:AdasFeature_B`
+- `stopFeature routed to external signal: KILL:AdasFeature`
 - telemetry publish
 - `status":"KILL_ACK"`
 
@@ -159,15 +159,15 @@ Get-Content "c:\Users\82107\Desktop\Team\sdv-feature-flag-platform\logs\B\Featur
 
 기대 로그:
 
-- `KILL -> AdasFeature_B`
-- `warning -> SignalSender: AdasFeature_B KillSwitch activated`
+- `KILL -> AdasFeature`
+- `warning -> SignalSender: AdasFeature KillSwitch activated`
 
-### 3. `AdasFeature_B.log`
+### 3. `AdasFeature.log`
 
 PowerShell:
 
 ```powershell
-Get-Content "c:\Users\82107\Desktop\Team\sdv-feature-flag-platform\logs\B\AdasFeature_B.log" -Tail 20
+Get-Content "c:\Users\82108\Desktop\final_merge\sdv-feature-flag-platform\logs\car_1\AdasFeature.log" -Tail 20
 ```
 
 기대 로그:
@@ -179,7 +179,7 @@ Get-Content "c:\Users\82107\Desktop\Team\sdv-feature-flag-platform\logs\B\AdasFe
 
 `[LifeCycleMgr] --- Process Status ---` 또는 관련 상태 로그에서 아래를 확인한다.
 
-- `AdasFeature_B : stopped`
+- `AdasFeature : stopped`
 - 다른 무관한 feature는 계속 `running`
 
 ---
@@ -190,8 +190,8 @@ Get-Content "c:\Users\82107\Desktop\Team\sdv-feature-flag-platform\logs\B\AdasFe
 
 1. REST 응답에 `completed : True`
 2. REST 응답에 `status : KILL_ACK`
-3. `FeatureEvaluator.log`에 `KILL -> AdasFeature_B`
-4. `AdasFeature_B.log` 또는 상태표에 `stopped`
+3. `FeatureEvaluator.log`에 `KILL -> AdasFeature`
+4. `AdasFeature.log` 또는 상태표에 `stopped`
 
 ---
 
@@ -225,4 +225,4 @@ Get-Content "c:\Users\82107\Desktop\Team\sdv-feature-flag-platform\logs\B\AdasFe
 
 ## 데모 한 줄 요약
 
-이 데모는 `kill-control-service`의 REST 요청이 MQTT를 통해 차량으로 전달되고, 차량 측 `MqttVehicleAgentHost`가 기존 `FeatureEvaluator` kill 경로에 연결되어 실제 `AdasFeature_B` 프로세스를 종료하는지 확인하는 절차다.
+이 데모는 `kill-control-service`의 REST 요청이 MQTT를 통해 차량으로 전달되고, 차량 측 `MqttVehicleAgentHost`가 기존 `FeatureEvaluator` kill 경로에 연결되어 실제 `AdasFeature` 프로세스를 종료하는지 확인하는 절차다.

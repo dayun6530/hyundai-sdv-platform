@@ -507,162 +507,6 @@ EvEnergyFeatureShadow/fast:
 .PHONY : EvEnergyFeatureShadow/fast
 
 #=============================================================================
-# Target rules for targets named AdasFeature_A
-
-# Build rule for target.
-AdasFeature_A: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 AdasFeature_A
-.PHONY : AdasFeature_A
-
-# fast build rule for target.
-AdasFeature_A/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A.dir/build.make src/Feature/CMakeFiles/AdasFeature_A.dir/build
-.PHONY : AdasFeature_A/fast
-
-#=============================================================================
-# Target rules for targets named AdasFeature_B
-
-# Build rule for target.
-AdasFeature_B: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 AdasFeature_B
-.PHONY : AdasFeature_B
-
-# fast build rule for target.
-AdasFeature_B/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B.dir/build.make src/Feature/CMakeFiles/AdasFeature_B.dir/build
-.PHONY : AdasFeature_B/fast
-
-#=============================================================================
-# Target rules for targets named NavigationFeature_A
-
-# Build rule for target.
-NavigationFeature_A: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 NavigationFeature_A
-.PHONY : NavigationFeature_A
-
-# fast build rule for target.
-NavigationFeature_A/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A.dir/build
-.PHONY : NavigationFeature_A/fast
-
-#=============================================================================
-# Target rules for targets named NavigationFeature_B
-
-# Build rule for target.
-NavigationFeature_B: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 NavigationFeature_B
-.PHONY : NavigationFeature_B
-
-# fast build rule for target.
-NavigationFeature_B/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B.dir/build
-.PHONY : NavigationFeature_B/fast
-
-#=============================================================================
-# Target rules for targets named EvEnergyFeature_A
-
-# Build rule for target.
-EvEnergyFeature_A: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 EvEnergyFeature_A
-.PHONY : EvEnergyFeature_A
-
-# fast build rule for target.
-EvEnergyFeature_A/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A.dir/build
-.PHONY : EvEnergyFeature_A/fast
-
-#=============================================================================
-# Target rules for targets named EvEnergyFeature_B
-
-# Build rule for target.
-EvEnergyFeature_B: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 EvEnergyFeature_B
-.PHONY : EvEnergyFeature_B
-
-# fast build rule for target.
-EvEnergyFeature_B/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B.dir/build
-.PHONY : EvEnergyFeature_B/fast
-
-#=============================================================================
-# Target rules for targets named AdasFeature_A_Shadow
-
-# Build rule for target.
-AdasFeature_A_Shadow: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 AdasFeature_A_Shadow
-.PHONY : AdasFeature_A_Shadow
-
-# fast build rule for target.
-AdasFeature_A_Shadow/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_A_Shadow.dir/build
-.PHONY : AdasFeature_A_Shadow/fast
-
-#=============================================================================
-# Target rules for targets named AdasFeature_B_Shadow
-
-# Build rule for target.
-AdasFeature_B_Shadow: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 AdasFeature_B_Shadow
-.PHONY : AdasFeature_B_Shadow
-
-# fast build rule for target.
-AdasFeature_B_Shadow/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/AdasFeature_B_Shadow.dir/build
-.PHONY : AdasFeature_B_Shadow/fast
-
-#=============================================================================
-# Target rules for targets named NavigationFeature_A_Shadow
-
-# Build rule for target.
-NavigationFeature_A_Shadow: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 NavigationFeature_A_Shadow
-.PHONY : NavigationFeature_A_Shadow
-
-# fast build rule for target.
-NavigationFeature_A_Shadow/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_A_Shadow.dir/build
-.PHONY : NavigationFeature_A_Shadow/fast
-
-#=============================================================================
-# Target rules for targets named NavigationFeature_B_Shadow
-
-# Build rule for target.
-NavigationFeature_B_Shadow: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 NavigationFeature_B_Shadow
-.PHONY : NavigationFeature_B_Shadow
-
-# fast build rule for target.
-NavigationFeature_B_Shadow/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/NavigationFeature_B_Shadow.dir/build
-.PHONY : NavigationFeature_B_Shadow/fast
-
-#=============================================================================
-# Target rules for targets named EvEnergyFeature_A_Shadow
-
-# Build rule for target.
-EvEnergyFeature_A_Shadow: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 EvEnergyFeature_A_Shadow
-.PHONY : EvEnergyFeature_A_Shadow
-
-# fast build rule for target.
-EvEnergyFeature_A_Shadow/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_A_Shadow.dir/build
-.PHONY : EvEnergyFeature_A_Shadow/fast
-
-#=============================================================================
-# Target rules for targets named EvEnergyFeature_B_Shadow
-
-# Build rule for target.
-EvEnergyFeature_B_Shadow: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 EvEnergyFeature_B_Shadow
-.PHONY : EvEnergyFeature_B_Shadow
-
-# fast build rule for target.
-EvEnergyFeature_B_Shadow/fast:
-	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature_B_Shadow.dir/build
-.PHONY : EvEnergyFeature_B_Shadow/fast
-
-#=============================================================================
 # Target rules for targets named unit_event
 
 # Build rule for target.
@@ -1104,19 +948,11 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... AdasFeature"
 	@echo "... AdasFeatureShadow"
-	@echo "... AdasFeature_A"
-	@echo "... AdasFeature_A_Shadow"
-	@echo "... AdasFeature_B"
-	@echo "... AdasFeature_B_Shadow"
 	@echo "... CenterCommunicationLib"
 	@echo "... DataCollector"
 	@echo "... DeploymentMgr"
 	@echo "... EvEnergyFeature"
 	@echo "... EvEnergyFeatureShadow"
-	@echo "... EvEnergyFeature_A"
-	@echo "... EvEnergyFeature_A_Shadow"
-	@echo "... EvEnergyFeature_B"
-	@echo "... EvEnergyFeature_B_Shadow"
 	@echo "... EventBus"
 	@echo "... EventBusHost"
 	@echo "... FeatureEvaluator"
@@ -1125,10 +961,6 @@ help:
 	@echo "... MqttVehicleAgentHost"
 	@echo "... NavigationFeature"
 	@echo "... NavigationFeatureShadow"
-	@echo "... NavigationFeature_A"
-	@echo "... NavigationFeature_A_Shadow"
-	@echo "... NavigationFeature_B"
-	@echo "... NavigationFeature_B_Shadow"
 	@echo "... SdvPlatform"
 	@echo "... SignalReceiver"
 	@echo "... SignalSender"

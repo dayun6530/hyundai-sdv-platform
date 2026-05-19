@@ -29,48 +29,15 @@ namespace sdv::platform::lifecyclemgr {
 
 namespace {
 
-/// `AdasFeature_A` / `NavigationFeature_B` -> `AdasFeature` / `NavigationFeature` (MQTT UI uses logical names).
-std::optional<std::string> carLineLogicalBaseName(const std::string& processName) {
-    if (processName.size() < 3) {
-        return std::nullopt;
-    }
-    if (processName[processName.size() - 2] != '_') {
-        return std::nullopt;
-    }
-    const char c = processName.back();
-    if (c != 'A' && c != 'B') {
-        return std::nullopt;
-    }
-    return processName.substr(0, processName.size() - 2);
-}
-
-bool matchesMainFlagMessage(const std::string& msg,
-    const std::string& processName,
-    bool shadowObserver,
-    bool primaryProcess) {
-    if (msg == processName) {
-        return true;
-    }
-    if (shadowObserver || !primaryProcess) {
-        return false;
-    }
-    const auto base = carLineLogicalBaseName(processName);
-    return base.has_value() && msg == *base;
+bool matchesMainFlagMessage(const std::string& msg, const std::string& processName) {
+    return msg == processName;
 }
 
 std::optional<std::string> extractSubFeatureKeyFromMessage(const std::string& msg,
     const std::string& processName) {
-    const std::string concrete = processName + ".";
-    if (msg.rfind(concrete, 0) == 0 && msg.size() > concrete.size()) {
-        return msg.substr(concrete.size());
-    }
-    const auto base = carLineLogicalBaseName(processName);
-    if (!base.has_value()) {
-        return std::nullopt;
-    }
-    const std::string logical = *base + ".";
-    if (msg.rfind(logical, 0) == 0 && msg.size() > logical.size()) {
-        return msg.substr(logical.size());
+    const std::string prefix = processName + ".";
+    if (msg.rfind(prefix, 0) == 0 && msg.size() > prefix.size()) {
+        return msg.substr(prefix.size());
     }
     return std::nullopt;
 }
@@ -365,7 +332,7 @@ Feature::Feature(const std::string& name, EventBusInterface& eventBus)
         ? std::string(envLogDir)
         : std::string("logs");
 
-    // Ensure nested log dir exists (logs/ then logs/A|logs/B).
+    // Ensure nested log dir exists (logs/ then logs/car_<n>/).
     mkdir("logs", 0755);
     if (logDir != "logs") {
         mkdir(logDir.c_str(), 0755);
@@ -640,7 +607,7 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
             logSubFeatureSnapshotAfterToggle();
             return true;
         }
-        if (matchesMainFlagMessage(msg, name_, isShadowMode_, isPrimaryProcess())) {
+        if (matchesMainFlagMessage(msg, name_)) {
             log(LogLevel::info, "Flag OFF (by FeatureEvaluator)");
             flag_.disable();
             return true;
@@ -654,7 +621,7 @@ bool Feature::tryConsumeAsPlatformControl(const Event& event) {
             logSubFeatureSnapshotAfterToggle();
             return true;
         }
-        if (matchesMainFlagMessage(msg, name_, isShadowMode_, isPrimaryProcess())) {
+        if (matchesMainFlagMessage(msg, name_)) {
             flag_.enable();
             log(LogLevel::info, "Flag ON (by FeatureEvaluator)");
             return true;
@@ -920,15 +887,9 @@ static int parseNavigationGuidanceStep(const std::string& g) {
 }  // namespace
 
 void Feature::flushNavigationShadowTriplet(const std::string& guidancePayload) {
-    const bool bLine = primaryNameContains(primaryName_, "NavigationFeature_B");
     const int step = parseNavigationGuidanceStep(guidancePayload);
-    if (bLine) {
-        log(LogLevel::info,
-            "=== " + std::to_string(step) + "회차 (B-line 내비) ===");
-    } else {
-        log(LogLevel::info,
-            "=== " + std::to_string(step) + "회차 정보 브로드캐스트 ===");
-    }
+    log(LogLevel::info,
+        "=== " + std::to_string(step) + "회차 정보 브로드캐스트 ===");
     log(LogLevel::info, std::string("차량 위치 전송: ") + navMirrorPendingLoc_);
     log(LogLevel::info, std::string("도로 정보 전송: ") + navMirrorPendingRoad_);
     navMirrorPendingLoc_.clear();
@@ -938,7 +899,6 @@ void Feature::flushNavigationShadowTriplet(const std::string& guidancePayload) {
 void Feature::logEvEnergyShadowEnergyState(const std::string& payload) {
     static constexpr const char kLoc[] = "|SHADOW_LOC|";
     static constexpr const char kRoad[] = "|SHADOW_ROAD|";
-    const bool genesisLine = primaryNameContains(primaryName_, "EvEnergyFeature_B");
 
     const auto pl = payload.find(kLoc);
     if (pl != std::string::npos) {
@@ -946,21 +906,12 @@ void Feature::logEvEnergyShadowEnergyState(const std::string& payload) {
         const std::string detail = payload.substr(pl + sizeof(kLoc) - 1);
         const int battery = parseIntAfterKey(head, "battery=");
         const int rangeKm = parseIntAfterKey(head, "rangeKm=");
-        if (genesisLine) {
-            log(LogLevel::info, "차량 위치 수신 (Genesis energy): " + detail);
-            if (battery >= 0 && rangeKm >= 0) {
-                log(LogLevel::info,
-                    "배터리 잔량: " + std::to_string(battery) +
-                    "% | 예상 주행 가능 거리: " + std::to_string(rangeKm) + "km");
-            }
-        } else {
-            log(LogLevel::info, "차량 위치 수신: " + detail);
-            if (battery >= 0) {
-                const int rkm = rangeKm >= 0 ? rangeKm : battery * 4;
-                log(LogLevel::info,
-                    "배터리 잔량: " + std::to_string(battery) +
-                    "% | 예상 주행 가능 거리: " + std::to_string(rkm) + "km");
-            }
+        log(LogLevel::info, "차량 위치 수신: " + detail);
+        if (battery >= 0) {
+            const int rkm = rangeKm >= 0 ? rangeKm : battery * 4;
+            log(LogLevel::info,
+                "배터리 잔량: " + std::to_string(battery) +
+                "% | 예상 주행 가능 거리: " + std::to_string(rkm) + "km");
         }
         return;
     }
@@ -969,35 +920,19 @@ void Feature::logEvEnergyShadowEnergyState(const std::string& payload) {
         const std::string head = payload.substr(0, pr);
         const std::string road = payload.substr(pr + sizeof(kRoad) - 1);
         const int battery = parseIntAfterKey(head, "battery=");
-        if (genesisLine) {
-            log(LogLevel::info, "도로 정보 수신 (Genesis energy): " + road);
-            if (road.find("오르막") != std::string::npos) {
-                log(LogLevel::warn, "오르막: B-line 에코+파워 한계 보호");
-            } else if (road.find("내리막") != std::string::npos) {
-                if (battery >= 0) {
-                    log(LogLevel::info,
-                        "회생제동 (고출력): " + std::to_string(battery) + "%");
-                } else {
-                    log(LogLevel::info, "회생제동 (고출력) [미러]");
-                }
+        log(LogLevel::info, "도로 정보 수신: " + road);
+        if (road.find("오르막") != std::string::npos) {
+            log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
+        } else if (road.find("내리막") != std::string::npos) {
+            log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
+            if (battery >= 0) {
+                log(LogLevel::info,
+                    "회생제동으로 배터리 회수: " + std::to_string(battery) + "%");
             } else {
-                log(LogLevel::info, "평지: 컴포트 주행 모드");
+                log(LogLevel::info, "회생제동으로 배터리 회수 [미러 동기화]");
             }
         } else {
-            log(LogLevel::info, "도로 정보 수신: " + road);
-            if (road.find("오르막") != std::string::npos) {
-                log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
-            } else if (road.find("내리막") != std::string::npos) {
-                log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
-                if (battery >= 0) {
-                    log(LogLevel::info,
-                        "회생제동으로 배터리 회수: " + std::to_string(battery) + "%");
-                } else {
-                    log(LogLevel::info, "회생제동으로 배터리 회수 [미러 동기화]");
-                }
-            } else {
-                log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
-            }
+            log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
         }
         return;
     }
@@ -1008,25 +943,15 @@ void Feature::logMirroredPayloadForShadow(EventId id, const std::string& payload
     const std::string& pr = primaryName_;
 
     if (primaryNameContains(pr, "Adas")) {
-        const bool genesisLine = primaryNameContains(pr, "AdasFeature_B");
         switch (id) {
         case EventId::VehicleLocationUpdate:
-            if (genesisLine) {
-                log(LogLevel::info, "현재 위치 수신 (Genesis): " + payload);
-                log(LogLevel::info, "주변 차량/장애물 감지 — 프리미엄 센서 융합");
-            } else {
-                log(LogLevel::info, "현재 위치 수신: " + payload);
-                log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
-            }
+            log(LogLevel::info, "현재 위치 수신: " + payload);
+            log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
             return;
         case EventId::RoadInfoUpdate:
-            if (genesisLine) {
-                log(LogLevel::info, "도로 정보 수신 (Genesis): " + payload);
-            } else {
-                log(LogLevel::info, "도로 정보 수신: " + payload);
-                log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
-                log(LogLevel::info, "자율주행 중...");
-            }
+            log(LogLevel::info, "도로 정보 수신: " + payload);
+            log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
+            log(LogLevel::info, "자율주행 중...");
             return;
         case EventId::AdasDecisionUpdate: {
             // Primary mirrors AdasDecisionUpdate with optional "|context" for Shadow replay.
@@ -1040,23 +965,14 @@ void Feature::logMirroredPayloadForShadow(EventId id, const std::string& payload
             const bool loc = header.find("source=location") != std::string::npos;
             const bool road = header.find("source=road") != std::string::npos;
             if (loc && !detail.empty()) {
-                if (genesisLine) {
-                    log(LogLevel::info, "현재 위치 수신 (Genesis): " + detail);
-                    log(LogLevel::info, "주변 차량/장애물 감지 — 프리미엄 센서 융합");
-                } else {
-                    log(LogLevel::info, "현재 위치 수신: " + detail);
-                    log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
-                }
+                log(LogLevel::info, "현재 위치 수신: " + detail);
+                log(LogLevel::info, "주변 차량/장애물 감지 영역 업데이트");
                 return;
             }
             if (road && !detail.empty()) {
-                if (genesisLine) {
-                    log(LogLevel::info, "도로 정보 수신 (Genesis): " + detail);
-                } else {
-                    log(LogLevel::info, "도로 정보 수신: " + detail);
-                    log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
-                    log(LogLevel::info, "자율주행 중...");
-                }
+                log(LogLevel::info, "도로 정보 수신: " + detail);
+                log(LogLevel::info, "자율주행 경로 및 속도 계획 반영");
+                log(LogLevel::info, "자율주행 중...");
                 return;
             }
             log(LogLevel::info, "ADAS 판단 수신: " + payload);

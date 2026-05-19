@@ -343,8 +343,7 @@ int main() {
     std::string outLine;
     bool warningFound = false;
     while (std::getline(outCheck, outLine)) {
-        if (outLine.find("WARNING:NavigationFeature_A:KillSwitch activated") != std::string::npos ||
-            outLine.find("WARNING:NavigationFeature_B:KillSwitch activated") != std::string::npos) {
+        if (outLine.find("WARNING:NavigationFeature:KillSwitch activated") != std::string::npos) {
             warningFound = true;
             break;
         }

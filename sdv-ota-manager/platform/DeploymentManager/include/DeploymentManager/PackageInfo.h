@@ -21,7 +21,7 @@ namespace sdv::platform::deployment {
 struct PackageInfo {
     std::string featureName;   ///< Logical family key, e.g. "ADAS", "NAV", "ENERGY"
     std::string version;       ///< "A" or "B" (slot / line label in this demo)
-    std::string execBasename;  ///< e.g. "AdasFeature_B" (artifact file basename)
+    std::string execBasename;  ///< e.g. "AdasFeature" (artifact file basename)
     std::string sourcePath;    ///< Path under deploy/packages at intake time
     std::string deployedPath;  ///< Path under deploy/active after successful placement
     std::string deployedAt;    ///< ISO-8601 local time string (for logs/audit)

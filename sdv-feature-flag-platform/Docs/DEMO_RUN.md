@@ -138,7 +138,7 @@ npm run dev
   - ADAS: `FCA`, `LKA`, `SCC` (예: `FLAG_OFF:AdasFeature.FCA`)  
   - Navigation: `LOCATION`, `ROAD`, `GUIDANCE`  
   - EV Energy: `REGEN`, `RANGE`, `ECO`  
-  SignalReceiver가 `AdasFeature.FCA` 를 **`AdasFeature_A.FCA` / `AdasFeature_B.FCA`** 로 확장해 EventBus에 넣습니다.
-- **확인 로그**: `logs/car_1/AdasFeature_A.log` 등에서 `SubFlag RX`, `SubFeature ... -> OFF/ON`, 그리고 `FCA: OFF ...` 같은 **도메인 로그**가 이어지는지 확인합니다.
+  SignalReceiver가 `AdasFeature.FCA` 를 설정에 선언된 feature 이름으로 EventBus에 전달합니다.
+- **확인 로그**: `logs/car_1/AdasFeature.log` 등에서 `SubFlag RX`, `SubFeature ... -> OFF/ON`, 그리고 `FCA: OFF ...` 같은 **도메인 로그**가 이어지는지 확인합니다.
 - **test-ui**: `SignalReceiver`가 **`/sdv/vehicle/<car_id>/flags/state`**(JSON, retain)로 논리 플래그 스냅샷을 발행하고, test-ui는 이 토픽을 **구독해서 버튼(active)을 실제 반영 상태와 동기화**합니다. 토픽을 바꾸려면 SignalReceiver 환경변수 `SDV_MQTT_FLAGS_STATE_TOPIC` 을 사용합니다. (Unleash/FeatureEvaluator만으로 바꾼 값은 아직 이 스냅샷에 안 잡히므로, 그 경우는 추후 동일 포맷으로 발행하면 됩니다.)
 
