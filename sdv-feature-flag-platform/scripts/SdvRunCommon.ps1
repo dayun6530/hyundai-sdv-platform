@@ -113,12 +113,16 @@ exit 0
 
 function Get-SdvDashboardExe {
     param([Parameter(Mandatory)][string]$ProjectRoot)
-    $dashRoot = Join-Path $ProjectRoot "sdv-dashboard-qt\build"
+    $qtRoot = Join-Path $ProjectRoot "sdv-dashboard-qt"
     $dashCandidates = @(
-        (Join-Path $dashRoot "Release\SDV_Dashboard.exe"),
-        (Join-Path $dashRoot "RelWithDebInfo\SDV_Dashboard.exe"),
-        (Join-Path $dashRoot "Debug\SDV_Dashboard.exe"),
-        (Join-Path $dashRoot "SDV_Dashboard.exe")
+        (Join-Path $qtRoot "build\Release\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build\RelWithDebInfo\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build\Debug\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build-hotfix\Release\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build-hotfix\x64\Release\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build-hotfix\RelWithDebInfo\SDV_Dashboard.exe"),
+        (Join-Path $qtRoot "build-hotfix\Debug\SDV_Dashboard.exe")
     )
     return ($dashCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1)
 }
@@ -131,7 +135,9 @@ function Start-SdvQtDashboard {
     )
     $dashExe = Get-SdvDashboardExe -ProjectRoot $ProjectRoot
     if (-not $dashExe) {
-        Write-Warning "[$LogPrefix] SDV_Dashboard.exe not found. Build: cmake -S sdv-dashboard-qt -B sdv-dashboard-qt/build && cmake --build sdv-dashboard-qt/build --config Release"
+        Write-Warning "[$LogPrefix] SDV_Dashboard.exe not found (optional Qt desktop UI)."
+        Write-Warning "[$LogPrefix] Build once: .\scripts\build_qt_dashboard.ps1"
+        Write-Warning "[$LogPrefix] Or skip: `$env:SDV_SKIP_QT_DASHBOARD='1'  (web Admin Portal at http://127.0.0.1:5170 is enough for most demos)"
         return
     }
 

@@ -35,6 +35,7 @@ services:
       - loki
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
     ports:
       - '3000:3000'
     volumes:
@@ -118,6 +119,9 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+      # Allow embedding in SDV Admin Portal (iframe on :5170 via Vite proxy).
+      PGADMIN_CONFIG_X_FRAME_OPTIONS: "'ALLOWALL'"
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
       # Pre-load Team_SDV_DB (operational-postgres on compose network); password in /pgpass.
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     ports:

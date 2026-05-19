@@ -1,10 +1,11 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Diagnose why Vite cannot bind to 5173/5174/5175 on Windows (EACCES / Hyper-V excluded ranges).
+  Diagnose why Vite cannot bind to 5170/5173/5174/5175 on Windows (EACCES / Hyper-V excluded ranges).
 
 .DESCRIPTION
   Team default UI ports (do not change without team agreement):
+    admin-portal  5170
     dashboard     5173
     test-ui       5174
     sdv-cockpit-ui 5175
@@ -17,7 +18,7 @@
   Print remediation steps when a port is blocked.
 
 .PARAMETER Quiet
-  Only write on failure; exit 0 if all three ports are listenable, else 1.
+  Only write on failure; exit 0 if all four ports are listenable, else 1.
 #>
 param(
     [switch]$FixHint,
@@ -25,7 +26,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Ports = @(5173, 5174, 5175)
+$Ports = @(5170, 5173, 5174, 5175)
 
 function Write-Info([string]$Message) {
     if (-not $Quiet) {
@@ -77,7 +78,7 @@ function Test-PortInExcludedRange([int]$Port, $Ranges) {
 function Show-FixSteps {
     Write-Host ""
     Write-Host "=== Remediation (try in order; admin PowerShell for step 2) ===" -ForegroundColor Yellow
-    Write-Host "1. Close old Vite CMD windows; run_sdv.ps1 already stops listeners on 5173-5175."
+    Write-Host "1. Close old Vite CMD windows; run_sdv.ps1 already stops listeners on 5170, 5173-5175."
     Write-Host "2. Restart Docker Desktop (WSL integration on), then reboot Windows if still blocked."
     Write-Host "3. Admin:  net stop winnat"
     Write-Host "          net start winnat"
@@ -90,7 +91,7 @@ function Show-FixSteps {
 $excluded = Get-ExcludedTcpRanges
 $blocked = @()
 
-Write-Info "SDV Vite port check (team defaults: 5173, 5174, 5175)"
+Write-Info "SDV Vite port check (team defaults: 5170, 5173, 5174, 5175)"
 if ($excluded.Count -gt 0) {
     Write-Info "Windows excluded TCP ranges (netsh):"
     foreach ($r in $excluded) {

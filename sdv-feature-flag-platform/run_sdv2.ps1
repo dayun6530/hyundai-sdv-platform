@@ -82,19 +82,20 @@ if ($env:SDV_CMAKE_BUILD -eq "1") {
     }
 }
 
-Stop-SdvListenPorts -Ports @(8080, 5173, 5174, 5175) -LogPrefix "run_sdv2"
+Stop-SdvListenPorts -Ports @(8080, 5170, 5173, 5174, 5175) -LogPrefix "run_sdv2"
 Start-Sleep -Milliseconds 800
 
 $viteDiag = Join-Path $ProjectRoot "scripts\diagnose_vite_ports.ps1"
 if (Test-Path -LiteralPath $viteDiag) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $viteDiag -Quiet
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Vite ports 5173-5175 may be blocked. Run: .\scripts\diagnose_vite_ports.ps1 -FixHint"
+        Write-Warning "Vite ports 5170, 5173-5175 may be blocked. Run: .\scripts\diagnose_vite_ports.ps1 -FixHint"
     }
 }
 
 Write-Host "Starting Node UIs + status-server (no vehicles)..."
 Start-SdvOptionalCmdWindow -ProjectRoot $ProjectRoot -SubDir "status-server" -NpmScript "start"
+Start-SdvOptionalCmdWindow -ProjectRoot $ProjectRoot -SubDir "admin-portal"
 Start-SdvOptionalCmdWindow -ProjectRoot $ProjectRoot -SubDir "dashboard"
 Start-SdvOptionalCmdWindow -ProjectRoot $ProjectRoot -SubDir "test-ui"
 Start-SdvOptionalCmdWindow -ProjectRoot $ProjectRoot -SubDir "sdv-cockpit-ui"
@@ -102,7 +103,8 @@ Start-SdvOptionalCmdWindow -ProjectRoot $ProjectRoot -SubDir "sdv-cockpit-ui"
 Write-Host "Waiting for status-server to drain pending Docker OTA queue (if any)..."
 Invoke-SdvStatusServerApplyPending -LogPrefix "run_sdv2"
 
-Write-Host "Done (infra only). dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:5174  cockpit-ui: http://127.0.0.1:5175  pgAdmin: http://127.0.0.1:5050  Grafana: http://127.0.0.1:3000"
+Write-Host "Done (infra only). admin-portal: http://127.0.0.1:5170  (unified menu for dashboard, test-ui, pgAdmin, Grafana)"
+Write-Host "      dashboard: http://127.0.0.1:5173  test-ui: http://127.0.0.1:5174  cockpit-ui: http://127.0.0.1:5175  pgAdmin: http://127.0.0.1:5050  Grafana: http://127.0.0.1:3000"
 Write-Host "[run_sdv2] No car_1..car_10 started. Next: .\scripts\start_car.ps1 -Car 1"
 
 if ($LaunchQt -or $env:SDV_LAUNCH_QT -eq "1") {
