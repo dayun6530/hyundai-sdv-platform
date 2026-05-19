@@ -110,7 +110,9 @@ void DataCollector::dispatchTelemetryBatch(const std::vector<TelemetryRecord>& r
             continue;
         }
         if (!exporter->exportRecords(records)) {
-            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' batch export failed"
+            std::cerr << "[DataCollector] exporter '" << exporter->name()
+                      << "' batch export failed (check SDV_OPERATIONAL_DB_INGEST_URL / "
+                         "SDV_OTLP_LOGS_ENDPOINT from start_platform_wsl.sh)"
                       << std::endl;
         }
     }

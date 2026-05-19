@@ -41,6 +41,37 @@ echo "[start_platform_wsl] platform=${PLATFORM} config=${CONFIG_REL} (arg=${CONF
 export SDV_OTLP_LOGS_ENDPOINT="${SDV_OTLP_LOGS_ENDPOINT:-http://127.0.0.1:4318/v1/logs}"
 export SDV_OPERATIONAL_DB_INGEST_URL="${SDV_OPERATIONAL_DB_INGEST_URL:-http://127.0.0.1:8090/v1/ingest}"
 
+sdv_tcp_port_open() {
+  local host="$1"
+  local port="$2"
+  bash -c "exec 3<>/dev/tcp/${host}/${port}" 2>/dev/null
+}
+
+sdv_wsl_windows_host() {
+  local win_host=""
+  win_host="$(ip route show 2>/dev/null | awk '/^default/ {print $3; exit}')"
+  if [[ -z "${win_host}" ]]; then
+    win_host="$(awk '/^nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null || true)"
+  fi
+  printf '%s' "${win_host}"
+}
+
+# WSL: Docker Desktop publishes ports on Windows localhost. Use the default gateway when
+# 127.0.0.1 inside WSL does not reach the host-published port (same pattern as MQTT below).
+if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+  win_host="$(sdv_wsl_windows_host)"
+  if [[ -n "${win_host}" ]]; then
+    if ! sdv_tcp_port_open 127.0.0.1 8090 && sdv_tcp_port_open "${win_host}" 8090; then
+      export SDV_OPERATIONAL_DB_INGEST_URL="http://${win_host}:8090/v1/ingest"
+      echo "[start_platform_wsl] SDV_OPERATIONAL_DB_INGEST_URL=${SDV_OPERATIONAL_DB_INGEST_URL} (WSL→Windows Docker)" >&2
+    fi
+    if ! sdv_tcp_port_open 127.0.0.1 4318 && sdv_tcp_port_open "${win_host}" 4318; then
+      export SDV_OTLP_LOGS_ENDPOINT="http://${win_host}:4318/v1/logs"
+      echo "[start_platform_wsl] SDV_OTLP_LOGS_ENDPOINT=${SDV_OTLP_LOGS_ENDPOINT} (WSL→Windows Docker)" >&2
+    fi
+  fi
+fi
+
 # Ensure log directory exists (repo-relative, works regardless of caller cwd).
 mkdir -p logs
 # LifeCycleMgr resolves fleet shadow policy from this file (see removeInactiveShadowFeaturesUsingFleetState).
@@ -51,13 +82,10 @@ START_LOG="logs/start_${LOG_TAG}.log"
 
 # If 127.0.0.1:1884 is closed inside WSL, default SDV_MQTT_BROKER_URI to Windows host gateway.
 if [[ -z "${SDV_MQTT_BROKER_URI:-}" ]] && grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-  if bash -c 'exec 3<>/dev/tcp/127.0.0.1/1884' 2>/dev/null; then
+  if sdv_tcp_port_open 127.0.0.1 1884; then
     :
   else
-    win_host="$(ip route show 2>/dev/null | awk '/^default/ {print $3; exit}')"
-    if [[ -z "${win_host}" ]]; then
-      win_host="$(awk '/^nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null || true)"
-    fi
+    win_host="$(sdv_wsl_windows_host)"
     if [[ -n "${win_host}" ]]; then
       export SDV_MQTT_BROKER_URI="tcp://${win_host}:1884"
       echo "[start_platform_wsl] SDV_MQTT_BROKER_URI=${SDV_MQTT_BROKER_URI}" >&2
@@ -72,6 +100,8 @@ fi
   echo "[start_platform_wsl] pwd=$(pwd)"
   echo "[start_platform_wsl] user=$(id -un) uid=$(id -u)"
   echo "[start_platform_wsl] SDV_MQTT_BROKER_URI=${SDV_MQTT_BROKER_URI:-<unset>}"
+  echo "[start_platform_wsl] SDV_OTLP_LOGS_ENDPOINT=${SDV_OTLP_LOGS_ENDPOINT:-<unset>}"
+  echo "[start_platform_wsl] SDV_OPERATIONAL_DB_INGEST_URL=${SDV_OPERATIONAL_DB_INGEST_URL:-<unset>}"
   echo "[start_platform_wsl] mode=${MODE:-<default>}"
 } >> "${START_LOG}" 2>&1
 

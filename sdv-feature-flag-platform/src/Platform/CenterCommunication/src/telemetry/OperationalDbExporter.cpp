@@ -11,6 +11,11 @@ namespace sdv::platform::centercommunication {
 namespace {
 
 nlohmann::json eventObjectFromRecord(const TelemetryRecord& record, const std::string& defaultCarId) {
+    nlohmann::json raw = nlohmann::json::parse(record.rawJson, nullptr, false);
+    if (raw.is_discarded()) {
+        raw = record.rawJson;
+    }
+
     nlohmann::json body = {
         {"vehicle_id", record.carId.empty() ? defaultCarId : record.carId},
         {"feature", record.feature},
@@ -18,10 +23,19 @@ nlohmann::json eventObjectFromRecord(const TelemetryRecord& record, const std::s
         {"level", record.level},
         {"role", record.role},
         {"occurred_at", record.timestamp},
-        {"raw", nlohmann::json::parse(record.rawJson, nullptr, false)},
+        {"raw", raw},
     };
-    if (body["raw"].is_discarded()) {
-        body["raw"] = record.rawJson;
+
+    // Mirror Grafana/Loki body: store inner payload separately for SQL/jsonb queries.
+    if (raw.is_object()) {
+        const auto payloadIt = raw.find("payload");
+        if (payloadIt != raw.end()) {
+            body["payload"] = *payloadIt;
+        }
+        const auto tsIt = raw.find("timestamp");
+        if (tsIt != raw.end() && tsIt->is_string() && record.timestamp.empty()) {
+            body["occurred_at"] = tsIt->get<std::string>();
+        }
     }
     return body;
 }
@@ -80,7 +94,29 @@ bool OperationalDbExporter::postBatch(const std::vector<TelemetryRecord>& record
 
     const std::string body = nlohmann::json{{"events", events}}.dump();
     std::string lastError;
-    return httpPostJsonWithRetry(batchIngestUrl_, body, "OperationalDbExporter(batch)", &lastError);
+    if (httpPostJsonWithRetry(batchIngestUrl_, body, "OperationalDbExporter(batch)", &lastError)) {
+        return true;
+    }
+
+    // Batch failed (HTTP, validation rollback, or oversized body on raw-socket transport).
+    // Fall back to per-event ingest so Loki/Grafana and Postgres stay aligned.
+    std::cerr << "[OperationalDbExporter] batch ingest failed (" << lastError
+              << "); retrying " << nonEmpty.size() << " event(s) individually" << std::endl;
+
+    bool allOk = true;
+    for (const TelemetryRecord& record : nonEmpty) {
+        if (record.rawJson.empty()) {
+            continue;
+        }
+        const std::string singleBody = eventObjectFromRecord(record, defaultCarId_).dump();
+        std::string singleError;
+        if (!httpPostJsonWithRetry(ingestUrl_, singleBody, "OperationalDbExporter", &singleError)) {
+            std::cerr << "[OperationalDbExporter] single ingest failed for event_type="
+                      << record.eventType << " (" << singleError << ")" << std::endl;
+            allOk = false;
+        }
+    }
+    return allOk;
 }
 
 bool OperationalDbExporter::exportRecord(const TelemetryRecord& record) {

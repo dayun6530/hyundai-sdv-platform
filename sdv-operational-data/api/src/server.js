@@ -44,7 +44,13 @@ function normalizeIngestBody(body) {
   const role = body.role != null ? String(body.role).trim() : null;
   const occurredAt = parseOccurredAt(body.occurred_at || body.timestamp);
 
-  let payload = body.payload ?? body.raw ?? null;
+  let payload = body.payload ?? null;
+  if (payload == null && body.raw != null && typeof body.raw === "object" && body.raw.payload != null) {
+    payload = body.raw.payload;
+  }
+  if (payload == null) {
+    payload = body.raw ?? null;
+  }
   if (payload != null && typeof payload === "string") {
     try {
       payload = JSON.parse(payload);
@@ -174,6 +180,7 @@ app.post("/v1/ingest/batch", async (req, res) => {
       const norm = normalizeIngestBody(events[i]);
       if (norm.error) {
         await client.query("ROLLBACK");
+        console.error("[ingest/batch] validation failed at index", i, norm.error, events[i]);
         res.status(400).json({
           ok: false,
           error: norm.error,
