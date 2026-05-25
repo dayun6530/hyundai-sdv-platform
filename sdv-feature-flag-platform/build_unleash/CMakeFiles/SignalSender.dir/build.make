@@ -94,12 +94,8 @@ SignalSender: CMakeFiles/SignalSender.dir/src/Platform/CenterCommunication/src/S
 SignalSender: CMakeFiles/SignalSender.dir/build.make
 SignalSender: src/Platform/CenterCommunication/libCenterCommunicationLib.a
 SignalSender: src/Platform/FeatureCommunication/EventBus/libEventBus.a
-SignalSender: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
-SignalSender: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
-SignalSender: /usr/lib/x86_64-linux-gnu/libssl.so
-SignalSender: /usr/lib/x86_64-linux-gnu/libcrypto.so
-SignalSender: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
-SignalSender: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
+SignalSender: src/Platform/LifeCycleManager/libLifeCycleManagerLib.a
+SignalSender: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 SignalSender: src/Platform/FeatureCommunication/EventBus/libeventbus_proto.a
 SignalSender: /usr/lib/x86_64-linux-gnu/libgrpc++.so.1.51.1
 SignalSender: /usr/lib/x86_64-linux-gnu/libprotobuf.so
@@ -156,6 +152,13 @@ SignalSender: /usr/lib/x86_64-linux-gnu/libabsl_civil_time.so.20220623.0.0
 SignalSender: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
 SignalSender: /usr/lib/x86_64-linux-gnu/libssl.so
 SignalSender: /usr/lib/x86_64-linux-gnu/libcrypto.so
+SignalSender: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
+SignalSender: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
+SignalSender: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
+SignalSender: /usr/lib/x86_64-linux-gnu/libssl.so
+SignalSender: /usr/lib/x86_64-linux-gnu/libcrypto.so
+SignalSender: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
+SignalSender: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
 SignalSender: CMakeFiles/SignalSender.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable SignalSender"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/SignalSender.dir/link.txt --verbose=$(VERBOSE)

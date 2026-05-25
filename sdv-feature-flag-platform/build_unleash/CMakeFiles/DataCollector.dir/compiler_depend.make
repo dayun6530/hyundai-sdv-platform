@@ -4,6 +4,7 @@
 CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src/DataCollector.cpp.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp \
   src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h \
   src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h \
+  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include/LifeCycleManager/TelemetryRuntimeConfig.h \
   /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/DataCollector.h \
   /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/detail/BoundedQueue.h \
   /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/telemetry/ITelemetryExporter.h \
@@ -599,10 +600,6 @@ CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src/DataCollector.
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
 
-/usr/include/google/protobuf/io/zero_copy_stream_impl.h:
-
-/usr/include/c++/13/bits/functexcept.h:
-
 /usr/include/ctype.h:
 
 /usr/include/c++/13/vector:
@@ -727,8 +724,6 @@ CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src/DataCollector.
 
 /usr/include/c++/13/mutex:
 
-/usr/include/c++/13/bits/unique_lock.h:
-
 /usr/include/c++/13/bits/uniform_int_dist.h:
 
 /usr/include/c++/13/bits/locale_classes.tcc:
@@ -766,6 +761,20 @@ CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src/DataCollector.
 /usr/include/c++/13/bits/stl_uninitialized.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/sigval_t.h:
+
+/usr/include/c++/13/debug/assertions.h:
+
+/usr/include/c++/13/debug/debug.h:
+
+/usr/include/c++/13/bits/stl_list.h:
+
+/usr/include/absl/synchronization/internal/create_thread_identity.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs.h:
+
+/usr/include/c++/13/bits/erase_if.h:
+
+/usr/include/grpcpp/security/tls_certificate_provider.h:
 
 /usr/include/c++/13/bits/unique_ptr.h:
 
@@ -835,18 +844,6 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h:
 
 /usr/include/c++/13/bits/range_access.h:
 
-/usr/include/absl/synchronization/internal/create_thread_identity.h:
-
-/usr/include/x86_64-linux-gnu/gnu/stubs.h:
-
-/usr/include/c++/13/bits/erase_if.h:
-
-/usr/include/c++/13/debug/debug.h:
-
-/usr/include/c++/13/bits/stl_list.h:
-
-/usr/include/grpcpp/security/tls_certificate_provider.h:
-
 /usr/include/grpcpp/impl/rpc_service_method.h:
 
 /usr/include/x86_64-linux-gnu/bits/sigstack.h:
@@ -897,8 +894,6 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h:
 
 /usr/include/absl/base/macros.h:
 
-/usr/include/c++/13/bits/deque.tcc:
-
 /usr/include/absl/time/internal/cctz/include/cctz/civil_time.h:
 
 /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/detail/BoundedQueue.h:
@@ -906,16 +901,6 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h:
 /usr/include/c++/13/bits/shared_ptr.h:
 
 /usr/include/grpc/slice_buffer.h:
-
-/usr/include/absl/base/internal/thread_identity.h:
-
-/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include/FeatureCommunication/EventBus/EventBusProxy.h:
-
-/usr/include/absl/base/const_init.h:
-
-/usr/include/c++/13/pstl/execution_defs.h:
-
-/usr/include/grpcpp/impl/codegen/intercepted_channel.h:
 
 /usr/include/c++/13/pstl/glue_algorithm_defs.h:
 
@@ -959,6 +944,8 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h:
 
 /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include/FeatureCommunication/EventBus/Event.h:
 
+/usr/include/c++/13/bits/deque.tcc:
+
 /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h:
 
 /usr/include/c++/13/deque:
@@ -968,6 +955,16 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h:
 /usr/include/c++/13/bits/hashtable.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/error_t.h:
+
+/usr/include/absl/base/internal/thread_identity.h:
+
+/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include/FeatureCommunication/EventBus/EventBusProxy.h:
+
+/usr/include/absl/base/const_init.h:
+
+/usr/include/c++/13/pstl/execution_defs.h:
+
+/usr/include/grpcpp/impl/codegen/intercepted_channel.h:
 
 /usr/include/c++/13/new:
 
@@ -982,6 +979,10 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h:
 /usr/include/absl/base/log_severity.h:
 
 /usr/include/endian.h:
+
+/usr/include/c++/13/bits/unique_lock.h:
+
+/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include/LifeCycleManager/TelemetryRuntimeConfig.h:
 
 /usr/include/stdint.h:
 
@@ -1151,6 +1152,10 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h:
 
 /usr/include/c++/13/bits/stl_construct.h:
 
+/usr/include/c++/13/bits/functexcept.h:
+
+/usr/include/google/protobuf/io/zero_copy_stream_impl.h:
+
 /usr/include/c++/13/iostream:
 
 /usr/include/asm-generic/errno.h:
@@ -1168,8 +1173,6 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h:
 /usr/include/c++/13/iosfwd:
 
 /usr/include/grpcpp/security/server_credentials.h:
-
-/usr/include/c++/13/debug/assertions.h:
 
 /usr/include/google/protobuf/io/zero_copy_stream_impl_lite.h:
 
@@ -1553,6 +1556,10 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h:
 
 /usr/include/x86_64-linux-gnu/bits/sched.h:
 
+/usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:
+
+/usr/include/x86_64-linux-gnu/bits/select.h:
+
 /usr/include/x86_64-linux-gnu/bits/time.h:
 
 /usr/include/x86_64-linux-gnu/bits/sigaction.h:
@@ -1568,10 +1575,6 @@ src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h:
 /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h:
-
-/usr/include/x86_64-linux-gnu/bits/select.h:
-
-/usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdio_lim.h:
 

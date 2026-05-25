@@ -86,6 +86,9 @@ protected:
                        const std::string& eventType,
                        const std::string& jsonPayload);
 
+    /// EventBus telemetry cadence from config/telemetry/runtime JSON (reloads on change).
+    void sleepTelemetryPublishInterval() const;
+
     bool isAbPathAEnabled() const { return abAEnabled_; }
     bool isAbPathBEnabled() const { return abBEnabled_; }
 

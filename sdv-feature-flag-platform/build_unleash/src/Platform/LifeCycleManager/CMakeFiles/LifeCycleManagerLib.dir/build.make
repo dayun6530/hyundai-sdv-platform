@@ -111,11 +111,26 @@ src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.s"
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp -o CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.s
 
+src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/flags.make
+src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o -MF CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o.d -o CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+
+src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.i"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp > CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.i
+
+src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.s"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp -o CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.s
+
 # Object files for target LifeCycleManagerLib
 LifeCycleManagerLib_OBJECTS = \
 "CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.o" \
 "CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.o" \
-"CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o"
+"CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o" \
+"CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o"
 
 # External object files for target LifeCycleManagerLib
 LifeCycleManagerLib_EXTERNAL_OBJECTS =
@@ -123,9 +138,10 @@ LifeCycleManagerLib_EXTERNAL_OBJECTS =
 src/Platform/LifeCycleManager/libLifeCycleManagerLib.a: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.o
 src/Platform/LifeCycleManager/libLifeCycleManagerLib.a: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.o
 src/Platform/LifeCycleManager/libLifeCycleManagerLib.a: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o
+src/Platform/LifeCycleManager/libLifeCycleManagerLib.a: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o
 src/Platform/LifeCycleManager/libLifeCycleManagerLib.a: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make
 src/Platform/LifeCycleManager/libLifeCycleManagerLib.a: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX static library libLifeCycleManagerLib.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libLifeCycleManagerLib.a"
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager && $(CMAKE_COMMAND) -P CMakeFiles/LifeCycleManagerLib.dir/cmake_clean_target.cmake
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/LifeCycleManagerLib.dir/link.txt --verbose=$(VERBOSE)
 

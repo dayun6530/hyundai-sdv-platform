@@ -10,6 +10,12 @@ add_library(CenterCommunicationLib
 target_include_directories(CenterCommunicationLib
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../LifeCycleManager/include
+)
+
+target_link_libraries(CenterCommunicationLib
+    PUBLIC
+        LifeCycleManagerLib
 )
 
 find_package(nlohmann_json CONFIG QUIET)

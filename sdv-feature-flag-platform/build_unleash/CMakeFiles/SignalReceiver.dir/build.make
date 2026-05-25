@@ -94,12 +94,8 @@ SignalReceiver: CMakeFiles/SignalReceiver.dir/src/Platform/CenterCommunication/s
 SignalReceiver: CMakeFiles/SignalReceiver.dir/build.make
 SignalReceiver: src/Platform/CenterCommunication/libCenterCommunicationLib.a
 SignalReceiver: src/Platform/FeatureCommunication/EventBus/libEventBus.a
-SignalReceiver: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
-SignalReceiver: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
-SignalReceiver: /usr/lib/x86_64-linux-gnu/libssl.so
-SignalReceiver: /usr/lib/x86_64-linux-gnu/libcrypto.so
-SignalReceiver: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
-SignalReceiver: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
+SignalReceiver: src/Platform/LifeCycleManager/libLifeCycleManagerLib.a
+SignalReceiver: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 SignalReceiver: src/Platform/FeatureCommunication/EventBus/libeventbus_proto.a
 SignalReceiver: /usr/lib/x86_64-linux-gnu/libgrpc++.so.1.51.1
 SignalReceiver: /usr/lib/x86_64-linux-gnu/libprotobuf.so
@@ -156,6 +152,13 @@ SignalReceiver: /usr/lib/x86_64-linux-gnu/libabsl_civil_time.so.20220623.0.0
 SignalReceiver: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
 SignalReceiver: /usr/lib/x86_64-linux-gnu/libssl.so
 SignalReceiver: /usr/lib/x86_64-linux-gnu/libcrypto.so
+SignalReceiver: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
+SignalReceiver: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
+SignalReceiver: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
+SignalReceiver: /usr/lib/x86_64-linux-gnu/libssl.so
+SignalReceiver: /usr/lib/x86_64-linux-gnu/libcrypto.so
+SignalReceiver: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
+SignalReceiver: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
 SignalReceiver: CMakeFiles/SignalReceiver.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable SignalReceiver"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/SignalReceiver.dir/link.txt --verbose=$(VERBOSE)

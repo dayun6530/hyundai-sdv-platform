@@ -9,13 +9,17 @@ macro(configure_shadow_executable target_name shadow_logical_name primary_logica
     add_executable(${target_name}
         ${LCM_SRC_DIR}/Feature.cpp
         ${LCM_SRC_DIR}/Flag.cpp
-        ${LCM_SRC_DIR}/LogData.cpp)
+        ${LCM_SRC_DIR}/LogData.cpp
+        ${LCM_SRC_DIR}/TelemetryRuntimeConfig.cpp)
     target_include_directories(${target_name} PRIVATE ${FEATURE_INCLUDE} ${LCM_INC_DIR})
     target_compile_definitions(${target_name} PRIVATE
         SDV_SHADOW_ENTRY_MAIN=1
         "SDV_SHADOW_LOGICAL_NAME=\"${shadow_logical_name}\""
         "SDV_SHADOW_PRIMARY_NAME=\"${primary_logical_name}\"")
     target_link_libraries(${target_name} PRIVATE EventBus FleetVersionResolveLib)
+    if(TARGET nlohmann_json::nlohmann_json)
+        target_link_libraries(${target_name} PRIVATE nlohmann_json::nlohmann_json)
+    endif()
     set_target_properties(${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endmacro()
 

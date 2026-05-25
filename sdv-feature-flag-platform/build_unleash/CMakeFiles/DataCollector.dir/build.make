@@ -94,12 +94,8 @@ DataCollector: CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src
 DataCollector: CMakeFiles/DataCollector.dir/build.make
 DataCollector: src/Platform/CenterCommunication/libCenterCommunicationLib.a
 DataCollector: src/Platform/FeatureCommunication/EventBus/libEventBus.a
-DataCollector: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
-DataCollector: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
-DataCollector: /usr/lib/x86_64-linux-gnu/libssl.so
-DataCollector: /usr/lib/x86_64-linux-gnu/libcrypto.so
-DataCollector: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
-DataCollector: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
+DataCollector: src/Platform/LifeCycleManager/libLifeCycleManagerLib.a
+DataCollector: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 DataCollector: src/Platform/FeatureCommunication/EventBus/libeventbus_proto.a
 DataCollector: /usr/lib/x86_64-linux-gnu/libgrpc++.so.1.51.1
 DataCollector: /usr/lib/x86_64-linux-gnu/libprotobuf.so
@@ -156,6 +152,13 @@ DataCollector: /usr/lib/x86_64-linux-gnu/libabsl_civil_time.so.20220623.0.0
 DataCollector: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
 DataCollector: /usr/lib/x86_64-linux-gnu/libssl.so
 DataCollector: /usr/lib/x86_64-linux-gnu/libcrypto.so
+DataCollector: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
+DataCollector: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
+DataCollector: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
+DataCollector: /usr/lib/x86_64-linux-gnu/libssl.so
+DataCollector: /usr/lib/x86_64-linux-gnu/libcrypto.so
+DataCollector: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
+DataCollector: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
 DataCollector: CMakeFiles/DataCollector.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable DataCollector"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/DataCollector.dir/link.txt --verbose=$(VERBOSE)

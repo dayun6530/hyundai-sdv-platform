@@ -110,12 +110,8 @@ tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/__
 tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/build.make
 tests/unit/unit_data_collector: src/Platform/CenterCommunication/libCenterCommunicationLib.a
 tests/unit/unit_data_collector: src/Platform/FeatureCommunication/EventBus/libEventBus.a
-tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
-tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
-tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libssl.so
-tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libcrypto.so
-tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
-tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
+tests/unit/unit_data_collector: src/Platform/LifeCycleManager/libLifeCycleManagerLib.a
+tests/unit/unit_data_collector: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 tests/unit/unit_data_collector: src/Platform/FeatureCommunication/EventBus/libeventbus_proto.a
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libgrpc++.so.1.51.1
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libprotobuf.so
@@ -172,6 +168,13 @@ tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_civil_time.so.
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libssl.so
 tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libcrypto.so
+tests/unit/unit_data_collector: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libssl.so
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libcrypto.so
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
+tests/unit/unit_data_collector: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
 tests/unit/unit_data_collector: tests/unit/CMakeFiles/unit_data_collector.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable unit_data_collector"
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_data_collector.dir/link.txt --verbose=$(VERBOSE)

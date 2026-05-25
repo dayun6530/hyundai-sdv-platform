@@ -290,6 +290,36 @@ __/Platform/LifeCycleManager/src/LogData.cpp.s:
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
 .PHONY : __/Platform/LifeCycleManager/src/LogData.cpp.s
 
+__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.o: __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
+.PHONY : __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.o
+
+# target to build an object file
+__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o:
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
+.PHONY : __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
+
+__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.i: __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+.PHONY : __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.i
+
+# target to preprocess a source file
+__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i:
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+.PHONY : __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+
+__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.s: __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+.PHONY : __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.s
+
+# target to generate assembly for a file
+__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s:
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+.PHONY : __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+
 src/AdasFeature.o: src/AdasFeature.cpp.o
 .PHONY : src/AdasFeature.o
 
@@ -385,6 +415,9 @@ help:
 	@echo "... __/Platform/LifeCycleManager/src/LogData.o"
 	@echo "... __/Platform/LifeCycleManager/src/LogData.i"
 	@echo "... __/Platform/LifeCycleManager/src/LogData.s"
+	@echo "... __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.o"
+	@echo "... __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.i"
+	@echo "... __/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.s"
 	@echo "... src/AdasFeature.o"
 	@echo "... src/AdasFeature.i"
 	@echo "... src/AdasFeature.s"

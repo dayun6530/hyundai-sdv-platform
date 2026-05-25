@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.o.d"
   "CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o"
   "CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o.d"
+  "CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o"
+  "CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o.d"
   "libLifeCycleManagerLib.a"
   "libLifeCycleManagerLib.pdb"
 )

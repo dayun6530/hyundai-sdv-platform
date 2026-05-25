@@ -7,6 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o.d"
   "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o"
   "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o.d"
+  "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
+  "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o.d"
 )
 
 # Per-language clean rules from dependency scanning.

@@ -19,6 +19,9 @@ const {
 const { registerCampaignRunRoutes } = require('./services/campaignRunApi');
 const { registerVehicleSafetyRoutes } = require('./services/vehicleSafetyApi');
 const {
+  registerTelemetryCollectorConfigRoutes,
+} = require('./services/telemetryCollectorConfigApi');
+const {
   mqttFlagCache,
   forceOfflineFeatureFlags,
   mergeMqttFlagsIntoStates,
@@ -4310,6 +4313,7 @@ registerCampaignRunRoutes(app, {
 });
 
 registerVehicleSafetyRoutes(app, { DEPLOY_ROOT });
+registerTelemetryCollectorConfigRoutes(app, { repoRoot: REPO_ROOT });
 
 const SDV_MQTT_BROKER_URI = String(
   process.env.SDV_MQTT_BROKER_URI || 'mqtt://127.0.0.1:1884',

@@ -111,11 +111,26 @@ src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Lo
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s"
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp -o CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
 
+src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: src/Feature/CMakeFiles/AdasFeatureShadow.dir/flags.make
+src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: src/Feature/CMakeFiles/AdasFeatureShadow.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o -MF CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o.d -o CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+
+src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp > CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+
+src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp -o CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+
 # Object files for target AdasFeatureShadow
 AdasFeatureShadow_OBJECTS = \
 "CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o" \
 "CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o" \
-"CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o"
+"CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o" \
+"CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
 
 # External object files for target AdasFeatureShadow
 AdasFeatureShadow_EXTERNAL_OBJECTS =
@@ -123,6 +138,7 @@ AdasFeatureShadow_EXTERNAL_OBJECTS =
 AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
 AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
 AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
 AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make
 AdasFeatureShadow: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 AdasFeatureShadow: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
@@ -183,7 +199,7 @@ AdasFeatureShadow: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
 AdasFeatureShadow: /usr/lib/x86_64-linux-gnu/libssl.so
 AdasFeatureShadow: /usr/lib/x86_64-linux-gnu/libcrypto.so
 AdasFeatureShadow: src/Feature/CMakeFiles/AdasFeatureShadow.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable ../../AdasFeatureShadow"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable ../../AdasFeatureShadow"
 	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/AdasFeatureShadow.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

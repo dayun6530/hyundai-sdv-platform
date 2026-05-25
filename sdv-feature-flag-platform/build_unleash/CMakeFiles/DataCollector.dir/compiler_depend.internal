@@ -5,6 +5,7 @@ CMakeFiles/DataCollector.dir/src/Platform/CenterCommunication/src/DataCollector.
  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/DataCollector.cpp
  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto/eventbus.grpc.pb.h
  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto/eventbus.pb.h
+ /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include/LifeCycleManager/TelemetryRuntimeConfig.h
  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/DataCollector.h
  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/detail/BoundedQueue.h
  /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include/CenterCommunication/telemetry/ITelemetryExporter.h

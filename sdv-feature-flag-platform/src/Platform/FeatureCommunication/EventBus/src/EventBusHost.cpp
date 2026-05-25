@@ -24,17 +24,11 @@ EventMessage toProtoMessage(const Event& event) {
 EventBusHost::EventBusHost()
     : nextComponentId_(1) {}
 
-bool EventBusHost::pushEventToStream(int64_t componentId, const Event& event) {
-    std::shared_ptr<StreamSubscriber> sub;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        const auto it = subscribers_.find(componentId);
-        if (it == subscribers_.end() || !it->second || !it->second->active.load()) {
-            return false;
-        }
-        sub = it->second;
+bool EventBusHost::writeEventToSubscriber(const std::shared_ptr<StreamSubscriber>& sub,
+                                          const Event& event) {
+    if (!sub || !sub->active.load()) {
+        return false;
     }
-
     const EventMessage msg = toProtoMessage(event);
     std::lock_guard<std::mutex> writeLock(sub->writeMu);
     if (!sub->active.load() || sub->writer == nullptr) {
@@ -45,6 +39,19 @@ bool EventBusHost::pushEventToStream(int64_t componentId, const Event& event) {
         return false;
     }
     return true;
+}
+
+bool EventBusHost::pushEventToStream(int64_t componentId, const Event& event) {
+    std::shared_ptr<StreamSubscriber> sub;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        const auto it = subscribers_.find(componentId);
+        if (it == subscribers_.end() || !it->second || !it->second->active.load()) {
+            return false;
+        }
+        sub = it->second;
+    }
+    return writeEventToSubscriber(sub, event);
 }
 
 void EventBusHost::flushQueueToStream(EventQueue& queue,
@@ -98,18 +105,22 @@ grpc::Status EventBusHost::sendEvent(grpc::ServerContext* /*context*/,
     EventId eventId = static_cast<EventId>(request->event_id());
     Event sentEvent(eventId, request->message());
 
-    std::vector<int64_t> targetIds;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        int totalQueues = static_cast<int>(eventQueueList_.size());
+        const int totalQueues = static_cast<int>(eventQueueList_.size());
         int droppedCount = 0;
         for (auto& eventQueue : eventQueueList_) {
+            const int64_t componentId = eventQueue.getId();
+            const auto subIt = subscribers_.find(componentId);
+            if (subIt != subscribers_.end() && subIt->second && subIt->second->active.load()) {
+                if (writeEventToSubscriber(subIt->second, sentEvent)) {
+                    continue;
+                }
+            }
             if (!eventQueue.addEvent(sentEvent)) {
-                std::cerr << "WARNING: Queue (ID:" << eventQueue.getId()
+                std::cerr << "WARNING: Queue (ID:" << componentId
                           << ") is full, event dropped" << std::endl;
                 droppedCount++;
-            } else {
-                targetIds.push_back(eventQueue.getId());
             }
         }
         std::cout << "Event Information(ID: " << request->event_id()
@@ -119,10 +130,6 @@ grpc::Status EventBusHost::sendEvent(grpc::ServerContext* /*context*/,
             return grpc::Status(grpc::StatusCode::RESOURCE_EXHAUSTED,
                                 "all queues full, event dropped");
         }
-    }
-
-    for (const int64_t componentId : targetIds) {
-        pushEventToStream(componentId, sentEvent);
     }
     return grpc::Status::OK;
 }

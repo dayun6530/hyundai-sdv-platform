@@ -2,9 +2,11 @@
 
 #include "CenterCommunication/detail/BoundedQueue.h"
 #include "CenterCommunication/telemetry/ITelemetryExporter.h"
+#include "LifeCycleManager/TelemetryRuntimeConfig.h"
 #include "CenterCommunication/telemetry/TelemetryRecord.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -49,6 +51,12 @@ private:
     detail::BoundedQueue<std::string> telemetryQueue_;
     std::thread exporterThread_;
     std::atomic<bool> running_;
+
+    std::string runtimeConfigPath_;
+    sdv::platform::lifecyclemgr::TelemetryCollectorTuning tuning_;
+    std::chrono::system_clock::time_point runtimeConfigMtime_{};
+
+    void reloadRuntimeTuningIfChanged();
 };
 
 }  // namespace sdv::platform::centercommunication
