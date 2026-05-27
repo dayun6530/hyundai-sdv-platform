@@ -184,8 +184,15 @@ src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/
  /usr/include/x86_64-linux-gnu/c++/13/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++io.h \
  /usr/include/c++/13/bits/fstream.tcc \
+<<<<<<< HEAD
  /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Feature/../Platform/LifeCycleManager/include/LifeCycleManager/FleetVersionResolve.h \
  /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include/FeatureCommunication/EventBus/EventBusProxy.h \
+=======
+ /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Feature/../Platform/LifeCycleManager/include/LifeCycleManager/TelemetryRuntimeConfig.h \
+ /usr/include/c++/13/chrono \
+ /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Feature/../Platform/LifeCycleManager/include/LifeCycleManager/FleetVersionResolve.h \
+ /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include/FeatureCommunication/EventBus/EventBusProxy.h \
+>>>>>>> origin/feature/datacollector
  /usr/include/grpcpp/grpcpp.h /usr/include/grpc/grpc.h \
  /usr/include/grpc/support/port_platform.h \
  /usr/include/grpc/impl/codegen/port_platform.h \
@@ -271,9 +278,8 @@ src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/
  /usr/include/absl/base/log_severity.h /usr/include/c++/13/array \
  /usr/include/c++/13/compare /usr/include/absl/base/macros.h \
  /usr/include/absl/time/clock.h /usr/include/absl/time/time.h \
- /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/c++/13/chrono \
- /usr/include/c++/13/cmath /usr/include/math.h \
- /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+ /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/c++/13/cmath \
+ /usr/include/math.h /usr/include/x86_64-linux-gnu/bits/math-vector.h \
  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \

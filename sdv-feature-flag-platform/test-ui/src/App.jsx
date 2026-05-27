@@ -282,6 +282,72 @@ export default function App() {
     await publishFlagsState(id, next);
   };
 
+  const statusApiBase = import.meta.env.VITE_STATUS_API || "";
+  const [collectorBatch, setCollectorBatch] = useState(50);
+  const [collectorFlush, setCollectorFlush] = useState(1000);
+  const [publishDefault, setPublishDefault] = useState(2000);
+  const [publishAdas, setPublishAdas] = useState(2000);
+  const [publishNav, setPublishNav] = useState(1000);
+  const [publishEv, setPublishEv] = useState(2000);
+  const [collectorStatus, setCollectorStatus] = useState("");
+
+  const loadCollectorConfig = useCallback(async () => {
+    const id = normalizeCarId(carId);
+    try {
+      const res = await fetch(`${statusApiBase}/api/telemetry/collector-config/${id}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || res.statusText);
+      setCollectorBatch(data.batch_max);
+      setCollectorFlush(data.flush_ms);
+      setPublishDefault(data.publish_default_ms ?? 1000);
+      const fp = data.feature_publish_ms || {};
+      setPublishAdas(fp.AdasFeature ?? data.publish_default_ms ?? 1000);
+      setPublishNav(fp.NavigationFeature ?? data.publish_default_ms ?? 1000);
+      setPublishEv(fp.EvEnergyFeature ?? data.publish_default_ms ?? 1000);
+      setCollectorStatus(`loaded (${data.runtime_source || "?"} · ${data.runtime_path || ""})`);
+    } catch (e) {
+      setCollectorStatus(`load failed: ${e.message}`);
+    }
+  }, [carId, statusApiBase]);
+
+  const saveCollectorConfig = useCallback(async () => {
+    const id = normalizeCarId(carId);
+    try {
+      const res = await fetch(`${statusApiBase}/api/telemetry/collector-config/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          batch_max: collectorBatch,
+          flush_ms: collectorFlush,
+          publish_default_ms: publishDefault,
+          feature_publish_ms: {
+            AdasFeature: publishAdas,
+            NavigationFeature: publishNav,
+            EvEnergyFeature: publishEv,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || res.statusText);
+      setCollectorStatus(data.message || "saved (no car restart)");
+    } catch (e) {
+      setCollectorStatus(`save failed: ${e.message}`);
+    }
+  }, [
+    carId,
+    collectorBatch,
+    collectorFlush,
+    publishDefault,
+    publishAdas,
+    publishNav,
+    publishEv,
+    statusApiBase,
+  ]);
+
+  useEffect(() => {
+    loadCollectorConfig();
+  }, [loadCollectorConfig]);
+
   return (
     <main className="shell">
       <header className="header">
@@ -302,7 +368,12 @@ export default function App() {
         </div>
         <div className="field">
           <label>Car ID</label>
-          <input value={carId} onChange={(e) => setCarId(e.target.value)} placeholder="car_1" />
+          <input
+            value={carId}
+            onChange={(e) => setCarId(e.target.value)}
+            onBlur={loadCollectorConfig}
+            placeholder="car_1"
+          />
           <div className="hint">
             제어: <span className="mono">{topic}</span>
             <br />
@@ -376,6 +447,94 @@ export default function App() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Telemetry 설정 (JSON)</h2>
+        <p className="hint">
+          주기·배치는 <span className="mono">config/telemetry/runtime/&lt;car&gt;.json</span> 만 사용합니다. UI 저장 시
+          해당 JSON이 갱신되며 Feature·DataCollector가 car 재시작 없이 반영합니다.
+        </p>
+        <h3 style={{ marginTop: 12, fontSize: "0.95rem" }}>② DataCollector → DB/Grafana</h3>
+        <div className="grid">
+          <div className="field">
+            <label>batch_max (1–100건)</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={collectorBatch}
+              onChange={(e) => setCollectorBatch(Number(e.target.value))}
+            />
+          </div>
+          <div className="field">
+            <label>flush_ms (500–2000ms)</label>
+            <input
+              type="number"
+              min={500}
+              max={2000}
+              step={100}
+              value={collectorFlush}
+              onChange={(e) => setCollectorFlush(Number(e.target.value))}
+            />
+          </div>
+        </div>
+        <h3 style={{ marginTop: 16, fontSize: "0.95rem" }}>① Feature → EventBus 발행 주기</h3>
+        <div className="grid">
+          <div className="field">
+            <label>기본 publish_ms (200–30000)</label>
+            <input
+              type="number"
+              min={200}
+              max={30000}
+              step={100}
+              value={publishDefault}
+              onChange={(e) => setPublishDefault(Number(e.target.value))}
+            />
+          </div>
+          <div className="field">
+            <label>AdasFeature ms</label>
+            <input
+              type="number"
+              min={200}
+              max={30000}
+              step={100}
+              value={publishAdas}
+              onChange={(e) => setPublishAdas(Number(e.target.value))}
+            />
+          </div>
+          <div className="field">
+            <label>NavigationFeature ms</label>
+            <input
+              type="number"
+              min={200}
+              max={30000}
+              step={100}
+              value={publishNav}
+              onChange={(e) => setPublishNav(Number(e.target.value))}
+            />
+          </div>
+          <div className="field">
+            <label>EvEnergyFeature ms</label>
+            <input
+              type="number"
+              min={200}
+              max={30000}
+              step={100}
+              value={publishEv}
+              onChange={(e) => setPublishEv(Number(e.target.value))}
+            />
+          </div>
+        </div>
+        <div className="buttons" style={{ marginTop: 12 }}>
+          <button type="button" className="btn on" onClick={saveCollectorConfig}>
+            JSON 저장 · 즉시 반영
+          </button>
+          <button type="button" className="btn off sm" onClick={loadCollectorConfig}>
+            다시 읽기
+          </button>
+        </div>
+        {collectorStatus ? <p className="hint">{collectorStatus}</p> : null}
       </section>
 
       <section className="card">

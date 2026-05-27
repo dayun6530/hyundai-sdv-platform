@@ -111,11 +111,26 @@ src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s"
 	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp -o CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
 
+src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/flags.make
+src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o -MF CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o.d -o CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+
+src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp > CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+
+src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp -o CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+
 # Object files for target NavigationFeatureShadow
 NavigationFeatureShadow_OBJECTS = \
 "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o" \
 "CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o" \
-"CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o"
+"CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o" \
+"CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
 
 # External object files for target NavigationFeatureShadow
 NavigationFeatureShadow_EXTERNAL_OBJECTS =
@@ -123,6 +138,7 @@ NavigationFeatureShadow_EXTERNAL_OBJECTS =
 NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
 NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
 NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
 NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make
 NavigationFeatureShadow: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 NavigationFeatureShadow: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
@@ -183,8 +199,13 @@ NavigationFeatureShadow: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623
 NavigationFeatureShadow: /usr/lib/x86_64-linux-gnu/libssl.so
 NavigationFeatureShadow: /usr/lib/x86_64-linux-gnu/libcrypto.so
 NavigationFeatureShadow: src/Feature/CMakeFiles/NavigationFeatureShadow.dir/link.txt
+<<<<<<< HEAD
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable ../../NavigationFeatureShadow"
 	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Feature && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/NavigationFeatureShadow.dir/link.txt --verbose=$(VERBOSE)
+=======
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable ../../NavigationFeatureShadow"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/NavigationFeatureShadow.dir/link.txt --verbose=$(VERBOSE)
+>>>>>>> origin/feature/datacollector
 
 # Rule to build all files generated by this target.
 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build: NavigationFeatureShadow

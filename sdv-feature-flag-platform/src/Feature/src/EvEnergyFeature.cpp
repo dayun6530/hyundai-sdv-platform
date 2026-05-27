@@ -139,7 +139,7 @@ void EvEnergyFeature::execute() {
         std::string("{\"version\":\"") + v + "\",\"battery_init\":" + std::to_string(battery_) + "}");
 
     while (!isStopRequested()) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        sleepTelemetryPublishInterval();
 
         auto events = pollEvents();
 
@@ -178,7 +178,7 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
         std::string("{\"battery\":") + std::to_string(battery_) + "}");
 
     while (!isStopRequested()) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        sleepTelemetryPublishInterval();
 
         auto events = pollEvents();
         for (const auto& event : events) {

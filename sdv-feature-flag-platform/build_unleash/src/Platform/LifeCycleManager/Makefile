@@ -240,6 +240,30 @@ src/LogData.cpp.s:
 	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.s
 .PHONY : src/LogData.cpp.s
 
+src/TelemetryRuntimeConfig.o: src/TelemetryRuntimeConfig.cpp.o
+.PHONY : src/TelemetryRuntimeConfig.o
+
+# target to build an object file
+src/TelemetryRuntimeConfig.cpp.o:
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o
+.PHONY : src/TelemetryRuntimeConfig.cpp.o
+
+src/TelemetryRuntimeConfig.i: src/TelemetryRuntimeConfig.cpp.i
+.PHONY : src/TelemetryRuntimeConfig.i
+
+# target to preprocess a source file
+src/TelemetryRuntimeConfig.cpp.i:
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.i
+.PHONY : src/TelemetryRuntimeConfig.cpp.i
+
+src/TelemetryRuntimeConfig.s: src/TelemetryRuntimeConfig.cpp.s
+.PHONY : src/TelemetryRuntimeConfig.s
+
+# target to generate assembly for a file
+src/TelemetryRuntimeConfig.cpp.s:
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.s
+.PHONY : src/TelemetryRuntimeConfig.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -262,6 +286,9 @@ help:
 	@echo "... src/LogData.o"
 	@echo "... src/LogData.i"
 	@echo "... src/LogData.s"
+	@echo "... src/TelemetryRuntimeConfig.o"
+	@echo "... src/TelemetryRuntimeConfig.i"
+	@echo "... src/TelemetryRuntimeConfig.s"
 .PHONY : help
 
 

@@ -10,6 +10,7 @@ add_library(LifeCycleManagerLib
     src/Feature.cpp
     src/Flag.cpp
     src/LogData.cpp
+    src/TelemetryRuntimeConfig.cpp
 )
 
 target_include_directories(LifeCycleManagerLib

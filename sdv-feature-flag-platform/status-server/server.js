@@ -26,6 +26,9 @@ const {
   invalidateCarRuntimeCache,
 } = require('./services/vehicleRuntimeCmdSync');
 const {
+  registerTelemetryCollectorConfigRoutes,
+} = require('./services/telemetryCollectorConfigApi');
+const {
   mqttFlagCache,
   forceOfflineFeatureFlags,
   mergeMqttFlagsIntoStates,
@@ -371,12 +374,10 @@ app.post('/api/unleash/strategy/target', async (req, res) => {
       contextName !== 'model' &&
       contextName !== 'group')
   ) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'contextName must be "region", "model", or "group"',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'contextName must be "region", "model", or "group"',
+    });
     return;
   }
   if (!values.length) {
@@ -492,12 +493,10 @@ app.post('/api/unleash/strategy/variants', async (req, res) => {
   }
 
   if (!variants.length) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'variants must be provided (or ratioA/ratioB)',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'variants must be provided (or ratioA/ratioB)',
+    });
     return;
   }
 
@@ -600,12 +599,10 @@ app.post('/api/unleash/deploy/target-version', async (req, res) => {
       contextName !== 'model' &&
       contextName !== 'group')
   ) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'contextName must be "region", "model", or "group"',
-      });
+    return res.status(400).json({
+      ok: false,
+      error: 'contextName must be "region", "model", or "group"',
+    });
   }
   if (!values.length)
     return res
@@ -636,12 +633,10 @@ app.post('/api/unleash/deploy/target-version', async (req, res) => {
     const raw = readJson(vehiclesPath);
     vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to read config/fleet/vehicles.json: ${err.message}`,
-      });
+    return res.status(500).json({
+      ok: false,
+      error: `failed to read config/fleet/vehicles.json: ${err.message}`,
+    });
   }
 
   const matched = vehicles
@@ -655,12 +650,10 @@ app.post('/api/unleash/deploy/target-version', async (req, res) => {
     .filter((id) => /^car_(10|[1-9])$/.test(id));
 
   if (!matched.length) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: `no cars matched ${contextName} IN [${values.join(', ')}]`,
-      });
+    return res.status(400).json({
+      ok: false,
+      error: `no cars matched ${contextName} IN [${values.join(', ')}]`,
+    });
   }
 
   // 1) Upsert Unleash strategy with a single strategy-level variant = desired version token (observability).
@@ -818,12 +811,10 @@ app.post('/api/unleash/deploy/region-versions', async (req, res) => {
   }
   const regions = Object.keys(wanted);
   if (!regions.length) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'No region versions provided (KR/US/EU are all empty).',
-      });
+    return res.status(400).json({
+      ok: false,
+      error: 'No region versions provided (KR/US/EU are all empty).',
+    });
   }
 
   let vehicles;
@@ -833,12 +824,10 @@ app.post('/api/unleash/deploy/region-versions', async (req, res) => {
     );
     vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to read config/fleet/vehicles.json: ${err.message}`,
-      });
+    return res.status(500).json({
+      ok: false,
+      error: `failed to read config/fleet/vehicles.json: ${err.message}`,
+    });
   }
 
   const byRegion = { KR: [], US: [], EU: [] };
@@ -1006,12 +995,10 @@ app.post('/api/unleash/deploy/global-version', async (req, res) => {
     );
     vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to read config/fleet/vehicles.json: ${err.message}`,
-      });
+    return res.status(500).json({
+      ok: false,
+      error: `failed to read config/fleet/vehicles.json: ${err.message}`,
+    });
   }
   const cars = vehicles
     .map((v) => String(v?.car_id || '').trim())
@@ -1148,12 +1135,10 @@ app.post('/api/unleash/deploy/model-versions', async (req, res) => {
     );
     vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to read config/fleet/vehicles.json: ${err.message}`,
-      });
+    return res.status(500).json({
+      ok: false,
+      error: `failed to read config/fleet/vehicles.json: ${err.message}`,
+    });
   }
 
   const knownModels = [
@@ -1343,22 +1328,18 @@ app.post('/api/unleash/deploy/ratio-versions', async (req, res) => {
     .filter((s) => s.percent > 0 && s.version);
 
   if (!cleaned.length) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'splits must include percent>0 and non-empty version',
-      });
+    return res.status(400).json({
+      ok: false,
+      error: 'splits must include percent>0 and non-empty version',
+    });
   }
 
   const sum = cleaned.reduce((a, b) => a + b.percent, 0);
   if (sum !== 100) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: `split percent sum must equal 100 (got ${sum})`,
-      });
+    return res.status(400).json({
+      ok: false,
+      error: `split percent sum must equal 100 (got ${sum})`,
+    });
   }
 
   let vehicles;
@@ -1368,12 +1349,10 @@ app.post('/api/unleash/deploy/ratio-versions', async (req, res) => {
     );
     vehicles = Array.isArray(raw?.vehicles) ? raw.vehicles : [];
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to read config/fleet/vehicles.json: ${err.message}`,
-      });
+    return res.status(500).json({
+      ok: false,
+      error: `failed to read config/fleet/vehicles.json: ${err.message}`,
+    });
   }
 
   const cars = vehicles
@@ -2084,32 +2063,26 @@ app.post('/api/fleet/package-register', (req, res) => {
   const package_id_in = String(body.package_id || '').trim();
 
   if (!PKG_FEATURES.has(feature)) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'feature must be ADAS, Navigation, or Energy',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'feature must be ADAS, Navigation, or Energy',
+    });
     return;
   }
   const version = safePathSegment(versionRaw);
   if (!version) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error:
-          'invalid version (use alphanumerics, dot, underscore, hyphen only)',
-      });
+    res.status(400).json({
+      ok: false,
+      error:
+        'invalid version (use alphanumerics, dot, underscore, hyphen only)',
+    });
     return;
   }
   if (!PKG_ROLES.has(role)) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'role must be candidate, stable, or experimental',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'role must be candidate, stable, or experimental',
+    });
     return;
   }
   if (!binary) {
@@ -2130,12 +2103,10 @@ app.post('/api/fleet/package-register', (req, res) => {
     return;
   }
   if (!compatible_regions.length) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'compatible_regions must be a non-empty list',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'compatible_regions must be a non-empty list',
+    });
     return;
   }
 
@@ -2261,12 +2232,10 @@ app.post('/api/fleet/package-register', (req, res) => {
       'utf8',
     );
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to write package files: ${err.message}`,
-      });
+    res.status(500).json({
+      ok: false,
+      error: `failed to write package files: ${err.message}`,
+    });
     return;
   }
 
@@ -2275,12 +2244,10 @@ app.post('/api/fleet/package-register', (req, res) => {
   try {
     writePackageRegistryDisk(reg);
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to update package_registry.json: ${err.message}`,
-      });
+    res.status(500).json({
+      ok: false,
+      error: `failed to update package_registry.json: ${err.message}`,
+    });
     return;
   }
 
@@ -2341,12 +2308,10 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
   const binary = String(pkg.binary || '').trim();
   const role = String(pkg.role || '').trim();
   if (!version || !binary || !role) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'package entry missing version, binary, or role',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'package entry missing version, binary, or role',
+    });
     return;
   }
   if (!PKG_ROLES.has(role)) {
@@ -2367,12 +2332,10 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
   try {
     vm = readJson(vmPath);
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to read version_map.json: ${err.message}`,
-      });
+    res.status(500).json({
+      ok: false,
+      error: `failed to read version_map.json: ${err.message}`,
+    });
     return;
   }
   if (!vm.features || typeof vm.features !== 'object') {
@@ -2382,24 +2345,20 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
     return;
   }
   if (!vm.features[feature] || typeof vm.features[feature] !== 'object') {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: `version_map missing feature entry: ${feature}`,
-      });
+    res.status(400).json({
+      ok: false,
+      error: `version_map missing feature entry: ${feature}`,
+    });
     return;
   }
   if (
     !vm.features[feature][slotRaw] ||
     typeof vm.features[feature][slotRaw] !== 'object'
   ) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: `version_map missing ${feature}.${slotRaw} slot`,
-      });
+    res.status(400).json({
+      ok: false,
+      error: `version_map missing ${feature}.${slotRaw} slot`,
+    });
     return;
   }
 
@@ -2422,12 +2381,10 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
   try {
     fs.copyFileSync(vmPath, vmBakPath);
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to backup version_map.json: ${err.message}`,
-      });
+    res.status(500).json({
+      ok: false,
+      error: `failed to backup version_map.json: ${err.message}`,
+    });
     return;
   }
   try {
@@ -2438,12 +2395,10 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
     } catch (_) {
       /* best effort restore */
     }
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: `failed to write version_map.json: ${err.message}`,
-      });
+    res.status(500).json({
+      ok: false,
+      error: `failed to write version_map.json: ${err.message}`,
+    });
     return;
   }
 
@@ -2989,14 +2944,12 @@ app.post('/api/fleet/driver-approval', async (req, res) => {
       stderr: r.stderr,
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: err.message,
-        stderr: err.stderr,
-        stdout: err.stdout,
-      });
+    res.status(500).json({
+      ok: false,
+      error: err.message,
+      stderr: err.stderr,
+      stdout: err.stdout,
+    });
   }
 });
 
@@ -3404,12 +3357,10 @@ app.post('/api/fleet/action', async (req, res) => {
     return;
   }
   if (!FLEET_ACTION_FEATURES.has(feature)) {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'feature must be ADAS, Navigation, or Energy',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'feature must be ADAS, Navigation, or Energy',
+    });
     return;
   }
 
@@ -3469,12 +3420,10 @@ app.post('/api/fleet/action', async (req, res) => {
     }
     cmd += `fleet-shadow vehicle ${car_id} ${feature} ${shadow_action}`;
   } else {
-    res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'action must be rollback, promote-shadow, flag, kill, or shadow',
-      });
+    res.status(400).json({
+      ok: false,
+      error: 'action must be rollback, promote-shadow, flag, kill, or shadow',
+    });
     return;
   }
 
@@ -3591,12 +3540,10 @@ app.post('/api/fleet/deploy', async (req, res) => {
         .json({ ok: false, error: 'group and region required' });
     cmd += `${group} ${region} `;
   } else {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: 'invalid scope (vehicle|group|region|group_region)',
-      });
+    return res.status(400).json({
+      ok: false,
+      error: 'invalid scope (vehicle|group|region|group_region)',
+    });
   }
 
   cmd += `${feature} ${slot} ${version}`;
@@ -3733,14 +3680,12 @@ app.post('/api/fleet/deploy', async (req, res) => {
       state_forced_updated: forcedUpdated,
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: err.message,
-        stderr: err.stderr,
-        stdout: err.stdout,
-      });
+    res.status(500).json({
+      ok: false,
+      error: err.message,
+      stderr: err.stderr,
+      stdout: err.stdout,
+    });
   }
 });
 
@@ -3968,14 +3913,12 @@ app.get('/api/vehicle-runtime/status', async (req, res) => {
     });
   } catch (err) {
     const code = err.message && err.message.includes('not found') ? 503 : 400;
-    res
-      .status(code)
-      .json({
-        ok: false,
-        error: err.message,
-        stderr: err.stderr,
-        stdout: err.stdout,
-      });
+    res.status(code).json({
+      ok: false,
+      error: err.message,
+      stderr: err.stderr,
+      stdout: err.stdout,
+    });
   }
 });
 
@@ -4287,12 +4230,10 @@ app.post('/api/fleet/docker-feature-versions/apply', async (req, res) => {
   const dry = req.query?.dry_run === '1' || req.query?.dry_run === 'true';
   try {
     if (!fs.existsSync(APPLY_FLEET_DOCKER_PY)) {
-      res
-        .status(503)
-        .json({
-          ok: false,
-          error: `missing ${path.relative(REPO_ROOT, APPLY_FLEET_DOCKER_PY)}`,
-        });
+      res.status(503).json({
+        ok: false,
+        error: `missing ${path.relative(REPO_ROOT, APPLY_FLEET_DOCKER_PY)}`,
+      });
       return;
     }
     if (!fs.existsSync(OTA_VEHICLE_SCRIPT)) {
@@ -4347,6 +4288,8 @@ registerCampaignRunRoutes(app, {
 });
 
 registerVehicleSafetyRoutes(app, { DEPLOY_ROOT, syncRuntimeCmdForCars });
+registerVehicleSafetyRoutes(app, { DEPLOY_ROOT });
+registerTelemetryCollectorConfigRoutes(app, { repoRoot: REPO_ROOT });
 
 const SDV_MQTT_BROKER_URI = String(
   process.env.SDV_MQTT_BROKER_URI || 'mqtt://127.0.0.1:1884',

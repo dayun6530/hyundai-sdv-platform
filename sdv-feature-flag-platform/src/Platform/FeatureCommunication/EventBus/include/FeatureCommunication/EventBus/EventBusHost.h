@@ -45,6 +45,7 @@ private:
     };
 
     bool pushEventToStream(int64_t componentId, const Event& event);
+    bool writeEventToSubscriber(const std::shared_ptr<StreamSubscriber>& sub, const Event& event);
     void flushQueueToStream(EventQueue& queue, const std::shared_ptr<StreamSubscriber>& sub);
 
     std::mutex mutex_;

@@ -111,11 +111,26 @@ src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/sr
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s"
 	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp -o CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.s
 
+src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/flags.make
+src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o -MF CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o.d -o CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o -c /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp
+
+src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp > CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.i
+
+src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp -o CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.s
+
 # Object files for target EvEnergyFeatureShadow
 EvEnergyFeatureShadow_OBJECTS = \
 "CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o" \
 "CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o" \
-"CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o"
+"CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o" \
+"CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o"
 
 # External object files for target EvEnergyFeatureShadow
 EvEnergyFeatureShadow_EXTERNAL_OBJECTS =
@@ -123,6 +138,7 @@ EvEnergyFeatureShadow_EXTERNAL_OBJECTS =
 EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o
 EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o
 EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o
+EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o
 EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make
 EvEnergyFeatureShadow: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 EvEnergyFeatureShadow: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
@@ -183,8 +199,13 @@ EvEnergyFeatureShadow: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0
 EvEnergyFeatureShadow: /usr/lib/x86_64-linux-gnu/libssl.so
 EvEnergyFeatureShadow: /usr/lib/x86_64-linux-gnu/libcrypto.so
 EvEnergyFeatureShadow: src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/link.txt
+<<<<<<< HEAD
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable ../../EvEnergyFeatureShadow"
 	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Feature && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/EvEnergyFeatureShadow.dir/link.txt --verbose=$(VERBOSE)
+=======
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable ../../EvEnergyFeatureShadow"
+	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Feature && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/EvEnergyFeatureShadow.dir/link.txt --verbose=$(VERBOSE)
+>>>>>>> origin/feature/datacollector
 
 # Rule to build all files generated by this target.
 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build: EvEnergyFeatureShadow

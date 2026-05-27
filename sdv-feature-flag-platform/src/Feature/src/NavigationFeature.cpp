@@ -161,7 +161,7 @@ void NavigationFeature::execute() {
         pollEvents();
 
         if (!flag_.isEnabled()) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            sleepTelemetryPublishInterval();
             continue;
         }
 
@@ -174,7 +174,7 @@ void NavigationFeature::execute() {
             }
             log(LogLevel::info, "내비 라운드 완료 — 연속 데모 재개");
             sendTelemetry("INFO", "NAV_ROUND_COMPLETE", "{\"status\":\"complete\"}");
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            sleepTelemetryPublishInterval();
         }
     }
 }
@@ -246,7 +246,7 @@ void NavigationFeature::runNavigationMainLoop() {
 
         if (i < broadcastCount_ - 1) {
             for (int s = 0; s < 5 && !isStopRequested(); ++s) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+                sleepTelemetryPublishInterval();
                 pollEvents();
                 if (!flag_.isEnabled()) {
                     return;

@@ -1,4 +1,5 @@
 #include "LifeCycleManager/Feature.h"
+#include "LifeCycleManager/TelemetryRuntimeConfig.h"
 #include "LifeCycleManager/FleetVersionResolve.h"
 
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
@@ -538,6 +539,10 @@ bool Feature::sendTelemetry(const std::string& level,
     os << "}";
 
     return eventBus_.sendEvent(Event(EventId::TelemetryData, os.str()));
+}
+
+void Feature::sleepTelemetryPublishInterval() const {
+    sdv::platform::lifecyclemgr::sleepTelemetryPublishInterval(name_);
 }
 
 void Feature::log(LogLevel level, const std::string& message) {

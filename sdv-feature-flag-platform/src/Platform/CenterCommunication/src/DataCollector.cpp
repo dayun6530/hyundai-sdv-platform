@@ -8,6 +8,7 @@
 
 #include "CenterCommunication/telemetry/OperationalDbExporter.h"
 #include "CenterCommunication/telemetry/OtlpLogsExporter.h"
+#include "LifeCycleManager/TelemetryRuntimeConfig.h"
 #include "CenterCommunication/telemetry/TelemetryRecord.h"
 
 #include <vector>
@@ -25,38 +26,6 @@ std::string resolveOperationalDbIngestUrl() {
         }
     }
     return "http://127.0.0.1:8090/v1/ingest";
-}
-
-std::size_t resolveTelemetryBatchMax() {
-    constexpr std::size_t kDefault = 50;
-    constexpr std::size_t kMin = 1;
-    constexpr std::size_t kMax = 100;
-    if (const char* env = std::getenv("SDV_TELEMETRY_BATCH_MAX")) {
-        try {
-            const long parsed = std::strtol(env, nullptr, 10);
-            if (parsed >= static_cast<long>(kMin) && parsed <= static_cast<long>(kMax)) {
-                return static_cast<std::size_t>(parsed);
-            }
-        } catch (...) {
-        }
-    }
-    return kDefault;
-}
-
-int resolveTelemetryFlushMs() {
-    constexpr int kDefault = 1000;
-    constexpr int kMin = 500;
-    constexpr int kMax = 2000;
-    if (const char* env = std::getenv("SDV_TELEMETRY_FLUSH_MS")) {
-        try {
-            const long parsed = std::strtol(env, nullptr, 10);
-            if (parsed >= kMin && parsed <= kMax) {
-                return static_cast<int>(parsed);
-            }
-        } catch (...) {
-        }
-    }
-    return kDefault;
 }
 
 }  // namespace
@@ -87,7 +56,21 @@ DataCollector::DataCollector(const std::string& eventBusAddress,
     , queueCapacity_(queueCapacity > 0 ? queueCapacity : kDefaultQueueCapacity)
     , exporters_(std::move(exporters))
     , telemetryQueue_(queueCapacity_)
-    , running_(false) {}
+    , running_(false)
+    , runtimeConfigPath_(sdv::platform::lifecyclemgr::resolveTelemetryRuntimeConfigPath(carId))
+    , tuning_(sdv::platform::lifecyclemgr::resolveTelemetryTuningFromEnv()) {
+    (void)sdv::platform::lifecyclemgr::tryReloadTelemetryRuntimeTuning(runtimeConfigPath_, tuning_,
+                                                                     runtimeConfigMtime_);
+}
+
+void DataCollector::reloadRuntimeTuningIfChanged() {
+    if (sdv::platform::lifecyclemgr::tryReloadTelemetryRuntimeTuning(runtimeConfigPath_, tuning_,
+                                                                  runtimeConfigMtime_)) {
+        std::cout << "[DataCollector] Runtime tuning updated: batch_max=" << tuning_.batchMax
+                  << " flush_ms=" << tuning_.flushMs << " (from " << runtimeConfigPath_ << ")"
+                  << std::endl;
+    }
+}
 
 DataCollector::~DataCollector() {
     stop();
@@ -131,11 +114,8 @@ void DataCollector::flushExporters() {
 }
 
 void DataCollector::exportWorkerLoop() {
-    const std::size_t batchMax = resolveTelemetryBatchMax();
-    const auto flushInterval = std::chrono::milliseconds(resolveTelemetryFlushMs());
-
     std::vector<std::string> pending;
-    pending.reserve(batchMax);
+    pending.reserve(tuning_.batchMax);
 
     auto flushPending = [this, &pending]() {
         if (pending.empty()) {
@@ -151,6 +131,13 @@ void DataCollector::exportWorkerLoop() {
     };
 
     while (true) {
+        reloadRuntimeTuningIfChanged();
+        const std::size_t batchMax = tuning_.batchMax;
+        const auto flushInterval = std::chrono::milliseconds(tuning_.flushMs);
+        if (pending.capacity() < batchMax) {
+            pending.reserve(batchMax);
+        }
+
         std::string payload;
         if (telemetryQueue_.pop(payload, flushInterval)) {
             pending.push_back(std::move(payload));
@@ -170,7 +157,7 @@ void DataCollector::exportWorkerLoop() {
     std::string payload;
     while (telemetryQueue_.tryPop(payload)) {
         pending.push_back(std::move(payload));
-        if (pending.size() >= batchMax) {
+        if (pending.size() >= tuning_.batchMax) {
             flushPending();
         }
     }
@@ -200,8 +187,9 @@ void DataCollector::run() {
               << " component_id=" << cid
               << " carId=" << carId_
               << " queueCapacity=" << queueCapacity_
-              << " batchMax=" << resolveTelemetryBatchMax()
-              << " flushMs=" << resolveTelemetryFlushMs()
+              << " batchMax=" << tuning_.batchMax
+              << " flushMs=" << tuning_.flushMs
+              << " runtimeConfig=" << runtimeConfigPath_
               << " exporters=" << exporters_.size();
     for (const auto& exporter : exporters_) {
         if (exporter) {

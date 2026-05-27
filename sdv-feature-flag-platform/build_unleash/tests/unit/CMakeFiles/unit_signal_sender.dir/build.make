@@ -110,12 +110,8 @@ tests/unit/unit_signal_sender: tests/unit/CMakeFiles/unit_signal_sender.dir/__/_
 tests/unit/unit_signal_sender: tests/unit/CMakeFiles/unit_signal_sender.dir/build.make
 tests/unit/unit_signal_sender: src/Platform/CenterCommunication/libCenterCommunicationLib.a
 tests/unit/unit_signal_sender: src/Platform/FeatureCommunication/EventBus/libEventBus.a
-tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
-tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
-tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libssl.so
-tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libcrypto.so
-tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
-tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
+tests/unit/unit_signal_sender: src/Platform/LifeCycleManager/libLifeCycleManagerLib.a
+tests/unit/unit_signal_sender: src/Platform/FeatureCommunication/EventBus/libEventBus.a
 tests/unit/unit_signal_sender: src/Platform/FeatureCommunication/EventBus/libeventbus_proto.a
 tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libgrpc++.so.1.51.1
 tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libprotobuf.so
@@ -172,6 +168,13 @@ tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libabsl_civil_time.so.2
 tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20220623.0.0
 tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libssl.so
 tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libcrypto.so
+tests/unit/unit_signal_sender: src/Platform/LifeCycleManager/libFleetVersionResolveLib.a
+tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libpaho-mqttpp3.so.1.2.0
+tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libpaho-mqtt3as.so
+tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libssl.so
+tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libcrypto.so
+tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
+tests/unit/unit_signal_sender: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
 tests/unit/unit_signal_sender: tests/unit/CMakeFiles/unit_signal_sender.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable unit_signal_sender"
 	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_signal_sender.dir/link.txt --verbose=$(VERBOSE)

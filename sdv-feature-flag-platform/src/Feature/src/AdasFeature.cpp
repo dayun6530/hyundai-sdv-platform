@@ -120,7 +120,7 @@ void AdasFeature::execute() {
         std::string("{\"version\":\"") + v + "\"}");
 
     while (!isStopRequested()) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        sleepTelemetryPublishInterval();
 
         auto events = pollEvents();
 
@@ -154,7 +154,7 @@ void AdasFeature::runAdasMainLoop() {
     log(LogLevel::info, "자율주행 대기 중...");
 
     while (!isStopRequested()) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        sleepTelemetryPublishInterval();
 
         auto events = pollEvents();
         // Match execute(): drain control events in pollEvents, then skip domain work while main FLAG OFF.
