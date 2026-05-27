@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "campaign_id": "campaign_adas_v0.6_car2_canary",
+  "name": "ADAS v0.6 candidate validation on car_2 (local registry)",
+  "description": "Deploy ADAS v0.6 to car_2 as candidate, verify logs, then promote to primary.",
+  "status": "draft",
+  "created_at": "2026-05-26T12:00:00Z",
+  "feature": "ADAS",
+  "target_version": "v0.6",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "package_id": "ADAS_v0.6",
+  "package_path": "deploy/packages/ADAS/v0.6",
+  "manifest_path": "deploy/packages/ADAS/v0.6/manifest.json",
+  "docker_image": "localhost:5000/sdv/adas-feature:v0.6",
+  "artifact_type": "docker_image",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_v0.6",
+  "target_selector": {
+    "scope": "vehicle",
+    "vehicle_ids": [
+      "car_2"
+    ]
+  },
+  "safety_requirements": {
+    "respect_kill_switch": true,
+    "require_ota_ready": true,
+    "require_driver_approval": true
+  },
+  "execution_options": {
+    "sync_config": true,
+    "no_defer_native": true
+  },
+  "docker_runtime": {
+    "enabled": true,
+    "candidate": {
+      "mode": "candidate",
+      "pull_policy": "missing"
+    },
+    "promote": {
+      "mode": "promote",
+      "policy": "manual",
+      "separate_run_required": true
+    }
+  },
+  "approval_required": true
+}

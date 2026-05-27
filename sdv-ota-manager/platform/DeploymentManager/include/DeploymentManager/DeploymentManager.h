@@ -399,7 +399,9 @@ private:
 
     DeployResult deployToVehicleInternal(const std::string& car_id, const std::string& feature,
         const std::string& target_slot, const std::string& target_version, bool sync_config_requested,
-        bool defer_native_until_restart = false);
+        bool defer_native_until_restart = false, bool candidate_docker_shadow_only = false);
+
+    void ensurePrimaryContainerForCandidateDeploy(DeployResult& r, const std::string& dockerImage);
 
     void finalizeFleetRollbackMetadata(DeployResult& r);
     void printDeploySummary(const DeploySummary& summary) const;

@@ -157,7 +157,7 @@ function applyPatchToState(state, patch) {
 }
 
 function registerVehicleSafetyRoutes(app, deps) {
-  const { DEPLOY_ROOT } = deps;
+  const { DEPLOY_ROOT, syncRuntimeCmdForCars } = deps;
   const STATE_DIR = path.join(DEPLOY_ROOT, "state");
 
   app.get("/api/vehicles/:carId/safety-state", (req, res) => {
@@ -223,6 +223,10 @@ function registerVehicleSafetyRoutes(app, deps) {
       const updatedFields = applyPatchToState(state, patch);
       safeWriteJsonAtomic(fp, state);
       console.log(`[SAFETY] updated deploy/state/${carId}.json fields=${updatedFields.join(",")}`);
+
+      if (typeof syncRuntimeCmdForCars === "function") {
+        syncRuntimeCmdForCars([carId]);
+      }
 
       res.json({
         ok: true,

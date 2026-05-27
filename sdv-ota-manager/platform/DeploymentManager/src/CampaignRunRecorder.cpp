@@ -128,8 +128,13 @@ CampaignRunVehicleRecord CampaignRunRecorder::vehicleRecordFromDeploy(const std:
 
     if (!summary.results.empty()) {
         const auto& r = summary.results.front();
-        row.result = r.success ? "success" : "failed";
+        const bool dockerFailed =
+            r.docker_runtime_requested && r.docker_runtime_result == "failed";
+        row.result = (r.success && !dockerFailed) ? "success" : "failed";
         row.reason = r.reason;
+        if (dockerFailed && row.reason.empty()) {
+            row.reason = r.docker_runtime_reason.empty() ? "docker runtime failed" : r.docker_runtime_reason;
+        }
         row.state_updated = r.state_updated;
         row.config_synced = r.config_synced;
         row.docker_runtime_result = r.docker_runtime_result;

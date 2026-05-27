@@ -111,6 +111,8 @@ function registerCampaignRunRoutes(app, deps) {
     detectDeploymentMgrPath,
     toWslPath,
     bashSingleQuote,
+    syncRuntimeCmdForCars,
+    extractCarIdsFromCampaign,
   } = deps;
 
   const CAMPAIGNS_DIR = path.join(DEPLOY_ROOT, "campaigns");
@@ -181,6 +183,16 @@ function registerCampaignRunRoutes(app, deps) {
         const r = await execWslBash(cmd, { timeout: RUN_TIMEOUT_MS });
         const parsed = parseCampaignRunOutput(r.stdout, r.stderr);
         const exitOk = Number(r.code) === 0 && parsed.status === "SUCCESS";
+
+        if (exitOk && typeof syncRuntimeCmdForCars === "function") {
+          const carIds =
+            typeof extractCarIdsFromCampaign === "function"
+              ? extractCarIdsFromCampaign(hit.data)
+              : [];
+          if (carIds.length) {
+            syncRuntimeCmdForCars(carIds);
+          }
+        }
 
         res.json({
           ok: exitOk,

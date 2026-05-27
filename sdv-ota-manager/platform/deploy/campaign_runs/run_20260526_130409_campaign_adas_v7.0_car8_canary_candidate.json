@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260526_130409_campaign_adas_v7.0_car8_canary_candidate",
+  "campaign_id": "campaign_adas_v7.0_car8_canary",
+  "campaign_file": "deploy/campaigns/campaign_adas_v7.0_car8_canary.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_v7.0",
+  "phase": "candidate",
+  "status": "failed",
+  "started_at": "2026-05-26T13:04:09",
+  "finished_at": "2026-05-26T13:04:10",
+  "feature": "ADAS",
+  "target_version": "v7.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "candidate",
+    "pull_requested": true,
+    "pull_policy": "missing",
+    "image": "localhost:5000/sdv/adas-feature:v7.0"
+  },
+  "resolved_targets": ["car_8"],
+  "aggregate": {
+    "total": 1,
+    "success": 0,
+    "failed": 1
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_8",
+      "result": "failed",
+      "reason": "update_mode is not READY",
+      "deploy_id": "deploy_20260526_130409_001",
+      "state_updated": false,
+      "config_synced": false,
+      "docker_runtime_result": "",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "",
+      "docker_runtime_image": "",
+      "docker_runtime_container": "",
+      "state_file": "deploy/state/car_8.json",
+      "config_file": "config/car/car_8.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_8 ADAS B v7.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    }
+  ],
+  "warnings": ["update_mode is not READY for car_8 (current=COMPLETED)"],
+  "failures": ["car_8: update_mode is not READY"]
+}

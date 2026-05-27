@@ -165,7 +165,10 @@ export default function VehicleSafetyPreconditionsCard({
         <button type="button" className="btn" disabled={saving || loading} onClick={load}>
           Refresh
         </button>
-        <span className="tiny subtle">Sets update_mode=READY, download=downloaded, install=not_started, driver approved</span>
+        <span className="tiny subtle">
+          Sets OTA fields in state JSON only (not version_map / campaign package). Re-runs Validate for the selected
+          campaign automatically.
+        </span>
       </div>
 
       {draft ? (

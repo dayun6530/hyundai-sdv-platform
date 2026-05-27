@@ -8,11 +8,11 @@
         "binary": "AdasFeature"
       },
       "B": {
-        "version": "v0.5",
+        "version": "v13.0",
         "role": "candidate",
         "binary": "AdasFeature",
-        "package_id": "ADAS_v0.5",
-        "package_path": "deploy/packages/ADAS/v0.5"
+        "package_id": "ADAS_v13.0",
+        "package_path": "deploy/packages/ADAS/v13.0"
       }
     },
     "Navigation": {

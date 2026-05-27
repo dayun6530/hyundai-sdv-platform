@@ -66,30 +66,9 @@ if ($WslDistro) { $wslArgsBase += @("-d", $WslDistro) }
 $wslArgsRoot = $wslArgsBase + @("-u", "root", "--")
 
 # Root pkill: any leftover car_1..car_10 or platform children from an earlier run_sdv / manual start.
-# Kill car_10..car_1 in that order so "car_1" does not match a still-running ".../car_10" cmdline.
-$cleanupBash = @'
-set +e
-pkill -9 -f SdvPlatform 2>/dev/null
-for i in $(seq 10 -1 1); do
-  pkill -9 -f "/build_unleash/car_${i}([[:space:]]|$)" 2>/dev/null
-  pkill -9 -f "/build/car_${i}([[:space:]]|$)" 2>/dev/null
-done
-pkill -9 -f 'sdv-feature-flag-platform/build_unleash/car_' 2>/dev/null
-pkill -9 -f 'sdv-feature-flag-platform/build/car_' 2>/dev/null
-pkill -9 -f EventBusHost 2>/dev/null
-pkill -9 -f WatchDog 2>/dev/null
-pkill -9 -f FeatureEvaluator 2>/dev/null
-pkill -9 -f DataCollector 2>/dev/null
-pkill -9 -f SignalReceiver 2>/dev/null
-pkill -9 -f SignalSender 2>/dev/null
-pkill -9 -f MqttVehicleAgentHost 2>/dev/null
-pkill -9 -f NavigationFeature 2>/dev/null
-pkill -9 -f AdasFeature 2>/dev/null
-pkill -9 -f EvEnergyFeature 2>/dev/null
-pkill -9 -f DeploymentMgr 2>/dev/null
-exit 0
-'@
-$null = & wsl.exe @wslArgsRoot bash -c $cleanupBash 2>$null
+# Use a .sh file — inline `bash -c` from PowerShell breaks on regex parentheses in pkill patterns.
+& wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/cleanup_wsl_car_processes.sh`" 2>/dev/null || true"
+$null = & wsl.exe @wslArgsRoot bash "$projWsl/scripts/cleanup_wsl_car_processes.sh" 2>$null
 Start-Sleep -Seconds 3
 
 # Wait until old processes are fully gone; avoids two car_N parents interleaving in the same log tail.

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260527_110319_campaign_adas_v13.0_car10_canary_candidate",
+  "campaign_id": "campaign_adas_v13.0_car10_canary",
+  "campaign_file": "deploy/campaigns/campaign_adas_v13.0_car10_canary.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_v13.0",
+  "phase": "candidate",
+  "status": "success",
+  "started_at": "2026-05-27T11:03:19",
+  "finished_at": "2026-05-27T11:03:29",
+  "feature": "ADAS",
+  "target_version": "v13.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "candidate",
+    "pull_requested": true,
+    "pull_policy": "missing",
+    "image": "localhost:5000/sdv/adas-feature:v13.0"
+  },
+  "resolved_targets": ["car_10"],
+  "aggregate": {
+    "total": 1,
+    "success": 1,
+    "failed": 0
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_10",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260527_110319_001",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v13.0",
+      "docker_runtime_container": "car_10_agent_adas_shadow",
+      "state_file": "deploy/state/car_10.json",
+      "config_file": "config/car/car_10.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_10 ADAS B v13.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    }
+  ],
+  "warnings": [],
+  "failures": []
+}

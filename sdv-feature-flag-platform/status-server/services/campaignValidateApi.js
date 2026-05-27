@@ -158,4 +158,5 @@ module.exports = {
   registerCampaignValidateRoutes,
   parseCampaignValidateOutput,
   findCampaignByCampaignId,
+  validateId,
 };

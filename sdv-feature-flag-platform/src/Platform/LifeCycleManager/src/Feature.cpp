@@ -459,16 +459,21 @@ int Feature::run() {
                 configPath = cfg;
             }
         }
+        const bool shadowProc = (name_.size() >= 6 && name_.compare(name_.size() - 6, 6, "Shadow") == 0);
+        if (auto rt = readVehicleRuntimeDomainVersions(name_, carId_)) {
+            const std::string rtLine =
+                formatVehicleRuntimeVersionLogLine(*rt, carId_, name_, shadowProc);
+            log(LogLevel::info, rtLine);
+            std::cerr << rtLine << std::endl;
+            appendRunSdvVersionLog(carId_, rtLine);
+            const std::string& laneVer = shadowProc ? rt->shadow_version : rt->primary_version;
+            if (!laneVer.empty()) {
+                distVer = stripLeadingVForDisplay(laneVer);
+            }
+        }
         if (auto info = resolveFleetVersionForProcess(name_, carId_, configPath)) {
-            if (info->version != "unknown") {
-                std::string v = info->version;
-                if (!v.empty() && (v[0] == 'v' || v[0] == 'V') && v.size() >= 2 &&
-                    std::isdigit(static_cast<unsigned char>(v[1]))) {
-                    v = v.substr(1);
-                }
-                if (distVer.empty()) {
-                    distVer = v;
-                }
+            if (distVer.empty() && info->version != "unknown") {
+                distVer = stripLeadingVForDisplay(info->version);
             }
             const std::string verLine = formatVersionLogLine(*info, carId_);
             const std::string startedLine = formatFeatureStartedLogLine(*info, carId_);

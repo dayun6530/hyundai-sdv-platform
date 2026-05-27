@@ -54,10 +54,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash
 
 #=============================================================================
 # Directory level rules for the build root directory
@@ -303,14 +303,14 @@ CMakeFiles/SdvPlatform.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVe
 CMakeFiles/SdvPlatform.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SdvPlatform.dir/build.make CMakeFiles/SdvPlatform.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SdvPlatform.dir/build.make CMakeFiles/SdvPlatform.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=45,46 "Built target SdvPlatform"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=45,46 "Built target SdvPlatform"
 .PHONY : CMakeFiles/SdvPlatform.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/SdvPlatform.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/SdvPlatform.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/SdvPlatform.dir/rule
 
 # Convenience name for target.
@@ -332,14 +332,14 @@ CMakeFiles/car_1.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_1.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_1.dir/build.make CMakeFiles/car_1.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_1.dir/build.make CMakeFiles/car_1.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=51,52 "Built target car_1"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=51,52 "Built target car_1"
 .PHONY : CMakeFiles/car_1.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_1.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_1.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_1.dir/rule
 
 # Convenience name for target.
@@ -361,14 +361,14 @@ CMakeFiles/car_2.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_2.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_2.dir/build.make CMakeFiles/car_2.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_2.dir/build.make CMakeFiles/car_2.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=54,55 "Built target car_2"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=54,55 "Built target car_2"
 .PHONY : CMakeFiles/car_2.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_2.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_2.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_2.dir/rule
 
 # Convenience name for target.
@@ -390,14 +390,14 @@ CMakeFiles/car_3.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_3.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_3.dir/build.make CMakeFiles/car_3.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_3.dir/build.make CMakeFiles/car_3.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=56 "Built target car_3"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=56 "Built target car_3"
 .PHONY : CMakeFiles/car_3.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_3.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_3.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_3.dir/rule
 
 # Convenience name for target.
@@ -419,14 +419,14 @@ CMakeFiles/car_4.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_4.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_4.dir/build.make CMakeFiles/car_4.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_4.dir/build.make CMakeFiles/car_4.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=57,58 "Built target car_4"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=57,58 "Built target car_4"
 .PHONY : CMakeFiles/car_4.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_4.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_4.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_4.dir/rule
 
 # Convenience name for target.
@@ -448,14 +448,14 @@ CMakeFiles/car_5.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_5.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_5.dir/build.make CMakeFiles/car_5.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_5.dir/build.make CMakeFiles/car_5.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=59,60 "Built target car_5"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=59,60 "Built target car_5"
 .PHONY : CMakeFiles/car_5.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_5.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_5.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_5.dir/rule
 
 # Convenience name for target.
@@ -477,14 +477,14 @@ CMakeFiles/car_6.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_6.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_6.dir/build.make CMakeFiles/car_6.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_6.dir/build.make CMakeFiles/car_6.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=61 "Built target car_6"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=61 "Built target car_6"
 .PHONY : CMakeFiles/car_6.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_6.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_6.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_6.dir/rule
 
 # Convenience name for target.
@@ -506,14 +506,14 @@ CMakeFiles/car_7.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_7.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_7.dir/build.make CMakeFiles/car_7.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_7.dir/build.make CMakeFiles/car_7.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=62,63 "Built target car_7"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=62,63 "Built target car_7"
 .PHONY : CMakeFiles/car_7.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_7.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_7.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_7.dir/rule
 
 # Convenience name for target.
@@ -535,14 +535,14 @@ CMakeFiles/car_8.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_8.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_8.dir/build.make CMakeFiles/car_8.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_8.dir/build.make CMakeFiles/car_8.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=64 "Built target car_8"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=64 "Built target car_8"
 .PHONY : CMakeFiles/car_8.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_8.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_8.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_8.dir/rule
 
 # Convenience name for target.
@@ -564,14 +564,14 @@ CMakeFiles/car_9.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionR
 CMakeFiles/car_9.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_9.dir/build.make CMakeFiles/car_9.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_9.dir/build.make CMakeFiles/car_9.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=65,66 "Built target car_9"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=65,66 "Built target car_9"
 .PHONY : CMakeFiles/car_9.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_9.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_9.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_9.dir/rule
 
 # Convenience name for target.
@@ -593,14 +593,14 @@ CMakeFiles/car_10.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersion
 CMakeFiles/car_10.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_10.dir/build.make CMakeFiles/car_10.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/car_10.dir/build.make CMakeFiles/car_10.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=53 "Built target car_10"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=53 "Built target car_10"
 .PHONY : CMakeFiles/car_10.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/car_10.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/car_10.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/car_10.dir/rule
 
 # Convenience name for target.
@@ -620,14 +620,14 @@ CMakeFiles/EventBusHost.dir/all: src/Platform/FeatureCommunication/EventBus/CMak
 CMakeFiles/EventBusHost.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/EventBusHost.dir/build.make CMakeFiles/EventBusHost.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/EventBusHost.dir/build.make CMakeFiles/EventBusHost.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=31,32 "Built target EventBusHost"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=31,32 "Built target EventBusHost"
 .PHONY : CMakeFiles/EventBusHost.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/EventBusHost.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/EventBusHost.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/EventBusHost.dir/rule
 
 # Convenience name for target.
@@ -649,14 +649,14 @@ CMakeFiles/WatchDog.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersi
 CMakeFiles/WatchDog.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/WatchDog.dir/build.make CMakeFiles/WatchDog.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/WatchDog.dir/build.make CMakeFiles/WatchDog.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=50 "Built target WatchDog"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=50 "Built target WatchDog"
 .PHONY : CMakeFiles/WatchDog.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/WatchDog.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/WatchDog.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/WatchDog.dir/rule
 
 # Convenience name for target.
@@ -678,14 +678,14 @@ CMakeFiles/FeatureEvaluator.dir/all: src/Platform/LifeCycleManager/CMakeFiles/Fl
 CMakeFiles/FeatureEvaluator.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FeatureEvaluator.dir/build.make CMakeFiles/FeatureEvaluator.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FeatureEvaluator.dir/build.make CMakeFiles/FeatureEvaluator.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=33 "Built target FeatureEvaluator"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=33 "Built target FeatureEvaluator"
 .PHONY : CMakeFiles/FeatureEvaluator.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/FeatureEvaluator.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/FeatureEvaluator.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/FeatureEvaluator.dir/rule
 
 # Convenience name for target.
@@ -706,14 +706,14 @@ CMakeFiles/DataCollector.dir/all: src/Platform/FeatureCommunication/EventBus/CMa
 CMakeFiles/DataCollector.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/DataCollector.dir/build.make CMakeFiles/DataCollector.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/DataCollector.dir/build.make CMakeFiles/DataCollector.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=11,12 "Built target DataCollector"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=11,12 "Built target DataCollector"
 .PHONY : CMakeFiles/DataCollector.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/DataCollector.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/DataCollector.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/DataCollector.dir/rule
 
 # Convenience name for target.
@@ -734,14 +734,14 @@ CMakeFiles/SignalReceiver.dir/all: src/Platform/FeatureCommunication/EventBus/CM
 CMakeFiles/SignalReceiver.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SignalReceiver.dir/build.make CMakeFiles/SignalReceiver.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SignalReceiver.dir/build.make CMakeFiles/SignalReceiver.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=47 "Built target SignalReceiver"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=47 "Built target SignalReceiver"
 .PHONY : CMakeFiles/SignalReceiver.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/SignalReceiver.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/SignalReceiver.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/SignalReceiver.dir/rule
 
 # Convenience name for target.
@@ -762,14 +762,14 @@ CMakeFiles/SignalSender.dir/all: src/Platform/FeatureCommunication/EventBus/CMak
 CMakeFiles/SignalSender.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SignalSender.dir/build.make CMakeFiles/SignalSender.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SignalSender.dir/build.make CMakeFiles/SignalSender.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=48,49 "Built target SignalSender"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=48,49 "Built target SignalSender"
 .PHONY : CMakeFiles/SignalSender.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/SignalSender.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/SignalSender.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : CMakeFiles/SignalSender.dir/rule
 
 # Convenience name for target.
@@ -788,14 +788,14 @@ CMakeFiles/SignalSender.dir/clean:
 src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/build.make src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/build.make src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=67,68,69,70 "Built target eventbus_proto"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=67,68,69,70 "Built target eventbus_proto"
 .PHONY : src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 4
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/rule
 
 # Convenience name for target.
@@ -814,14 +814,14 @@ src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/clean:
 src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/eventbus_proto.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/build.make src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/build.make src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=28,29,30 "Built target EventBus"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=28,29,30 "Built target EventBus"
 .PHONY : src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 7
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/rule
 
 # Convenience name for target.
@@ -840,14 +840,14 @@ src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/clean:
 src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=34,35 "Built target FleetVersionResolveLib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=34,35 "Built target FleetVersionResolveLib"
 .PHONY : src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 2
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/rule
 
 # Convenience name for target.
@@ -868,14 +868,14 @@ src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all: src/Platfo
 src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=36,37,38 "Built target LifeCycleManagerLib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=36,37,38 "Built target LifeCycleManagerLib"
 .PHONY : src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/rule
 
 # Convenience name for target.
@@ -894,14 +894,14 @@ src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/clean:
 src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/build.make src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/build.make src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=5,6,7,8,9,10 "Built target CenterCommunicationLib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=5,6,7,8,9,10 "Built target CenterCommunicationLib"
 .PHONY : src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 6
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/rule
 
 # Convenience name for target.
@@ -922,14 +922,14 @@ src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/all: src/Pl
 src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/build.make src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/build.make src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=39,40 "Built target MqttVehicleAgentHost"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=39,40 "Built target MqttVehicleAgentHost"
 .PHONY : src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/rule
 
 # Convenience name for target.
@@ -948,14 +948,14 @@ src/Platform/CenterCommunication/CMakeFiles/MqttVehicleAgentHost.dir/clean:
 src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/build.make src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/build.make src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=13,14,15,16,17,18,19,20,21,22,23 "Built target DeploymentMgr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=13,14,15,16,17,18,19,20,21,22,23 "Built target DeploymentMgr"
 .PHONY : src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/all
 
 # Build rule for subdir invocation for target.
 src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 11
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 11
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Platform/sdv_ota_manager__DeploymentManager/CMakeFiles/DeploymentMgr.dir/rule
 
 # Convenience name for target.
@@ -977,14 +977,14 @@ src/Feature/CMakeFiles/NavigationFeature.dir/all: src/Platform/LifeCycleManager/
 src/Feature/CMakeFiles/NavigationFeature.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeature.dir/build.make src/Feature/CMakeFiles/NavigationFeature.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=41 "Built target NavigationFeature"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=41 "Built target NavigationFeature"
 .PHONY : src/Feature/CMakeFiles/NavigationFeature.dir/all
 
 # Build rule for subdir invocation for target.
 src/Feature/CMakeFiles/NavigationFeature.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeature.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Feature/CMakeFiles/NavigationFeature.dir/rule
 
 # Convenience name for target.
@@ -1005,14 +1005,14 @@ src/Feature/CMakeFiles/NavigationFeatureShadow.dir/all: src/Platform/FeatureComm
 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build.make src/Feature/CMakeFiles/NavigationFeatureShadow.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=42,43,44 "Built target NavigationFeatureShadow"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=42,43,44 "Built target NavigationFeatureShadow"
 .PHONY : src/Feature/CMakeFiles/NavigationFeatureShadow.dir/all
 
 # Build rule for subdir invocation for target.
 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/NavigationFeatureShadow.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Feature/CMakeFiles/NavigationFeatureShadow.dir/rule
 
 # Convenience name for target.
@@ -1034,14 +1034,14 @@ src/Feature/CMakeFiles/AdasFeature.dir/all: src/Platform/LifeCycleManager/CMakeF
 src/Feature/CMakeFiles/AdasFeature.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeature.dir/build.make src/Feature/CMakeFiles/AdasFeature.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=1 "Built target AdasFeature"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=1 "Built target AdasFeature"
 .PHONY : src/Feature/CMakeFiles/AdasFeature.dir/all
 
 # Build rule for subdir invocation for target.
 src/Feature/CMakeFiles/AdasFeature.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeature.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Feature/CMakeFiles/AdasFeature.dir/rule
 
 # Convenience name for target.
@@ -1062,14 +1062,14 @@ src/Feature/CMakeFiles/AdasFeatureShadow.dir/all: src/Platform/FeatureCommunicat
 src/Feature/CMakeFiles/AdasFeatureShadow.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/AdasFeatureShadow.dir/build.make src/Feature/CMakeFiles/AdasFeatureShadow.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=2,3,4 "Built target AdasFeatureShadow"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=2,3,4 "Built target AdasFeatureShadow"
 .PHONY : src/Feature/CMakeFiles/AdasFeatureShadow.dir/all
 
 # Build rule for subdir invocation for target.
 src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/AdasFeatureShadow.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Feature/CMakeFiles/AdasFeatureShadow.dir/rule
 
 # Convenience name for target.
@@ -1091,14 +1091,14 @@ src/Feature/CMakeFiles/EvEnergyFeature.dir/all: src/Platform/LifeCycleManager/CM
 src/Feature/CMakeFiles/EvEnergyFeature.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeature.dir/build.make src/Feature/CMakeFiles/EvEnergyFeature.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=24 "Built target EvEnergyFeature"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=24 "Built target EvEnergyFeature"
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature.dir/all
 
 # Build rule for subdir invocation for target.
 src/Feature/CMakeFiles/EvEnergyFeature.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeature.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeature.dir/rule
 
 # Convenience name for target.
@@ -1119,14 +1119,14 @@ src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/all: src/Platform/FeatureCommun
 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/all: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build.make src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=25,26,27 "Built target EvEnergyFeatureShadow"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=25,26,27 "Built target EvEnergyFeatureShadow"
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/all
 
 # Build rule for subdir invocation for target.
 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : src/Feature/CMakeFiles/EvEnergyFeatureShadow.dir/rule
 
 # Convenience name for target.
@@ -1146,14 +1146,14 @@ tests/unit/CMakeFiles/unit_event.dir/all: src/Platform/FeatureCommunication/Even
 tests/unit/CMakeFiles/unit_event.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event.dir/build.make tests/unit/CMakeFiles/unit_event.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event.dir/build.make tests/unit/CMakeFiles/unit_event.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=76 "Built target unit_event"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=76 "Built target unit_event"
 .PHONY : tests/unit/CMakeFiles/unit_event.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_event.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 8
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 8
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_event.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_event.dir/rule
 
 # Convenience name for target.
@@ -1173,14 +1173,14 @@ tests/unit/CMakeFiles/unit_event_queue.dir/all: src/Platform/FeatureCommunicatio
 tests/unit/CMakeFiles/unit_event_queue.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_queue.dir/build.make tests/unit/CMakeFiles/unit_event_queue.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_queue.dir/build.make tests/unit/CMakeFiles/unit_event_queue.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=82,83 "Built target unit_event_queue"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=82,83 "Built target unit_event_queue"
 .PHONY : tests/unit/CMakeFiles/unit_event_queue.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_event_queue.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_event_queue.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_event_queue.dir/rule
 
 # Convenience name for target.
@@ -1200,14 +1200,14 @@ tests/unit/CMakeFiles/unit_event_bus_interface.dir/all: src/Platform/FeatureComm
 tests/unit/CMakeFiles/unit_event_bus_interface.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_bus_interface.dir/build.make tests/unit/CMakeFiles/unit_event_bus_interface.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_bus_interface.dir/build.make tests/unit/CMakeFiles/unit_event_bus_interface.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=79,80 "Built target unit_event_bus_interface"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=79,80 "Built target unit_event_bus_interface"
 .PHONY : tests/unit/CMakeFiles/unit_event_bus_interface.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_event_bus_interface.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_event_bus_interface.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_event_bus_interface.dir/rule
 
 # Convenience name for target.
@@ -1227,14 +1227,14 @@ tests/unit/CMakeFiles/unit_event_bus_proxy.dir/all: src/Platform/FeatureCommunic
 tests/unit/CMakeFiles/unit_event_bus_proxy.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_bus_proxy.dir/build.make tests/unit/CMakeFiles/unit_event_bus_proxy.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_bus_proxy.dir/build.make tests/unit/CMakeFiles/unit_event_bus_proxy.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=81 "Built target unit_event_bus_proxy"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=81 "Built target unit_event_bus_proxy"
 .PHONY : tests/unit/CMakeFiles/unit_event_bus_proxy.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_event_bus_proxy.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 8
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 8
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_event_bus_proxy.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_event_bus_proxy.dir/rule
 
 # Convenience name for target.
@@ -1254,14 +1254,14 @@ tests/unit/CMakeFiles/unit_event_bus_host.dir/all: src/Platform/FeatureCommunica
 tests/unit/CMakeFiles/unit_event_bus_host.dir/all: src/Platform/FeatureCommunication/EventBus/CMakeFiles/EventBus.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_bus_host.dir/build.make tests/unit/CMakeFiles/unit_event_bus_host.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_event_bus_host.dir/build.make tests/unit/CMakeFiles/unit_event_bus_host.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=77,78 "Built target unit_event_bus_host"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=77,78 "Built target unit_event_bus_host"
 .PHONY : tests/unit/CMakeFiles/unit_event_bus_host.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_event_bus_host.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 9
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_event_bus_host.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_event_bus_host.dir/rule
 
 # Convenience name for target.
@@ -1283,14 +1283,14 @@ tests/unit/CMakeFiles/unit_feature_base.dir/all: src/Platform/LifeCycleManager/C
 tests/unit/CMakeFiles/unit_feature_base.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_feature_base.dir/build.make tests/unit/CMakeFiles/unit_feature_base.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_feature_base.dir/build.make tests/unit/CMakeFiles/unit_feature_base.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=84 "Built target unit_feature_base"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=84 "Built target unit_feature_base"
 .PHONY : tests/unit/CMakeFiles/unit_feature_base.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_feature_base.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_feature_base.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_feature_base.dir/rule
 
 # Convenience name for target.
@@ -1312,14 +1312,14 @@ tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/all: src/Platform/LifeCycleManager/
 tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/build.make tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/build.make tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=88,89 "Built target unit_lifecycle_mgr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=88,89 "Built target unit_lifecycle_mgr"
 .PHONY : tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_lifecycle_mgr.dir/rule
 
 # Convenience name for target.
@@ -1341,14 +1341,14 @@ tests/unit/CMakeFiles/unit_watchdog.dir/all: src/Platform/LifeCycleManager/CMake
 tests/unit/CMakeFiles/unit_watchdog.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_watchdog.dir/build.make tests/unit/CMakeFiles/unit_watchdog.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_watchdog.dir/build.make tests/unit/CMakeFiles/unit_watchdog.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=99,100 "Built target unit_watchdog"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=99,100 "Built target unit_watchdog"
 .PHONY : tests/unit/CMakeFiles/unit_watchdog.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_watchdog.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_watchdog.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_watchdog.dir/rule
 
 # Convenience name for target.
@@ -1370,14 +1370,14 @@ tests/unit/CMakeFiles/unit_adas_feature.dir/all: src/Platform/LifeCycleManager/C
 tests/unit/CMakeFiles/unit_adas_feature.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_adas_feature.dir/build.make tests/unit/CMakeFiles/unit_adas_feature.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_adas_feature.dir/build.make tests/unit/CMakeFiles/unit_adas_feature.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=71 "Built target unit_adas_feature"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=71 "Built target unit_adas_feature"
 .PHONY : tests/unit/CMakeFiles/unit_adas_feature.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_adas_feature.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_adas_feature.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_adas_feature.dir/rule
 
 # Convenience name for target.
@@ -1399,14 +1399,14 @@ tests/unit/CMakeFiles/unit_ev_energy_feature.dir/all: src/Platform/LifeCycleMana
 tests/unit/CMakeFiles/unit_ev_energy_feature.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_ev_energy_feature.dir/build.make tests/unit/CMakeFiles/unit_ev_energy_feature.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_ev_energy_feature.dir/build.make tests/unit/CMakeFiles/unit_ev_energy_feature.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=74,75 "Built target unit_ev_energy_feature"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=74,75 "Built target unit_ev_energy_feature"
 .PHONY : tests/unit/CMakeFiles/unit_ev_energy_feature.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_ev_energy_feature.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_ev_energy_feature.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_ev_energy_feature.dir/rule
 
 # Convenience name for target.
@@ -1428,14 +1428,14 @@ tests/unit/CMakeFiles/unit_navigation_feature.dir/all: src/Platform/LifeCycleMan
 tests/unit/CMakeFiles/unit_navigation_feature.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_navigation_feature.dir/build.make tests/unit/CMakeFiles/unit_navigation_feature.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_navigation_feature.dir/build.make tests/unit/CMakeFiles/unit_navigation_feature.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=91,92 "Built target unit_navigation_feature"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=91,92 "Built target unit_navigation_feature"
 .PHONY : tests/unit/CMakeFiles/unit_navigation_feature.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_navigation_feature.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_navigation_feature.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_navigation_feature.dir/rule
 
 # Convenience name for target.
@@ -1457,14 +1457,14 @@ tests/unit/CMakeFiles/unit_flag.dir/all: src/Platform/LifeCycleManager/CMakeFile
 tests/unit/CMakeFiles/unit_flag.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_flag.dir/build.make tests/unit/CMakeFiles/unit_flag.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_flag.dir/build.make tests/unit/CMakeFiles/unit_flag.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=87 "Built target unit_flag"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=87 "Built target unit_flag"
 .PHONY : tests/unit/CMakeFiles/unit_flag.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_flag.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_flag.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_flag.dir/rule
 
 # Convenience name for target.
@@ -1486,14 +1486,14 @@ tests/unit/CMakeFiles/unit_log_data.dir/all: src/Platform/LifeCycleManager/CMake
 tests/unit/CMakeFiles/unit_log_data.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_log_data.dir/build.make tests/unit/CMakeFiles/unit_log_data.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_log_data.dir/build.make tests/unit/CMakeFiles/unit_log_data.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=90 "Built target unit_log_data"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=90 "Built target unit_log_data"
 .PHONY : tests/unit/CMakeFiles/unit_log_data.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_log_data.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_log_data.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_log_data.dir/rule
 
 # Convenience name for target.
@@ -1515,14 +1515,14 @@ tests/unit/CMakeFiles/unit_feature_evaluator.dir/all: src/Platform/LifeCycleMana
 tests/unit/CMakeFiles/unit_feature_evaluator.dir/all: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_feature_evaluator.dir/build.make tests/unit/CMakeFiles/unit_feature_evaluator.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_feature_evaluator.dir/build.make tests/unit/CMakeFiles/unit_feature_evaluator.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=85,86 "Built target unit_feature_evaluator"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=85,86 "Built target unit_feature_evaluator"
 .PHONY : tests/unit/CMakeFiles/unit_feature_evaluator.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_feature_evaluator.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 14
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_feature_evaluator.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_feature_evaluator.dir/rule
 
 # Convenience name for target.
@@ -1541,14 +1541,14 @@ tests/unit/CMakeFiles/unit_feature_evaluator.dir/clean:
 tests/unit/CMakeFiles/unit_signal.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_signal.dir/build.make tests/unit/CMakeFiles/unit_signal.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_signal.dir/build.make tests/unit/CMakeFiles/unit_signal.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=93 "Built target unit_signal"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=93 "Built target unit_signal"
 .PHONY : tests/unit/CMakeFiles/unit_signal.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_signal.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 7
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_signal.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_signal.dir/rule
 
 # Convenience name for target.
@@ -1569,14 +1569,14 @@ tests/unit/CMakeFiles/unit_signal_receiver.dir/all: src/Platform/FeatureCommunic
 tests/unit/CMakeFiles/unit_signal_receiver.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_signal_receiver.dir/build.make tests/unit/CMakeFiles/unit_signal_receiver.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_signal_receiver.dir/build.make tests/unit/CMakeFiles/unit_signal_receiver.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=94,95,96 "Built target unit_signal_receiver"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=94,95,96 "Built target unit_signal_receiver"
 .PHONY : tests/unit/CMakeFiles/unit_signal_receiver.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_signal_receiver.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 16
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 16
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_signal_receiver.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_signal_receiver.dir/rule
 
 # Convenience name for target.
@@ -1597,14 +1597,14 @@ tests/unit/CMakeFiles/unit_signal_sender.dir/all: src/Platform/FeatureCommunicat
 tests/unit/CMakeFiles/unit_signal_sender.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_signal_sender.dir/build.make tests/unit/CMakeFiles/unit_signal_sender.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_signal_sender.dir/build.make tests/unit/CMakeFiles/unit_signal_sender.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=97,98 "Built target unit_signal_sender"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=97,98 "Built target unit_signal_sender"
 .PHONY : tests/unit/CMakeFiles/unit_signal_sender.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_signal_sender.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_signal_sender.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_signal_sender.dir/rule
 
 # Convenience name for target.
@@ -1625,14 +1625,14 @@ tests/unit/CMakeFiles/unit_data_collector.dir/all: src/Platform/FeatureCommunica
 tests/unit/CMakeFiles/unit_data_collector.dir/all: src/Platform/CenterCommunication/CMakeFiles/CenterCommunicationLib.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_data_collector.dir/build.make tests/unit/CMakeFiles/unit_data_collector.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/unit/CMakeFiles/unit_data_collector.dir/build.make tests/unit/CMakeFiles/unit_data_collector.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=72,73 "Built target unit_data_collector"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=72,73 "Built target unit_data_collector"
 .PHONY : tests/unit/CMakeFiles/unit_data_collector.dir/all
 
 # Build rule for subdir invocation for target.
 tests/unit/CMakeFiles/unit_data_collector.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 15
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/unit/CMakeFiles/unit_data_collector.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : tests/unit/CMakeFiles/unit_data_collector.dir/rule
 
 # Convenience name for target.

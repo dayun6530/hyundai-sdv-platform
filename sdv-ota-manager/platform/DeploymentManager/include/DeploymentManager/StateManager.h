@@ -175,6 +175,10 @@ public:
     bool applyFeaturePackageMetadata(const std::string& car_id, const std::string& feature,
         const FeaturePackageMetadata& metadata, std::string& error) const;
 
+    /// Candidate Docker deploy: set shadow/candidate fields only; primary/active stay unchanged.
+    bool stageCandidatePackage(const std::string& car_id, const std::string& feature,
+        const std::string& candidate_version, const FeaturePackageMetadata& metadata, std::string& error) const;
+
     struct FeatureDockerRuntimeRecord {
         std::string result;
         std::string mode;

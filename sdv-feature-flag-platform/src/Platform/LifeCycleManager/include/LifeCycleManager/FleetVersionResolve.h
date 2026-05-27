@@ -16,10 +16,36 @@ struct FleetDomainRuntimeInfo {
     std::string artifact_type;  // optional (from deploy/state when present)
     std::string package_id;     // optional (from deploy/state when present)
     std::string binary_path;
-    std::string source;        // config | state | runtime | unknown
+    std::string source;        // config | state | vehicle_runtime | unknown
 };
 
-/// Maps a spawned process name (e.g. AdasFeature) to fleet metadata using config → state → (optional) runtime.
+/// Per-domain versions from `deploy/vehicle_runtime/<car_id>.json`.
+struct VehicleRuntimeDomainVersions {
+    std::string json_path;
+    std::string domain_key;
+    std::string fleet_label;
+    std::string primary_version;
+    std::string shadow_version;
+    bool found = false;
+};
+
+/// Best-effort path to `deploy/vehicle_runtime/<car_id>.json` (empty if not found).
+std::string resolveVehicleRuntimeJsonPath(const std::string& carId);
+
+/// Reads `domains.<domain>.primary_version` / `shadow_version` for a fleet feature process.
+std::optional<VehicleRuntimeDomainVersions> readVehicleRuntimeDomainVersions(const std::string& processName,
+    const std::string& carId);
+
+/// Display token without a leading `v` (e.g. `v4.0` → `4.0`).
+std::string stripLeadingVForDisplay(std::string version);
+
+/// CMD-friendly line listing both lane versions from vehicle_runtime JSON.
+std::string formatVehicleRuntimeVersionLogLine(const VehicleRuntimeDomainVersions& rt,
+    const std::string& carId,
+    const std::string& processName,
+    bool shadowProcess);
+
+/// Maps a spawned process name (e.g. AdasFeature) to fleet metadata using vehicle_runtime → config → state.
 std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::string& processName,
     const std::string& carId,
     const std::string& lifecycleConfigPath);

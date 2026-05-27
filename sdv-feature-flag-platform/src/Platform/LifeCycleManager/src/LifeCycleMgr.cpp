@@ -368,6 +368,13 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
     const std::string want = trimExecToken(slot.execName);
 
     if (!carInstanceId_.empty() && isFleetFeatureProcessName(want)) {
+        const bool shadowProc = (want.size() >= 6 && want.compare(want.size() - 6, 6, "Shadow") == 0);
+        if (auto rt = readVehicleRuntimeDomainVersions(want, carInstanceId_)) {
+            const std::string rtLine =
+                formatVehicleRuntimeVersionLogLine(*rt, carInstanceId_, want, shadowProc);
+            std::cout << rtLine << std::endl;
+            appendFleetSpawnGateLog(carInstanceId_, logRootDir_, want, rtLine);
+        }
         std::string gateLine;
         std::string warnLine;
         if (!shouldSpawnFleetProcess(want, carInstanceId_, lifecycleConfigPath_, gateLine, warnLine)) {

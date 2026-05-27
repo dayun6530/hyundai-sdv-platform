@@ -1,10 +1,12 @@
-# Campaign UI demo (ADAS v0.5 · car_1)
+# Campaign UI demo
 
 Terminal-free flow using **Deployment Campaigns** in the dashboard.
 
-## Steps
+**ADAS v6.0 · car_3 (exam):** full checklist in `sdv-ota-manager/DEMO_V6_CAR3.md` — campaign `campaign_adas_v6.0_car3_canary`, version_map B = v6.0 (not v0.6).
 
-1. **Select** `campaign_adas_v0.5_car1_canary`
+## Steps (example: v4.0 · car_1)
+
+1. **Select** `campaign_adas_v4.0_car1_canary` (must match `deploy/version_map.json` slot B = v4.0)
 2. **Validate** — fail must be 0
 3. **Safety Preconditions** — click **Prepare Demo READY** (sets `deploy/state/<car>.json` OTA fields)
 4. **Run Candidate** — requires OTA `update_mode=READY` (use Safety UI, not terminal)

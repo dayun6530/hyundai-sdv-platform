@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Feature
+# Install script for directory: /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Feature
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

@@ -1,0 +1,14 @@
+{
+  "domain": "ADAS",
+  "feature": "AdasFeature",
+  "version": "0.6",
+  "artifact_type": "docker_image",
+  "docker_image": "localhost:5000/sdv/adas-feature:v0.6",
+  "checksum_file": "checksum.sha256",
+  "supported_targets": [
+    "docker"
+  ],
+  "created_at": "2026-05-26T01:47:47Z",
+  "executable_name": "AdasFeature",
+  "binary_name": "AdasFeature"
+}

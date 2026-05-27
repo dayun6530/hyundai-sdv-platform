@@ -688,12 +688,25 @@ bool DeploymentManager::deployToVehicle(const std::string& car_id, const std::st
     return r.success;
 }
 
+namespace {
+
+std::string stripVersionLeadingV(std::string v) {
+    v = trim(v);
+    if (!v.empty() && (v[0] == 'v' || v[0] == 'V')) {
+        return v.substr(1);
+    }
+    return v;
+}
+
+}  // namespace
+
 DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const std::string& car_id,
     const std::string& feature,
     const std::string& target_slot,
     const std::string& target_version,
     bool sync_config_requested,
-    bool defer_native_until_restart) {
+    bool defer_native_until_restart,
+    bool candidate_docker_shadow_only) {
     DeployResult r;
     r.car_id = car_id;
     r.feature = feature;
@@ -1025,44 +1038,68 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         err.clear();
     }
 
-    // Update state: active_slot/active_version only. Keep flag/fallback/kill/shadow unchanged.
-    if (!sm.updateFeatureSlot(car_id, feature, target_slot, target_version, err)) {
-        const std::string failed = "failed";
-        const std::string failedMode = "FAILED";
-        (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
-        (void)sm.updateOtaPhase(car_id, "INSTALL_FAILED", "unable to update feature slot", err);
-        std::cout << "[OTA] target=" << car_id << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
-        return fail(err.empty() ? "deploy failed: unable to update feature slot" : err);
-    }
-
-    if (const auto resolvedOpt =
-            resolvePackageManifest(packagesDir_, workDir_, feature, target_version, &manifestHints)) {
-        ResolvedPackageManifest resolved = *resolvedOpt;
-        const std::string manifestJson = readFileTextBestEffortLocal(resolved.abs_path);
-        if (!manifestJson.empty()) {
-            parsePackageManifestFields(manifestJson, resolved);
-            const StateManager::FeaturePackageMetadata meta = featureMetadataFromResolved(resolved, manifestHints);
-            const bool hasMeta = !meta.primary_image.empty() || !meta.artifact_type.empty() || !meta.image_digest.empty()
-                || !meta.manifest_path.empty() || !meta.package_id.empty();
-            if (hasMeta) {
+    if (candidate_docker_shadow_only) {
+        std::cout << "[FLEET] candidate docker: preserving primary fields; staging shadow/candidate metadata only\n";
+        if (const auto resolvedOpt =
+                resolvePackageManifest(packagesDir_, workDir_, feature, target_version, &manifestHints)) {
+            ResolvedPackageManifest resolved = *resolvedOpt;
+            const std::string manifestJson = readFileTextBestEffortLocal(resolved.abs_path);
+            if (!manifestJson.empty()) {
+                parsePackageManifestFields(manifestJson, resolved);
+                const StateManager::FeaturePackageMetadata meta =
+                    featureMetadataFromResolved(resolved, manifestHints);
                 std::string metaErr;
-                if (!sm.applyFeaturePackageMetadata(car_id, feature, meta, metaErr)) {
-                    std::cerr << "[FLEET] warning: unable to apply package metadata to state: "
+                if (!sm.stageCandidatePackage(car_id, feature, target_version, meta, metaErr)) {
+                    std::cerr << "[FLEET] warning: unable to stage candidate package metadata: "
                               << (metaErr.empty() ? "unknown" : metaErr) << "\n";
                 } else {
-                    std::cout << "[FLEET] package metadata applied"
-                              << (meta.package_id.empty() ? "" : (" package_id=" + meta.package_id))
-                              << (meta.primary_image.empty() ? "" : (" primary_image=" + meta.primary_image))
-                              << (meta.artifact_type.empty() ? "" : (" artifact_type=" + meta.artifact_type))
-                              << (meta.manifest_path.empty() ? "" : (" manifest_path=" + meta.manifest_path))
-                              << "\n";
+                    std::cout << "[FLEET] candidate package staged shadow_version=" << target_version
+                              << (meta.package_id.empty() ? "" : (" package_id=" + meta.package_id)) << "\n";
+                }
+            }
+        }
+    } else {
+        // Update state: active_slot/active_version only. Keep flag/fallback/kill/shadow unchanged.
+        if (!sm.updateFeatureSlot(car_id, feature, target_slot, target_version, err)) {
+            const std::string failed = "failed";
+            const std::string failedMode = "FAILED";
+            (void)sm.updateOtaProgressForDeploy(car_id, &failed, &failed, &failedMode, &notRunning, err);
+            (void)sm.updateOtaPhase(car_id, "INSTALL_FAILED", "unable to update feature slot", err);
+            std::cout << "[OTA] target=" << car_id
+                      << " mode=FAILED download_status=failed install_status=failed target_system_running=false\n";
+            return fail(err.empty() ? "deploy failed: unable to update feature slot" : err);
+        }
+
+        if (const auto resolvedOpt =
+                resolvePackageManifest(packagesDir_, workDir_, feature, target_version, &manifestHints)) {
+            ResolvedPackageManifest resolved = *resolvedOpt;
+            const std::string manifestJson = readFileTextBestEffortLocal(resolved.abs_path);
+            if (!manifestJson.empty()) {
+                parsePackageManifestFields(manifestJson, resolved);
+                const StateManager::FeaturePackageMetadata meta =
+                    featureMetadataFromResolved(resolved, manifestHints);
+                const bool hasMeta = !meta.primary_image.empty() || !meta.artifact_type.empty()
+                    || !meta.image_digest.empty() || !meta.manifest_path.empty() || !meta.package_id.empty();
+                if (hasMeta) {
+                    std::string metaErr;
+                    if (!sm.applyFeaturePackageMetadata(car_id, feature, meta, metaErr)) {
+                        std::cerr << "[FLEET] warning: unable to apply package metadata to state: "
+                                  << (metaErr.empty() ? "unknown" : metaErr) << "\n";
+                    } else {
+                        std::cout << "[FLEET] package metadata applied"
+                                  << (meta.package_id.empty() ? "" : (" package_id=" + meta.package_id))
+                                  << (meta.primary_image.empty() ? "" : (" primary_image=" + meta.primary_image))
+                                  << (meta.artifact_type.empty() ? "" : (" artifact_type=" + meta.artifact_type))
+                                  << (meta.manifest_path.empty() ? "" : (" manifest_path=" + meta.manifest_path))
+                                  << "\n";
+                    }
                 }
             }
         }
     }
 
     // Record the previous stable primary into rollback_stack (most-recent-first), capped to 3.
-    if (!prev_version.empty() && prev_version != target_version) {
+    if (!candidate_docker_shadow_only && !prev_version.empty() && prev_version != target_version) {
         StateManager::RollbackStackEntry e{};
         e.slot = prev_slot;
         e.version = prev_version;
@@ -1114,6 +1151,77 @@ void DeploymentManager::finalizeFleetRollbackMetadata(DeployResult& r) {
         r.rollback_metadata_error = r.rollback_metadata_error.empty() ? msg : (r.rollback_metadata_error + "; " + msg);
         std::cerr << "[FLEET] " << msg << "\n";
     }
+}
+
+void DeploymentManager::ensurePrimaryContainerForCandidateDeploy(DeployResult& r, const std::string& dockerImage) {
+    (void)dockerImage;
+    const std::string primaryContainer = primaryContainerForCarFeature(r.car_id, r.feature);
+    if (primaryContainer.empty() || dockerContainerNameExists(primaryContainer)) {
+        return;
+    }
+
+    const auto domainOpt = fleetFeatureToOtaVehicleDomain(r.feature);
+    if (!domainOpt) {
+        return;
+    }
+
+    std::string bootVer = r.staged_primary_version;
+    if (bootVer.empty()) {
+        StateManager sm(workDir_);
+        std::string loadErr;
+        if (const auto st = sm.loadState(r.car_id, loadErr)) {
+            if (const auto* fs = StateManager::featureRef(*st, r.feature)) {
+                bootVer = fs->primary_version.empty() ? fs->active_version : fs->primary_version;
+            }
+        }
+    }
+    if (bootVer.empty()) {
+        bootVer = "v1.0";
+    }
+
+    std::string bootImg;
+    if (!r.rollback_prev_feature.primary_image.empty()) {
+        bootImg = r.rollback_prev_feature.primary_image;
+    } else {
+        StateManager sm(workDir_);
+        std::string loadErr;
+        if (const auto st = sm.loadState(r.car_id, loadErr)) {
+            if (const auto* fs = StateManager::featureRef(*st, r.feature)) {
+                bootImg = fs->primary_image;
+            }
+        }
+    }
+    if (bootImg.empty()) {
+        bootImg = "sdv/" + toLower(*domainOpt) + "-feature:" + bootVer;
+    }
+
+    const auto scriptOpt = findOtaVehicleScriptPath(workDir_);
+    if (!scriptOpt) {
+        std::cerr << "[DOCKER_RUNTIME] auto-bootstrap skipped: ota_vehicle.sh not found\n";
+        return;
+    }
+
+    std::cout << "[DOCKER_RUNTIME] primary container missing; auto-bootstrap " << primaryContainer << " version="
+              << bootVer << " image=" << bootImg << "\n";
+
+    std::string cmd = std::string("bash ") + bashSingleQuoteLocal(*scriptOpt) + " bootstrap --car "
+        + bashSingleQuoteLocal(r.car_id) + " --domain " + bashSingleQuoteLocal(*domainOpt) + " --version "
+        + bashSingleQuoteLocal(stripVersionLeadingV(bootVer)) + " --image " + bashSingleQuoteLocal(bootImg);
+    if (r.docker_pull_requested && !r.docker_runtime_pull_policy.empty()) {
+        cmd += " --pull " + bashSingleQuoteLocal(r.docker_runtime_pull_policy);
+    }
+    cmd += " 2>&1";
+
+    const ShellCaptureResult shell = runShellCapture(cmd);
+    if (shell.exit_code != 0) {
+        std::string reason = summarizeShellOutput(shell.output);
+        if (reason.empty()) {
+            reason = "auto-bootstrap failed (exit " + std::to_string(shell.exit_code) + ")";
+        }
+        std::cerr << "[DOCKER_RUNTIME] auto-bootstrap failed: " << reason << "\n";
+        return;
+    }
+    std::cout << "[DOCKER_RUNTIME] auto-bootstrap ok container=" << primaryContainer << "\n";
 }
 
 void DeploymentManager::resyncCarConfigAfterDockerRuntime(DeployResult& r) {
@@ -1353,6 +1461,9 @@ void DeploymentManager::applyPostDeployDockerRuntime(DeployResult& r, bool defer
     const std::string container = candidateShadowContainerForCarFeature(r.car_id, r.feature);
     r.docker_runtime_action = "deploy-shadow";
     std::cout << "\n";
+
+    ensurePrimaryContainerForCandidateDeploy(r, dockerImage);
+
     std::cout << "[DOCKER_RUNTIME] action=deploy-shadow domain=" << *domainOpt << " script=" << *scriptOpt << "\n";
 
     std::string cmd = std::string("bash ") + bashSingleQuoteLocal(*scriptOpt) + " deploy-shadow --car "
@@ -1866,10 +1977,19 @@ DeploymentManager::DeploySummary DeploymentManager::deployToVehicleWithSummary(c
     s.docker_pull_policy = dockerOpts.pull_policy;
     s.total = 1;
 
+    const bool candidateDockerShadowOnly = dockerOpts.requested
+        && toLower(trim(dockerOpts.mode.empty() ? std::string("candidate") : dockerOpts.mode)) == "candidate"
+        && target_slot == "B";
     auto r = deployToVehicleInternal(car_id, feature, target_slot, target_version, sync_config_after_success,
-        defer_native_until_restart);
+        defer_native_until_restart, candidateDockerShadowOnly);
     applyPostDeployConfigSync(r, sync_config_after_success);
     applyPostDeployDockerRuntime(r, defer_native_until_restart, dockerOpts);
+    if (dockerOpts.requested && r.docker_runtime_result == "failed") {
+        r.success = false;
+        if (r.reason.empty()) {
+            r.reason = r.docker_runtime_reason.empty() ? "docker runtime failed" : r.docker_runtime_reason;
+        }
+    }
     s.results.push_back(r);
     if (r.success) {
         s.success = 1;

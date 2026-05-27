@@ -19,6 +19,13 @@ const {
 const { registerCampaignRunRoutes } = require('./services/campaignRunApi');
 const { registerVehicleSafetyRoutes } = require('./services/vehicleSafetyApi');
 const {
+  startVehicleRuntimeCmdPoller,
+  syncCarsVehicleRuntimeToCmd,
+  syncAllCarsVehicleRuntimeToCmd,
+  extractCarIdsFromCampaign,
+  invalidateCarRuntimeCache,
+} = require('./services/vehicleRuntimeCmdSync');
+const {
   mqttFlagCache,
   forceOfflineFeatureFlags,
   mergeMqttFlagsIntoStates,
@@ -58,6 +65,27 @@ const APPLY_FLEET_DOCKER_PY = path.join(
   'apply_fleet_feature_versions.py',
 );
 const RUNTIME_DOCKER_CAR_RE = /^car_(10|[1-9])$/;
+
+const VEHICLE_RUNTIME_CMD_SYNC_DEPS = {
+  REPO_ROOT,
+  OTA_VEHICLE_RUNTIME_DIR,
+  DEPLOY_ROOT,
+};
+
+function syncRuntimeCmdForCars(carIds, options = {}) {
+  if (Array.isArray(carIds) && carIds.length) {
+    for (const c of carIds) invalidateCarRuntimeCache(c);
+    return syncCarsVehicleRuntimeToCmd(VEHICLE_RUNTIME_CMD_SYNC_DEPS, carIds, {
+      force: true,
+      ...options,
+    });
+  }
+  invalidateCarRuntimeCache();
+  return syncAllCarsVehicleRuntimeToCmd(VEHICLE_RUNTIME_CMD_SYNC_DEPS, {
+    force: true,
+    ...options,
+  });
+}
 
 app.use(cors());
 app.use(express.json({ limit: '256kb' }));
@@ -3488,6 +3516,9 @@ app.post('/api/fleet/action', async (req, res) => {
           plainConsoleLine: `fleet-action ${action} OK`,
         });
       }
+      if (RUNTIME_DOCKER_CAR_RE.test(car_id)) {
+        syncRuntimeCmdForCars([car_id]);
+      }
     }
     res.json({
       ok: okExec,
@@ -3668,6 +3699,9 @@ app.post('/api/fleet/deploy', async (req, res) => {
           pending_version: pendingAfter || '<missing>',
         });
       }
+    }
+    if (cars.length) {
+      syncRuntimeCmdForCars(cars);
     }
     if (!cars.length) {
       console.log(
@@ -3876,6 +3910,7 @@ function notifyVehicleRuntimeDockerSuccess(subcommand, t) {
       plainConsoleLine: `docker-ota promote ${t.domain} v${t.version}${t.sync_shadow ? ' +sync-shadow' : ''} OK`,
     });
   }
+  syncRuntimeCmdForCars([t.car_id]);
 }
 
 app.get('/api/vehicle-runtime/health', (_req, res) => {
@@ -4307,9 +4342,11 @@ registerCampaignRunRoutes(app, {
   detectDeploymentMgrPath,
   toWslPath,
   bashSingleQuote,
+  syncRuntimeCmdForCars,
+  extractCarIdsFromCampaign,
 });
 
-registerVehicleSafetyRoutes(app, { DEPLOY_ROOT });
+registerVehicleSafetyRoutes(app, { DEPLOY_ROOT, syncRuntimeCmdForCars });
 
 const SDV_MQTT_BROKER_URI = String(
   process.env.SDV_MQTT_BROKER_URI || 'mqtt://127.0.0.1:1884',
@@ -4322,4 +4359,6 @@ app.listen(PORT, () => {
   console.log(
     `[STATUS] MQTT flag mirror: ${SDV_MQTT_BROKER_URI} (topic /sdv/vehicle/+/flags/state)`,
   );
+  const syncMs = Number(process.env.SDV_RUNTIME_CMD_SYNC_MS || 3000);
+  startVehicleRuntimeCmdPoller(VEHICLE_RUNTIME_CMD_SYNC_DEPS, syncMs);
 });

@@ -636,6 +636,11 @@ bool parseFeature(JsonLite& p, StateManager::FeatureState& out, const std::strin
     if (out.active_slot.empty()) out.active_slot = out.primary_slot;
     if (out.active_version.empty()) out.active_version = out.primary_version;
 
+    // Default: feature flag ON unless explicitly set OFF in JSON (or kill_switch below).
+    if (out.flag.empty()) {
+        out.flag = "ON";
+    }
+
     // Shadow status compatibility:
     // - legacy state may only have shadow_enabled/shadow_version.
     // - treat enabled=true as RUNNING by default (validation can refine later).
@@ -1306,6 +1311,56 @@ bool StateManager::applyFeaturePackageMetadata(const std::string& car_id, const 
 
     if (!metadata.primary_image.empty()) {
         fs->primary_image = metadata.primary_image;
+    }
+    if (!metadata.artifact_type.empty()) {
+        fs->artifact_type = metadata.artifact_type;
+    }
+    if (!metadata.image_digest.empty()) {
+        fs->image_digest = metadata.image_digest;
+    }
+    if (!metadata.manifest_path.empty()) {
+        fs->manifest_path = metadata.manifest_path;
+    }
+    if (!metadata.package_id.empty()) {
+        fs->package_id = metadata.package_id;
+    }
+
+    return saveState(car_id, *s, error);
+}
+
+bool StateManager::stageCandidatePackage(const std::string& car_id, const std::string& feature,
+    const std::string& candidate_version, const FeaturePackageMetadata& metadata, std::string& error) const {
+    error.clear();
+    if (!isValidFeature(feature)) {
+        error = "StateManager: unsupported feature: " + feature;
+        return false;
+    }
+    if (candidate_version.empty()) {
+        error = "StateManager: candidate version is empty";
+        return false;
+    }
+
+    auto s = loadState(car_id, error);
+    if (!s) {
+        return false;
+    }
+    auto* fs = featureRef(*s, feature);
+    if (!fs) {
+        error = "StateManager: internal error: featureRef failed";
+        return false;
+    }
+
+    const std::string cv = formatFleetVersionTag(candidate_version);
+    fs->shadow_version = cv;
+    fs->shadow_enabled = true;
+    if (fs->shadow_slot.empty()) {
+        fs->shadow_slot = "B";
+    }
+    fs->shadow_status = "RUNNING";
+    fs->shadow_validation_result = "UNKNOWN";
+
+    if (!metadata.primary_image.empty()) {
+        fs->shadow_image = metadata.primary_image;
     }
     if (!metadata.artifact_type.empty()) {
         fs->artifact_type = metadata.artifact_type;

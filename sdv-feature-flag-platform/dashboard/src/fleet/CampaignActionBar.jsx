@@ -22,11 +22,26 @@ function promoteButtonTitle({
   return "Promote Primary";
 }
 
+function firstValidateFailMessage(validateResult) {
+  const items = validateResult?.items || [];
+  const fails = items.filter((i) => i.level === "FAIL");
+  if (!fails.length) return "";
+  const head = String(fails[0].message || "").trim();
+  if (fails.length === 1) return head;
+  return `${head} (+${fails.length - 1} more)`;
+}
+
 function actionHintValidate({ validateResult, validateLoading }) {
   if (validateLoading) return "Running campaign-validate…";
   if (!validateResult) return "Check campaign readiness before deploy steps.";
   const fail = validateResult.summary?.fail ?? 0;
-  if (fail > 0) return "Fix FAIL items before Run Candidate.";
+  if (fail > 0) {
+    const detail = firstValidateFailMessage(validateResult);
+    if (/version_map/i.test(detail)) {
+      return `FAIL: ${detail} — select campaign_adas_v6.0_car3_canary (car_3) or align deploy/version_map.json slot B to target_version.`;
+    }
+    return detail ? `FAIL: ${detail}` : "Fix FAIL items before Run Candidate.";
+  }
   return "fail=0 — Run Candidate is available.";
 }
 
@@ -126,8 +141,8 @@ export default function CampaignActionBar({
       </div>
       {updateModeWarnings?.length ? (
         <div className="campaign-logs-alert campaign-logs-alert-muted tiny campaign-action-ota-warn">
-          OTA: {updateModeWarnings.join(" · ")} — Vehicle OTA state may need READY before candidate/promote. For demo,
-          prepare OTA READY in the terminal; this UI does not change state automatically.
+          OTA: {updateModeWarnings.join(" · ")} — use <strong>Prepare Demo READY</strong> above, then click{" "}
+          <strong>Validate</strong> again (warnings only; they do not block Run Candidate when fail=0).
         </div>
       ) : null}
     </div>

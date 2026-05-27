@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <cstring>
 #include <cstdlib>
 #include <filesystem>
@@ -179,19 +180,6 @@ std::string resolveStateJsonPath(const std::string& carId) {
     return std::string("deploy/state/") + carId + ".json";
 }
 
-std::string vehicleRuntimeJsonPathForCar(const std::string& carId) {
-    if (const char* p = std::getenv("SDV_VEHICLE_RUNTIME_JSON")) {
-        if (p[0] != '\0') {
-            return std::string(p);
-        }
-    }
-    const std::string rel = std::string("../sdv-ota-manager/deploy/vehicle_runtime/") + carId + ".json";
-    if (access(rel.c_str(), R_OK) == 0) {
-        return rel;
-    }
-    return {};
-}
-
 std::string readFileText(const std::string& path) {
     std::ifstream in(path);
     if (!in) {
@@ -240,8 +228,119 @@ const char* runtimeDomainKeyForLabel(const char* fleetLabel) {
 
 }  // namespace
 
+std::string resolveVehicleRuntimeJsonPath(const std::string& carId) {
+    if (carId.empty()) {
+        return {};
+    }
+    if (const char* p = std::getenv("SDV_VEHICLE_RUNTIME_JSON")) {
+        if (p[0] != '\0') {
+            return std::string(p);
+        }
+    }
+    const std::string suffix = std::string("deploy/vehicle_runtime/") + carId + ".json";
+    if (const char* deployRoot = std::getenv("SDV_PLATFORM_DEPLOY_ROOT")) {
+        if (deployRoot[0] != '\0') {
+            std::string root(deployRoot);
+            while (!root.empty() && (root.back() == '/' || root.back() == '\\')) {
+                root.pop_back();
+            }
+            const std::string viaPlatform = root + "/../../" + suffix;
+            if (access(viaPlatform.c_str(), R_OK) == 0) {
+                return viaPlatform;
+            }
+            const std::string viaDeploy = root + "/../" + suffix;
+            if (access(viaDeploy.c_str(), R_OK) == 0) {
+                return viaDeploy;
+            }
+        }
+    }
+    const std::string statePath = resolveStateJsonPath(carId);
+    const std::string needle = "/platform/deploy/state/";
+    const auto pos = statePath.find(needle);
+    if (pos != std::string::npos) {
+        const std::string candidate = statePath.substr(0, pos) + "/deploy/vehicle_runtime/" + carId + ".json";
+        if (access(candidate.c_str(), R_OK) == 0) {
+            return candidate;
+        }
+    }
+    const std::string rel = std::string("../sdv-ota-manager/") + suffix;
+    if (access(rel.c_str(), R_OK) == 0) {
+        return rel;
+    }
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+        const std::string base(cwd);
+        const std::string cands[] = {
+            base + "/../sdv-ota-manager/" + suffix,
+            base + "/../../sdv-ota-manager/" + suffix,
+            base + "/../../../sdv-ota-manager/" + suffix,
+        };
+        for (const auto& candidate : cands) {
+            if (access(candidate.c_str(), R_OK) == 0) {
+                return candidate;
+            }
+        }
+    }
+    return {};
+}
+
+std::string stripLeadingVForDisplay(std::string v) {
+    v = trimCopy(std::move(v));
+    if (!v.empty() && (v[0] == 'v' || v[0] == 'V') && v.size() >= 2 &&
+        std::isdigit(static_cast<unsigned char>(v[1]))) {
+        return v.substr(1);
+    }
+    return v;
+}
+
 bool isFleetFeatureProcessName(const std::string& processName) {
     return mapForProcess(processName) != nullptr;
+}
+
+std::optional<VehicleRuntimeDomainVersions> readVehicleRuntimeDomainVersions(const std::string& processName,
+    const std::string& carId) {
+    const ProcessFleetMap* map = mapForProcess(processName);
+    if (map == nullptr || carId.empty()) {
+        return std::nullopt;
+    }
+    const std::string path = resolveVehicleRuntimeJsonPath(carId);
+    if (path.empty()) {
+        return std::nullopt;
+    }
+    const std::string json = readFileText(path);
+    if (json.empty()) {
+        return std::nullopt;
+    }
+    VehicleRuntimeDomainVersions out;
+    out.found = true;
+    out.json_path = path;
+    out.fleet_label = map->fleetLabel;
+    out.domain_key = runtimeDomainKeyForLabel(map->fleetLabel);
+    if (auto pv = readQuotedFieldInDomainBlock(json, out.domain_key.c_str(), "primary_version")) {
+        out.primary_version = normalizeVersionToken(*pv);
+    }
+    if (auto sv = readQuotedFieldInDomainBlock(json, out.domain_key.c_str(), "shadow_version")) {
+        const std::string svNorm = normalizeVersionToken(*sv);
+        if (!svNorm.empty()) {
+            out.shadow_version = svNorm;
+        }
+    }
+    return out;
+}
+
+std::string formatVehicleRuntimeVersionLogLine(const VehicleRuntimeDomainVersions& rt,
+    const std::string& carId,
+    const std::string& processName,
+    bool shadowProcess) {
+    std::ostringstream os;
+    os << "[VERSION] car_id=" << carId << " process=" << processName << " feature=" << rt.fleet_label
+       << " role=" << (shadowProcess ? "shadow" : "primary") << " primary_version="
+       << (rt.primary_version.empty() ? "-" : rt.primary_version);
+    if (!rt.shadow_version.empty()) {
+        os << " shadow_version=" << rt.shadow_version;
+    }
+    os << " source=vehicle_runtime json=" << rt.json_path;
+    return os.str();
 }
 
 std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::string& processName,
@@ -270,12 +369,29 @@ std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::s
     const std::string statePath = resolveStateJsonPath(carId);
     const std::string stateJson = readFileText(statePath);
 
+    const std::string rtPath = resolveVehicleRuntimeJsonPath(carId);
+    const std::string rtJson = readFileText(rtPath);
+    if (!rtJson.empty()) {
+        const char* domain = runtimeDomainKeyForLabel(map->fleetLabel);
+        const char* field = map->shadowProcess ? "shadow_version" : "primary_version";
+        if (auto v = readQuotedFieldInDomainBlock(rtJson, domain, field)) {
+            info.version = normalizeVersionToken(*v);
+            if (!info.version.empty()) {
+                info.source = "vehicle_runtime";
+            }
+        }
+    }
+
     if (!configPath.empty()) {
         const std::string prefix = map->configPrefix;
         if (!map->shadowProcess) {
             if (auto v = parseConfigFleetField(configPath, prefix + "_version")) {
-                info.version = normalizeVersionToken(*v);
-                configHasVersion = !info.version.empty();
+                const std::string cv = normalizeVersionToken(*v);
+                configHasVersion = !cv.empty();
+                if (info.version.empty() && configHasVersion) {
+                    info.version = cv;
+                    info.source = "config";
+                }
             }
             if (auto s = parseConfigFleetField(configPath, prefix + "_slot")) {
                 info.slot = trimCopy(*s);
@@ -291,9 +407,6 @@ std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::s
             }
             if (auto bp = parseConfigFleetField(configPath, prefix + "_binary_path")) {
                 info.binary_path = trimCopy(*bp);
-            }
-            if (configHasVersion) {
-                info.source = "config";
             }
         }
         if (auto e = parseConfigFleetField(configPath, prefix + "_enabled")) {
@@ -344,7 +457,7 @@ std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::s
         }
     }
 
-    if (map->shadowProcess && !stateJson.empty()) {
+    if (map->shadowProcess && info.version.empty() && !stateJson.empty()) {
         if (auto v = readQuotedFieldInFeatureBlock(stateJson, map->stateFeatureKey, "shadow_version")) {
             info.version = normalizeVersionToken(*v);
         }
@@ -360,24 +473,6 @@ std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::s
         }
         if (!info.version.empty()) {
             info.source = "state";
-        }
-    }
-
-    if (info.version.empty()) {
-        const bool allowRuntime = (std::getenv("SDV_VEHICLE_RUNTIME_JSON") != nullptr);
-        if (allowRuntime) {
-            const std::string rtPath = vehicleRuntimeJsonPathForCar(carId);
-            const std::string rtJson = readFileText(rtPath);
-            if (!rtJson.empty()) {
-                const char* domain = runtimeDomainKeyForLabel(map->fleetLabel);
-                const char* field = map->shadowProcess ? "shadow_version" : "primary_version";
-                if (auto v = readQuotedFieldInDomainBlock(rtJson, domain, field)) {
-                    info.version = normalizeVersionToken(*v);
-                    if (!info.version.empty()) {
-                        info.source = "runtime";
-                    }
-                }
-            }
         }
     }
 

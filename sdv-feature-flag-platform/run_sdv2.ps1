@@ -40,7 +40,7 @@ $wslArgsRoot = Get-SdvWslArgs -WslDistro $WslDistro -Root
 
 if ($KillCars) {
     Write-Host "Cleaning up previous SDV / car processes in WSL (KillCars)..."
-    Invoke-SdvKillAllCarsWsl -WslArgsRoot $wslArgsRoot
+    Invoke-SdvKillAllCarsWsl -WslArgsRoot $wslArgsRoot -ProjWsl $projWsl
     Start-Sleep -Seconds 3
     & wsl.exe @wslArgsRoot bash -lc "sed -i 's/\r$//' `"$projWsl/scripts/wait_shutdown_wsl.sh`" 2>/dev/null || true"
     & wsl.exe @wslArgsRoot bash "$projWsl/scripts/wait_shutdown_wsl.sh" "60" "0.3"

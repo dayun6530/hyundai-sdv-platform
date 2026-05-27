@@ -416,7 +416,11 @@ export default function CampaignManagementPanel() {
   useEffect(() => {
     if (selectedCampaignId || !campaigns.length) return;
     const preferred =
-      campaigns.find((c) => c.campaign_id === "campaign_adas_v0.5_car1_canary") || campaigns[0];
+      campaigns.find((c) => c.campaign_id === "campaign_adas_v6.0_car3_canary") ||
+      campaigns.find((c) => c.campaign_id === "campaign_adas_v6.0_car2_canary") ||
+      campaigns.find((c) => c.campaign_id === "campaign_adas_v4.0_car1_canary") ||
+      campaigns.find((c) => c.campaign_id === "campaign_adas_v0.5_car1_canary") ||
+      campaigns[0];
     if (preferred?.campaign_id) setSelectedCampaignId(preferred.campaign_id);
   }, [campaigns, selectedCampaignId]);
 
@@ -589,10 +593,10 @@ export default function CampaignManagementPanel() {
     if (runtimeCarId) {
       await loadRuntime(runtimeCarId);
     }
-    if (selectedCampaignId && validateCache[selectedCampaignId]) {
+    if (selectedCampaignId) {
       await runValidate();
     }
-  }, [runtimeCarId, selectedCampaignId, validateCache, loadRuntime, runValidate]);
+  }, [runtimeCarId, selectedCampaignId, loadRuntime, runValidate]);
 
   const onSelectCampaign = (id) => {
     setSelectedCampaignId(id);
