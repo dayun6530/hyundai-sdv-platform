@@ -7,7 +7,7 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS": {
+    "ADAS":     {
       "active_slot": "A",
       "active_version": "v1.0",
       "primary_slot": "A",
@@ -85,12 +85,21 @@
         }
       ]
     },
-    "Navigation": {
-      "active_slot": "A",
-      "active_version": "v1.0",
-      "primary_slot": "A",
-      "primary_version": "v1.0",
-      "primary_image": "sdv/navigation-feature:v1.0",
+    "Navigation":     {
+      "active_slot": "B",
+      "active_version": "v3.0",
+      "primary_slot": "B",
+      "primary_version": "v3.0",
+      "primary_image": "localhost:5000/sdv/navigation-feature:v3.0",
+      "artifact_type": "docker_image",
+      "manifest_path": "deploy/packages/Navigation/v3.0/manifest.json",
+      "package_id": "Navigation_v3.0",
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "promote",
+      "docker_runtime_time": "2026-06-01T21:29:30",
+      "docker_runtime_container": "car_8_agent_navigation",
+      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v3.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
@@ -99,14 +108,15 @@
       "shadow_enabled": false,
       "shadow_slot": "",
       "shadow_version": "",
-      "shadow_status": "DISABLED",
+      "shadow_status": "RUNNING",
+      "shadow_validation_result": "UNKNOWN",
       "shadow_mode": "inactive",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     },
-    "Energy": {
+    "Energy":     {
       "active_slot": "A",
       "active_version": "v2.0",
       "primary_slot": "A",
@@ -128,13 +138,13 @@
       "fallback_version": "v0.5"
     }
   },
-  "ota": {
+  "ota":   {
     "download_status": "downloaded",
     "install_status": "not_started",
     "vehicle_mode": "PARKED",
     "ignition": "OFF",
     "update_mode": "READY",
-    "ota_phase": "INSTALL_COMPLETED",
+    "ota_phase": "INSTALL_STARTED",
     "gear": "P",
     "speed": 0,
     "parking_brake": "ON",
@@ -143,7 +153,7 @@
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack": {
+  "last_ack":   {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",
@@ -151,11 +161,11 @@
     "deploy_id": "deploy_adas_004",
     "message": "ADAS v0.4 shadow installed"
   },
-  "last_deploy_id": "deploy_20260526_130813_car_8_ADAS",
-  "last_deploy_result": "success",
-  "last_deploy_time": "2026-05-26T13:08:13",
-  "last_deploy_feature": "ADAS",
+  "last_deploy_id": "deploy_20260601_212745_car_8_Navigation",
+  "last_deploy_result": "pending",
+  "last_deploy_time": "2026-06-01T21:27:45",
+  "last_deploy_feature": "Navigation",
   "last_deploy_slot": "B",
-  "last_deploy_version": "v7.0",
-  "last_deploy_reason": ""
+  "last_deploy_version": "v3.0",
+  "last_deploy_reason": "deferred until apply-pending-native-car"
 }

@@ -12,13 +12,15 @@
       "shadow_mode": "inactive"
     },
     "navigation": {
-      "primary_version": "1.0",
+      "primary_version": "v3.0",
       "shadow_version": "",
       "binary": "NavigationFeature",
       "primary_container": "car_8_agent_navigation",
       "shadow_container": "car_8_agent_navigation_shadow",
-      "last_action": "bootstrap",
-      "last_message_ko": "NavigationFeature: Primary\u00b7Shadow \ubaa8\ub450 \uc2e4\ud589 \ubc84\uc804 v1.0\uc73c\ub85c \uae30\ub3d9\ud588\uc2b5\ub2c8\ub2e4 (bootstrap)."
+      "last_action": "promote",
+      "last_message_ko": "NavigationFeature: Primary(운영) 실행 버전이 v3.0으로 승격되었습니다.",
+      "shadow_enabled": false,
+      "shadow_mode": "inactive"
     },
     "evenergy": {
       "primary_version": "2.0",
@@ -27,7 +29,7 @@
       "primary_container": "car_8_agent_evenergy",
       "shadow_container": "car_8_agent_evenergy_shadow",
       "last_action": "promote",
-      "last_message_ko": "EvEnergyFeature: Primary(\uc6b4\uc601) \uc2e4\ud589 \ubc84\uc804\uc774 v2.0\uc73c\ub85c \uc2b9\uaca9\ub418\uc5c8\uc2b5\ub2c8\ub2e4.",
+      "last_message_ko": "EvEnergyFeature: Primary(운영) 실행 버전이 v2.0으로 승격되었습니다.",
       "shadow_enabled": false,
       "shadow_mode": "inactive"
     }

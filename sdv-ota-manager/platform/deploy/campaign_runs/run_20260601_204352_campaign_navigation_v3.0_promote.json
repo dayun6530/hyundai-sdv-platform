@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260601_204352_campaign_navigation_v3.0_promote",
+  "campaign_id": "campaign_navigation_v3.0",
+  "campaign_file": "deploy/campaign_runs/.runtime/campaign_navigation_v3.0_runtime_US.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_nav_v3.0",
+  "phase": "promote",
+  "status": "success",
+  "started_at": "2026-06-01T20:43:52",
+  "finished_at": "2026-06-01T20:43:52",
+  "feature": "Navigation",
+  "target_version": "v3.0",
+  "target_role": "primary",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "promote",
+    "pull_requested": false,
+    "pull_policy": "",
+    "image": "localhost:5000/sdv/navigation-feature:v3.0"
+  },
+  "resolved_targets": ["car_3","car_6","car_9"],
+  "aggregate": {
+    "total": 3,
+    "success": 3,
+    "failed": 0
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_3",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260601_204352_001",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "pending",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "deferred_promote",
+      "docker_runtime_image": "",
+      "docker_runtime_container": "",
+      "state_file": "deploy/state/car_3.json",
+      "config_file": "config/car/car_3.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_3 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=promote"
+    },
+    {
+      "car_id": "car_6",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260601_204352_002",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "pending",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "deferred_promote",
+      "docker_runtime_image": "",
+      "docker_runtime_container": "",
+      "state_file": "deploy/state/car_6.json",
+      "config_file": "config/car/car_6.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_6 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=promote"
+    },
+    {
+      "car_id": "car_9",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260601_204352_003",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "pending",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "deferred_promote",
+      "docker_runtime_image": "",
+      "docker_runtime_container": "",
+      "state_file": "deploy/state/car_9.json",
+      "config_file": "config/car/car_9.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_9 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=promote"
+    }
+  ],
+  "warnings": ["update_mode is not READY for car_3 (current=COMPLETED)","update_mode is not READY for car_6 (current=COMPLETED)","update_mode is not READY for car_9 (current=COMPLETED)"],
+  "failures": []
+}

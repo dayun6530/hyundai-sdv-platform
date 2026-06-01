@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,14 +87,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager//CMakeFiles/progress.marks
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/CMakeFiles /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager//CMakeFiles/progress.marks
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/clean
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/clean
 .PHONY : clean
 
 # The main clean target
@@ -103,22 +103,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/preinstall
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/preinstall
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/rule:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/rule
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/rule
 .PHONY : src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/rule
 
 # Convenience name for target.
@@ -127,12 +127,12 @@ FleetVersionResolveLib: src/Platform/LifeCycleManager/CMakeFiles/FleetVersionRes
 
 # fast build rule for target.
 FleetVersionResolveLib/fast:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build
 .PHONY : FleetVersionResolveLib/fast
 
 # Convenience name for target.
 src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/rule:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/rule
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/rule
 .PHONY : src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/rule
 
 # Convenience name for target.
@@ -141,7 +141,7 @@ LifeCycleManagerLib: src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLi
 
 # fast build rule for target.
 LifeCycleManagerLib/fast:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build
 .PHONY : LifeCycleManagerLib/fast
 
 src/Feature.o: src/Feature.cpp.o
@@ -149,7 +149,7 @@ src/Feature.o: src/Feature.cpp.o
 
 # target to build an object file
 src/Feature.cpp.o:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.o
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.o
 .PHONY : src/Feature.cpp.o
 
 src/Feature.i: src/Feature.cpp.i
@@ -157,7 +157,7 @@ src/Feature.i: src/Feature.cpp.i
 
 # target to preprocess a source file
 src/Feature.cpp.i:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.i
 .PHONY : src/Feature.cpp.i
 
 src/Feature.s: src/Feature.cpp.s
@@ -165,7 +165,7 @@ src/Feature.s: src/Feature.cpp.s
 
 # target to generate assembly for a file
 src/Feature.cpp.s:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Feature.cpp.s
 .PHONY : src/Feature.cpp.s
 
 src/Flag.o: src/Flag.cpp.o
@@ -173,7 +173,7 @@ src/Flag.o: src/Flag.cpp.o
 
 # target to build an object file
 src/Flag.cpp.o:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.o
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.o
 .PHONY : src/Flag.cpp.o
 
 src/Flag.i: src/Flag.cpp.i
@@ -181,7 +181,7 @@ src/Flag.i: src/Flag.cpp.i
 
 # target to preprocess a source file
 src/Flag.cpp.i:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.i
 .PHONY : src/Flag.cpp.i
 
 src/Flag.s: src/Flag.cpp.s
@@ -189,7 +189,7 @@ src/Flag.s: src/Flag.cpp.s
 
 # target to generate assembly for a file
 src/Flag.cpp.s:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/Flag.cpp.s
 .PHONY : src/Flag.cpp.s
 
 src/FleetVersionResolve.o: src/FleetVersionResolve.cpp.o
@@ -197,7 +197,7 @@ src/FleetVersionResolve.o: src/FleetVersionResolve.cpp.o
 
 # target to build an object file
 src/FleetVersionResolve.cpp.o:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.o
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.o
 .PHONY : src/FleetVersionResolve.cpp.o
 
 src/FleetVersionResolve.i: src/FleetVersionResolve.cpp.i
@@ -205,7 +205,7 @@ src/FleetVersionResolve.i: src/FleetVersionResolve.cpp.i
 
 # target to preprocess a source file
 src/FleetVersionResolve.cpp.i:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.i
 .PHONY : src/FleetVersionResolve.cpp.i
 
 src/FleetVersionResolve.s: src/FleetVersionResolve.cpp.s
@@ -213,7 +213,7 @@ src/FleetVersionResolve.s: src/FleetVersionResolve.cpp.s
 
 # target to generate assembly for a file
 src/FleetVersionResolve.cpp.s:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.s
 .PHONY : src/FleetVersionResolve.cpp.s
 
 src/LogData.o: src/LogData.cpp.o
@@ -221,7 +221,7 @@ src/LogData.o: src/LogData.cpp.o
 
 # target to build an object file
 src/LogData.cpp.o:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.o
 .PHONY : src/LogData.cpp.o
 
 src/LogData.i: src/LogData.cpp.i
@@ -229,7 +229,7 @@ src/LogData.i: src/LogData.cpp.i
 
 # target to preprocess a source file
 src/LogData.cpp.i:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.i
 .PHONY : src/LogData.cpp.i
 
 src/LogData.s: src/LogData.cpp.s
@@ -237,7 +237,7 @@ src/LogData.s: src/LogData.cpp.s
 
 # target to generate assembly for a file
 src/LogData.cpp.s:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/LogData.cpp.s
 .PHONY : src/LogData.cpp.s
 
 src/TelemetryRuntimeConfig.o: src/TelemetryRuntimeConfig.cpp.o
@@ -245,7 +245,7 @@ src/TelemetryRuntimeConfig.o: src/TelemetryRuntimeConfig.cpp.o
 
 # target to build an object file
 src/TelemetryRuntimeConfig.cpp.o:
-	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.o
 .PHONY : src/TelemetryRuntimeConfig.cpp.o
 
 src/TelemetryRuntimeConfig.i: src/TelemetryRuntimeConfig.cpp.i
@@ -253,7 +253,7 @@ src/TelemetryRuntimeConfig.i: src/TelemetryRuntimeConfig.cpp.i
 
 # target to preprocess a source file
 src/TelemetryRuntimeConfig.cpp.i:
-	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.i
 .PHONY : src/TelemetryRuntimeConfig.cpp.i
 
 src/TelemetryRuntimeConfig.s: src/TelemetryRuntimeConfig.cpp.s
@@ -261,7 +261,7 @@ src/TelemetryRuntimeConfig.s: src/TelemetryRuntimeConfig.cpp.s
 
 # target to generate assembly for a file
 src/TelemetryRuntimeConfig.cpp.s:
-	cd /mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(MAKE) $(MAKESILENT) -f src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/build.make src/Platform/LifeCycleManager/CMakeFiles/LifeCycleManagerLib.dir/src/TelemetryRuntimeConfig.cpp.s
 .PHONY : src/TelemetryRuntimeConfig.cpp.s
 
 # Help Target
@@ -300,6 +300,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

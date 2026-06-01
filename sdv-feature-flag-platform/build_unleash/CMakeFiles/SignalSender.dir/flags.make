@@ -4,11 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DFMT_SHARED -DOPENSSL=1 -DSDV_ENABLE_MQTT_VEHICLE_AGENT=1 -DSDV_LIFECYCLE_HAS_NJSON=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
 
-<<<<<<< HEAD
-CXX_INCLUDES = -I/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/CenterCommunication/include -I/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
-=======
-CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/CenterCommunication/../LifeCycleManager/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
->>>>>>> origin/feature/datacollector
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/CenterCommunication/include -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/CenterCommunication/../LifeCycleManager/include -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
 
-CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic -pthread
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic -pthread
 

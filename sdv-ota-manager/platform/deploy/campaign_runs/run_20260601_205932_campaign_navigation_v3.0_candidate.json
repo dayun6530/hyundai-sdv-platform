@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260601_205932_campaign_navigation_v3.0_candidate",
+  "campaign_id": "campaign_navigation_v3.0",
+  "campaign_file": "deploy/campaign_runs/.runtime/campaign_navigation_v3.0_runtime_EU.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_nav_v3.0",
+  "phase": "candidate",
+  "status": "failed",
+  "started_at": "2026-06-01T20:59:32",
+  "finished_at": "2026-06-01T20:59:39",
+  "feature": "Navigation",
+  "target_version": "v3.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "candidate",
+    "pull_requested": true,
+    "pull_policy": "missing",
+    "image": "localhost:5000/sdv/navigation-feature:v3.0"
+  },
+  "resolved_targets": ["car_4","car_7"],
+  "aggregate": {
+    "total": 2,
+    "success": 0,
+    "failed": 2
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_4",
+      "result": "failed",
+      "reason": "[PULL] policy=missing image=sdv/navigation-feature:v1.0 (local image missing, pulling) Error response from daemon: pull access denied for sdv/navigation-feature, repository does not exist or may require 'docker login' [DEPLOY-ABORT] Docker pull failed for sdv/navigation-feature:v1.0 [DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first.",
+      "deploy_id": "deploy_20260601_205932_001",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "failed",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "sdv/navigation-feature:v1.0",
+      "docker_runtime_container": "car_4_agent_navigation_shadow",
+      "state_file": "deploy/state/car_4.json",
+      "config_file": "config/car/car_4.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_4 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    },
+    {
+      "car_id": "car_7",
+      "result": "failed",
+      "reason": "[PULL] policy=missing image=sdv/navigation-feature:v1.0 (local image missing, pulling) Error response from daemon: pull access denied for sdv/navigation-feature, repository does not exist or may require 'docker login' [DEPLOY-ABORT] Docker pull failed for sdv/navigation-feature:v1.0 [DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first.",
+      "deploy_id": "deploy_20260601_205936_002",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "failed",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "sdv/navigation-feature:v1.0",
+      "docker_runtime_container": "car_7_agent_navigation_shadow",
+      "state_file": "deploy/state/car_7.json",
+      "config_file": "config/car/car_7.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_7 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    }
+  ],
+  "warnings": [],
+  "failures": ["car_4: [PULL] policy=missing image=sdv/navigation-feature:v1.0 (local image missing, pulling) Error response from daemon: pull access denied for sdv/navigation-feature, repository does not exist or may require 'docker login' [DEPLOY-ABORT] Docker pull failed for sdv/navigation-feature:v1.0 [DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first.","car_7: [PULL] policy=missing image=sdv/navigation-feature:v1.0 (local image missing, pulling) Error response from daemon: pull access denied for sdv/navigation-feature, repository does not exist or may require 'docker login' [DEPLOY-ABORT] Docker pull failed for sdv/navigation-feature:v1.0 [DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first."]
+}

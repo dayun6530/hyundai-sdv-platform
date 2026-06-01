@@ -1,9 +1,13 @@
-function runCandidateButtonTitle({ validateResult, runCandidateLoading, canRunCandidate }) {
-  if (runCandidateLoading) return "Running candidate…";
-  if (!validateResult) return "Validate first";
-  if ((validateResult.summary?.fail ?? 0) > 0) return "Fix validation failures";
-  if (canRunCandidate) return "Run Candidate";
-  return "Validate first";
+function runCandidateButtonTitle({
+  validateResult,
+  runCandidateLoading,
+  canRunCandidate,
+}) {
+  if (runCandidateLoading) return 'Running candidate…';
+  if (!validateResult) return 'Validate first';
+  if ((validateResult.summary?.fail ?? 0) > 0) return 'Fix validation failures';
+  if (canRunCandidate) return 'Run Candidate';
+  return 'Validate first';
 }
 
 function promoteButtonTitle({
@@ -13,52 +17,117 @@ function promoteButtonTitle({
   canPromote,
   hasFailedCandidateRun,
 }) {
-  if (promoteLoading) return "Promoting…";
-  if (!validateResult) return "Validate first";
-  if ((validateResult.summary?.fail ?? 0) > 0) return "Fix validation failures";
-  if (runCandidateLoading) return "Run candidate first";
-  if (hasFailedCandidateRun && !canPromote) return "Candidate must succeed first";
-  if (!canPromote) return "Run candidate first";
-  return "Promote Primary";
+  if (promoteLoading) return 'Promoting…';
+  if (!validateResult) return 'Validate first';
+  if ((validateResult.summary?.fail ?? 0) > 0) return 'Fix validation failures';
+  if (runCandidateLoading) return 'Run candidate first';
+  if (hasFailedCandidateRun && !canPromote)
+    return 'Candidate must succeed first';
+  if (!canPromote) return 'Run candidate first';
+  return 'Promote Primary';
 }
 
 function firstValidateFailMessage(validateResult) {
   const items = validateResult?.items || [];
-  const fails = items.filter((i) => i.level === "FAIL");
-  if (!fails.length) return "";
-  const head = String(fails[0].message || "").trim();
+  const fails = items.filter((i) => i.level === 'FAIL');
+  if (!fails.length) return '';
+  const head = String(fails[0].message || '').trim();
   if (fails.length === 1) return head;
   return `${head} (+${fails.length - 1} more)`;
 }
 
-function actionHintValidate({ validateResult, validateLoading }) {
-  if (validateLoading) return "Running campaign-validate…";
-  if (!validateResult) return "Check campaign readiness before deploy steps.";
+function actionHintValidate({
+  validateResult,
+  validateLoading,
+  targetVehicleCount,
+}) {
+  if (validateLoading) return 'Running campaign-validate…';
+  if (!validateResult) return 'Check campaign readiness before deploy steps.';
   const fail = validateResult.summary?.fail ?? 0;
+  if (fail === 0 && targetVehicleCount > 1) {
+    return `fail=0 (${targetVehicleCount} vehicles)`;
+  }
   if (fail > 0) {
     const detail = firstValidateFailMessage(validateResult);
     if (/version_map/i.test(detail)) {
       return `FAIL: ${detail} — select campaign_adas_v6.0_car3_canary (car_3) or align deploy/version_map.json slot B to target_version.`;
     }
-    return detail ? `FAIL: ${detail}` : "Fix FAIL items before Run Candidate.";
+    return detail ? `FAIL: ${detail}` : 'Fix FAIL items before Run Candidate.';
   }
-  return "fail=0 — Run Candidate is available.";
+  return 'fail=0 — Run Candidate is available.';
 }
 
-function actionHintCandidate({ validateResult, runCandidateLoading, canRunCandidate }) {
-  if (runCandidateLoading) return "Deploying candidate via campaign-run…";
-  if (!validateResult) return "Validate first.";
-  if ((validateResult.summary?.fail ?? 0) > 0) return "Fix validation failures first.";
-  if (canRunCandidate) return "Deploys candidate container (Docker runtime).";
-  return "Validate first.";
+function actionHintCandidate({
+  validateResult,
+  runCandidateLoading,
+  canRunCandidate,
+  deploymentHasTarget,
+  imageOk,
+  targetVehicleCount,
+}) {
+  if (runCandidateLoading) return 'Deploying candidate via campaign-run…';
+  if (!deploymentHasTarget) return 'Select deployment target first.';
+  if (!imageOk) return 'Local Docker image missing — build and push first.';
+  if (!validateResult) return 'Validate first.';
+  if ((validateResult.summary?.fail ?? 0) > 0)
+    return 'Fix validation failures first.';
+  if (canRunCandidate) {
+    return targetVehicleCount > 1
+      ? `Deploys candidate to ${targetVehicleCount} vehicles (sequential; shadow may update per car).`
+      : 'Deploys candidate container (Docker runtime).';
+  }
+  return 'Validate first.';
 }
 
-function actionHintPromote({ canPromote, promoteLoading, runCandidateLoading, hasFailedCandidateRun }) {
-  if (promoteLoading) return "Promoting candidate to primary…";
-  if (runCandidateLoading) return "Wait for candidate run to finish.";
-  if (hasFailedCandidateRun) return "Latest candidate run must succeed.";
-  if (canPromote) return "Available after successful candidate run.";
-  return "Run candidate first.";
+function promoteLoadingLabel(promotePhase) {
+  if (promotePhase === 'campaign') return 'Running campaign-run promote…';
+  if (promotePhase === 'docker') return 'Applying Docker pending queue…';
+  if (promotePhase === 'apply-native') return 'Applying native rollout (apply-pending-native)…';
+  if (promotePhase === 'verify') return 'Waiting for vehicle_runtime JSON to match…';
+  return 'Promoting candidate to primary…';
+}
+
+function actionHintPromote({
+  canPromote,
+  promoteLoading,
+  promotePhase,
+  promoteCompleteMessage,
+  runCandidateLoading,
+  hasFailedCandidateRun,
+  deploymentHasTarget,
+  imageOk,
+  targetVehicleCount,
+  candidateStagedInRuntime,
+}) {
+  if (promoteCompleteMessage && !promoteLoading) return promoteCompleteMessage;
+  if (promoteLoading) return promoteLoadingLabel(promotePhase);
+  if (runCandidateLoading) return 'Wait for candidate run to finish.';
+  if (!deploymentHasTarget) return 'Select deployment target first.';
+  if (!imageOk) return 'Local Docker image missing.';
+  if (hasFailedCandidateRun) return 'Latest candidate run must succeed.';
+  if (canPromote && candidateStagedInRuntime) {
+    return targetVehicleCount > 1
+      ? `Candidate already staged on all ${targetVehicleCount} vehicles (vehicle_runtime).`
+      : 'Candidate version already staged in vehicle_runtime.';
+  }
+  if (canPromote) {
+    return targetVehicleCount > 1
+      ? `Promote after candidate success on all ${targetVehicleCount} targets.`
+      : 'Available after successful candidate run.';
+  }
+  return 'Run candidate first, or stage candidate in vehicle_runtime.';
+}
+
+function actionHintDrop({
+  dropCandidateLoading,
+  deploymentHasTarget,
+  targetVehicleCount,
+}) {
+  if (dropCandidateLoading) return 'Clearing candidate (shadow) on targets…';
+  if (!deploymentHasTarget) return 'Select deployment target first.';
+  return targetVehicleCount > 1
+    ? `Clears shadow/candidate on all ${targetVehicleCount} vehicles (vehicle_runtime + fleet state).`
+    : 'Clears shadow/candidate lane (vehicle_runtime + fleet state).';
 }
 
 export default function CampaignActionBar({
@@ -70,16 +139,50 @@ export default function CampaignActionBar({
   canRunCandidate,
   onPromote,
   promoteLoading,
+  promotePhase,
+  promoteCompleteMessage,
   canPromote,
+  onDropCandidate,
+  dropCandidateLoading,
+  canDropCandidate,
   validateResult,
   updateModeWarnings,
   hasFailedCandidateRun,
+  deploymentHasTarget,
+  targetVehicleCount,
+  imageAvailable,
+  candidateStagedInRuntime,
 }) {
+  const imageOk = imageAvailable !== false;
   const runDisabled =
-    !selectedCampaignId || !canRunCandidate || runCandidateLoading || promoteLoading;
-  const runTitle = runCandidateButtonTitle({ validateResult, runCandidateLoading, canRunCandidate });
+    !selectedCampaignId ||
+    !deploymentHasTarget ||
+    !canRunCandidate ||
+    !imageOk ||
+    runCandidateLoading ||
+    promoteLoading ||
+    dropCandidateLoading;
+  const runTitle = runCandidateButtonTitle({
+    validateResult,
+    runCandidateLoading,
+    canRunCandidate,
+  });
   const promoteDisabled =
-    !selectedCampaignId || !canPromote || promoteLoading || runCandidateLoading;
+    !selectedCampaignId ||
+    !deploymentHasTarget ||
+    !canPromote ||
+    !imageOk ||
+    promoteLoading ||
+    runCandidateLoading ||
+    dropCandidateLoading;
+  const dropDisabled =
+    !selectedCampaignId ||
+    !deploymentHasTarget ||
+    !canDropCandidate ||
+    promoteLoading ||
+    runCandidateLoading ||
+    dropCandidateLoading ||
+    validateLoading;
   const promoteTitle = promoteButtonTitle({
     validateResult,
     promoteLoading,
@@ -95,14 +198,26 @@ export default function CampaignActionBar({
           <button
             type="button"
             className="btn btn-primary"
-            disabled={!selectedCampaignId || validateLoading || promoteLoading}
+            disabled={
+              !selectedCampaignId ||
+              !deploymentHasTarget ||
+              validateLoading ||
+              promoteLoading ||
+              dropCandidateLoading
+            }
             onClick={onValidate}
             title="Check campaign readiness"
           >
-            {validateLoading ? "Validating…" : "Validate"}
+            {validateLoading ? 'Validating…' : 'Validate'}
           </button>
           <p className="tiny subtle campaign-action-hint">
-            {actionHintValidate({ validateResult, validateLoading })}
+            {!deploymentHasTarget
+              ? 'Select deployment target (vehicle or region) first.'
+              : actionHintValidate({
+                  validateResult,
+                  validateLoading,
+                  targetVehicleCount,
+                })}
           </p>
         </div>
         <div className="campaign-action-step">
@@ -113,36 +228,69 @@ export default function CampaignActionBar({
             title={runTitle}
             onClick={onRunCandidate}
           >
-            {runCandidateLoading ? "Running candidate…" : "Run Candidate"}
+            {runCandidateLoading ? 'Running candidate…' : 'Run Candidate'}
           </button>
           <p className="tiny subtle campaign-action-hint">
-            {actionHintCandidate({ validateResult, runCandidateLoading, canRunCandidate })}
+            {actionHintCandidate({
+              validateResult,
+              runCandidateLoading,
+              canRunCandidate,
+              deploymentHasTarget,
+              imageOk,
+              targetVehicleCount,
+            })}
           </p>
         </div>
-        <div className="campaign-action-step">
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={promoteDisabled}
-            title={promoteTitle}
-            onClick={onPromote}
-          >
-            {promoteLoading ? "Promoting…" : "Promote Primary"}
-          </button>
+        <div className="campaign-action-step campaign-action-step-promote">
+          <div className="campaign-action-promote-row">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={promoteDisabled}
+              title={promoteTitle}
+              onClick={onPromote}
+            >
+              {promoteLoading ? 'Promoting…' : 'Promote Primary'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={dropDisabled}
+              title="Clear candidate (shadow) on deployment targets"
+              onClick={onDropCandidate}
+            >
+              {dropCandidateLoading ? 'Dropping…' : 'Drop Candidate'}
+            </button>
+          </div>
           <p className="tiny subtle campaign-action-hint">
             {actionHintPromote({
               canPromote,
               promoteLoading,
+              promotePhase,
+              promoteCompleteMessage,
               runCandidateLoading,
               hasFailedCandidateRun,
+              deploymentHasTarget,
+              imageOk,
+              targetVehicleCount,
+              candidateStagedInRuntime,
+            })}
+          </p>
+          <p className="tiny subtle campaign-action-hint">
+            {actionHintDrop({
+              dropCandidateLoading,
+              deploymentHasTarget,
+              targetVehicleCount,
             })}
           </p>
         </div>
       </div>
       {updateModeWarnings?.length ? (
         <div className="campaign-logs-alert campaign-logs-alert-muted tiny campaign-action-ota-warn">
-          OTA: {updateModeWarnings.join(" · ")} — use <strong>Prepare Demo READY</strong> above, then click{" "}
-          <strong>Validate</strong> again (warnings only; they do not block Run Candidate when fail=0).
+          OTA: {updateModeWarnings.join(' · ')} — use{' '}
+          <strong>Prepare Demo READY</strong> above, then click{' '}
+          <strong>Validate</strong> (warnings only; they do not block Run
+          Candidate when fail=0).
         </div>
       ) : null}
     </div>

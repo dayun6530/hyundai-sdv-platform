@@ -2,24 +2,26 @@
   "car_id": "car_10",
   "domains": {
     "adas": {
-      "primary_version": "v13.0",
-      "shadow_version": "",
+      "primary_version": "4.0",
+      "shadow_version": "4.0",
       "binary": "AdasFeature",
       "primary_container": "car_10_agent_adas",
       "shadow_container": "car_10_agent_adas_shadow",
-      "last_action": "promote",
-      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v13.0으로 승격되었습니다.",
+      "last_action": "bootstrap",
+      "last_message_ko": "AdasFeature: Primary·Shadow 모두 실행 버전 v4.0으로 기동했습니다 (bootstrap, 검증 후 전환).",
       "shadow_enabled": false,
       "shadow_mode": "inactive"
     },
     "navigation": {
-      "primary_version": "1.0",
+      "primary_version": "v3.0",
       "shadow_version": "",
       "binary": "NavigationFeature",
       "primary_container": "car_10_agent_navigation",
       "shadow_container": "car_10_agent_navigation_shadow",
-      "last_action": "bootstrap",
-      "last_message_ko": "NavigationFeature: Primary·Shadow 모두 실행 버전 v1.0으로 기동했습니다 (bootstrap)."
+      "last_action": "promote",
+      "last_message_ko": "NavigationFeature: Primary(운영) 실행 버전이 v3.0으로 승격되었습니다.",
+      "shadow_enabled": false,
+      "shadow_mode": "inactive"
     },
     "evenergy": {
       "primary_version": "2.0",

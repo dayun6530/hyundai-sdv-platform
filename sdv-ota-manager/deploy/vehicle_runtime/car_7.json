@@ -13,13 +13,15 @@
       "shadow_mode": "inactive"
     },
     "navigation": {
-      "primary_version": "1.0",
+      "primary_version": "v3.0",
       "shadow_version": "",
       "binary": "NavigationFeature",
       "primary_container": "car_7_agent_navigation",
       "shadow_container": "car_7_agent_navigation_shadow",
-      "last_action": "bootstrap",
-      "last_message_ko": "NavigationFeature: Primary·Shadow 모두 실행 버전 v1.0으로 기동했습니다 (bootstrap)."
+      "last_action": "promote",
+      "last_message_ko": "NavigationFeature: Primary(운영) 실행 버전이 v3.0으로 승격되었습니다.",
+      "shadow_enabled": false,
+      "shadow_mode": "inactive"
     },
     "evenergy": {
       "primary_version": "2.0",

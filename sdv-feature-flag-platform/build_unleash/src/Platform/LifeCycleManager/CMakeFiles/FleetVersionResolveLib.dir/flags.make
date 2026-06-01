@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/LifeCycleManager/include
 
-CXX_FLAGS = -std=gnu++17 -fPIC -Wall -Wextra -Wpedantic
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17 -fPIC -Wall -Wextra -Wpedantic
 

@@ -108,7 +108,11 @@ export default function VehicleSafetyPreconditionsCard({
     return (
       <div className="card campaign-safety-card">
         <h3>Safety Preconditions</h3>
-        <p className="tiny subtle">Select a single-vehicle campaign to edit OTA demo safety for that car.</p>
+        <p className="tiny subtle">
+          Select deployment target (vehicle or region) above to edit OTA demo
+          safety. For multi-vehicle targets, the first selected car is shown
+          here; Promote runs Prepare Demo READY on all targets automatically.
+        </p>
       </div>
     );
   }

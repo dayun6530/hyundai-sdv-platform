@@ -8,16 +8,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-<<<<<<< HEAD
-  "/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/Feature.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o.d"
-  "/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/Flag.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o.d"
-  "/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o.d"
-=======
-  "/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/Feature.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o.d"
-  "/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/Flag.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o.d"
-  "/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o.d"
-  "/mnt/c/Users/82108/Desktop/final_merge/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o.d"
->>>>>>> origin/feature/datacollector
+  "/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/Feature.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Feature.cpp.o.d"
+  "/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/Flag.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/Flag.cpp.o.d"
+  "/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/LogData.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/LogData.cpp.o.d"
+  "/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o" "gcc" "src/Feature/CMakeFiles/AdasFeatureShadow.dir/__/Platform/LifeCycleManager/src/TelemetryRuntimeConfig.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

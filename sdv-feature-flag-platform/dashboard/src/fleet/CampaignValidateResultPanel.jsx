@@ -1,6 +1,10 @@
-import CampaignExecutionResultPanel from "./CampaignExecutionResultPanel.jsx";
+import CampaignExecutionResultPanel from './CampaignExecutionResultPanel.jsx';
 
-export default function CampaignValidateResultPanel({ result, error, loading }) {
+export default function CampaignValidateResultPanel({
+  result,
+  error,
+  loading,
+}) {
   return (
     <CampaignExecutionResultPanel
       title="Campaign Validate Result"

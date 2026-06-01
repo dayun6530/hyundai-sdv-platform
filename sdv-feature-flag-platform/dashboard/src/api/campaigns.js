@@ -1,10 +1,10 @@
 function fetchNoStore(url, options = {}) {
   return fetch(url, {
-    cache: "no-store",
+    cache: 'no-store',
     ...options,
     headers: {
-      "cache-control": "no-cache",
-      pragma: "no-cache",
+      'cache-control': 'no-cache',
+      pragma: 'no-cache',
       ...(options.headers || {}),
     },
   });
@@ -24,25 +24,35 @@ async function fetchCampaignJson(url) {
     }
     return { ok: true, ...data };
   } catch (err) {
-    return { ok: false, error: err.message || String(err), campaigns: [], runs: [] };
+    return {
+      ok: false,
+      error: err.message || String(err),
+      campaigns: [],
+      runs: [],
+    };
   }
 }
 
 export async function fetchCampaigns() {
-  return fetchCampaignJson("/api/campaigns");
+  return fetchCampaignJson('/api/campaigns');
 }
 
 export async function fetchCampaignDetail(campaignId) {
-  const id = encodeURIComponent(String(campaignId || "").trim());
+  const id = encodeURIComponent(String(campaignId || '').trim());
   return fetchCampaignJson(`/api/campaigns/${id}`);
 }
 
-export async function fetchCampaignRuns({ campaign_id, limit = 20, phase, status } = {}) {
+export async function fetchCampaignRuns({
+  campaign_id,
+  limit = 20,
+  phase,
+  status,
+} = {}) {
   const q = new URLSearchParams();
-  q.set("limit", String(limit));
-  if (campaign_id) q.set("campaign_id", String(campaign_id));
-  if (phase) q.set("phase", String(phase));
-  if (status) q.set("status", String(status));
+  q.set('limit', String(limit));
+  if (campaign_id) q.set('campaign_id', String(campaign_id));
+  if (phase) q.set('phase', String(phase));
+  if (status) q.set('status', String(status));
   const path = campaign_id
     ? `/api/campaigns/${encodeURIComponent(campaign_id)}/runs?${q.toString()}`
     : `/api/campaign-runs?${q.toString()}`;
@@ -50,78 +60,150 @@ export async function fetchCampaignRuns({ campaign_id, limit = 20, phase, status
 }
 
 export async function fetchCampaignRun(runId) {
-  const id = encodeURIComponent(String(runId || "").trim());
+  const id = encodeURIComponent(String(runId || '').trim());
   return fetchCampaignJson(`/api/campaign-runs/${id}`);
 }
 
 export async function fetchVehicleRuntimeSummary(carId) {
-  const id = encodeURIComponent(String(carId || "").trim());
+  const id = encodeURIComponent(String(carId || '').trim());
   return fetchCampaignJson(`/api/vehicles/${id}/runtime-summary`);
 }
 
 export async function fetchRolloutPolicies() {
-  return fetchCampaignJson("/api/rollout-policies");
+  return fetchCampaignJson('/api/rollout-policies');
 }
 
 export async function fetchDockerLogs(carId, feature, role, tail = 60) {
-  const car = encodeURIComponent(String(carId || "").trim());
-  const feat = encodeURIComponent(String(feature || "").trim());
-  const r = encodeURIComponent(String(role || "").trim());
+  const car = encodeURIComponent(String(carId || '').trim());
+  const feat = encodeURIComponent(String(feature || '').trim());
+  const r = encodeURIComponent(String(role || '').trim());
   const q = new URLSearchParams({ tail: String(tail) });
-  return fetchCampaignJson(`/api/logs/docker/${car}/${feat}/${r}?${q.toString()}`);
+  return fetchCampaignJson(
+    `/api/logs/docker/${car}/${feat}/${r}?${q.toString()}`,
+  );
 }
 
-export async function runCampaignPhase(campaignId, phase = "candidate") {
-  const id = encodeURIComponent(String(campaignId || "").trim());
-  const ph = encodeURIComponent(String(phase || "candidate").trim());
+function buildDeployTargetBody(target) {
+  if (!target || typeof target !== 'object') return undefined;
+  const region = String(target.region || '')
+    .trim()
+    .toUpperCase();
+  if (region) return { region };
+  const vehicle_ids = (Array.isArray(target.vehicle_ids) ? target.vehicle_ids : [])
+    .map((id) => String(id || '').trim())
+    .filter(Boolean);
+  if (vehicle_ids.length) return { vehicle_ids };
+  return undefined;
+}
+
+export async function runCampaignPhase(
+  campaignId,
+  phase = 'candidate',
+  target = null,
+) {
+  const id = encodeURIComponent(String(campaignId || '').trim());
+  const ph = encodeURIComponent(String(phase || 'candidate').trim());
+  const body = buildDeployTargetBody(target);
   try {
-    const res = await fetchNoStore(`/api/campaigns/${id}/run?phase=${ph}`, { method: "POST" });
+    const res = await fetchNoStore(`/api/campaigns/${id}/run?phase=${ph}`, {
+      method: 'POST',
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
     const data = await res.json().catch(() => ({}));
     return { ...data, http_ok: res.ok, http_status: res.status };
   } catch (err) {
     return {
       ok: false,
       execution: true,
-      status: "FAIL",
-      phase: phase || "candidate",
+      status: 'FAIL',
+      phase: phase || 'candidate',
       error: err.message || String(err),
       summary: { total: 0, success: 0, failed: 1 },
-      items: [{ level: "FAIL", message: err.message || String(err) }],
+      items: [{ level: 'FAIL', message: err.message || String(err) }],
     };
   }
 }
 
-export async function validateCampaign(campaignId) {
-  const id = encodeURIComponent(String(campaignId || "").trim());
+export async function dropCampaignCandidate(campaignId, target = null) {
+  const id = encodeURIComponent(String(campaignId || '').trim());
+  const body = buildDeployTargetBody(target);
   try {
-    const res = await fetchNoStore(`/api/campaigns/${id}/validate`, { method: "POST" });
+    const res = await fetchNoStore(`/api/campaigns/${id}/drop-candidate`, {
+      method: 'POST',
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
     const data = await res.json().catch(() => ({}));
     return { ...data, http_ok: res.ok, http_status: res.status };
   } catch (err) {
     return {
       ok: false,
-      status: "FAIL",
       error: err.message || String(err),
-      summary: { ok: 0, warn: 0, fail: 1 },
-      items: [{ level: "FAIL", message: err.message || String(err) }],
+      results: [],
     };
   }
 }
 
-export async function fetchVehicleSafetyState(carId, feature = "ADAS") {
-  const id = encodeURIComponent(String(carId || "").trim());
-  const q = new URLSearchParams();
-  if (feature) q.set("feature", String(feature));
-  const qs = q.toString();
-  return fetchCampaignJson(`/api/vehicles/${id}/safety-state${qs ? `?${qs}` : ""}`);
+export async function fetchCampaignCandidateStaged(campaignId, target = null) {
+  const id = encodeURIComponent(String(campaignId || '').trim());
+  const body = buildDeployTargetBody(target);
+  try {
+    const res = await fetchNoStore(`/api/campaigns/${id}/candidate-staged`, {
+      method: 'POST',
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ...data, http_ok: res.ok, http_status: res.status };
+  } catch (err) {
+    return {
+      ok: false,
+      ready: false,
+      error: err.message || String(err),
+      vehicles: [],
+    };
+  }
 }
 
-export async function updateVehicleSafetyState(carId, patch, feature = "ADAS") {
-  const id = encodeURIComponent(String(carId || "").trim());
+export async function validateCampaign(campaignId, target = null) {
+  const id = encodeURIComponent(String(campaignId || '').trim());
+  const body = buildDeployTargetBody(target);
+  try {
+    const res = await fetchNoStore(`/api/campaigns/${id}/validate`, {
+      method: 'POST',
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ...data, http_ok: res.ok, http_status: res.status };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 'FAIL',
+      error: err.message || String(err),
+      summary: { ok: 0, warn: 0, fail: 1 },
+      items: [{ level: 'FAIL', message: err.message || String(err) }],
+    };
+  }
+}
+
+export async function fetchVehicleSafetyState(carId, feature = 'ADAS') {
+  const id = encodeURIComponent(String(carId || '').trim());
+  const q = new URLSearchParams();
+  if (feature) q.set('feature', String(feature));
+  const qs = q.toString();
+  return fetchCampaignJson(
+    `/api/vehicles/${id}/safety-state${qs ? `?${qs}` : ''}`,
+  );
+}
+
+export async function updateVehicleSafetyState(carId, patch, feature = 'ADAS') {
+  const id = encodeURIComponent(String(carId || '').trim());
   try {
     const res = await fetchNoStore(`/api/vehicles/${id}/safety-state`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...patch, feature }),
     });
     const data = await res.json().catch(() => ({}));
@@ -131,13 +213,13 @@ export async function updateVehicleSafetyState(carId, patch, feature = "ADAS") {
   }
 }
 
-export async function prepareVehicleDemoReady(carId, feature = "ADAS") {
-  const id = encodeURIComponent(String(carId || "").trim());
+export async function prepareVehicleDemoReady(carId, feature = 'ADAS') {
+  const id = encodeURIComponent(String(carId || '').trim());
   try {
     const res = await fetchNoStore(`/api/vehicles/${id}/safety-state`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ preset: "prepare_demo_ready", feature }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ preset: 'prepare_demo_ready', feature }),
     });
     const data = await res.json().catch(() => ({}));
     return { ...data, http_ok: res.ok, http_status: res.status };
@@ -146,10 +228,54 @@ export async function prepareVehicleDemoReady(carId, feature = "ADAS") {
   }
 }
 
-export async function fetchFleetHistoryLogs({ limit = 20, car_id, feature, action } = {}) {
+export async function applyPendingNativeForCars(carIds) {
+  const ids = [
+    ...new Set(
+      (carIds || []).map((id) => String(id || '').trim()).filter(Boolean),
+    ),
+  ];
+  if (!ids.length) return { ok: true, results: [] };
+  try {
+    const res = await fetchNoStore('/api/fleet/apply-pending-native', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ car_ids: ids }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ...data, http_ok: res.ok, http_status: res.status };
+  } catch (err) {
+    return { ok: false, error: err.message || String(err), results: [] };
+  }
+}
+
+export async function prepareAllTargetsDemoReady(carIds, feature = 'ADAS') {
+  const ids = [
+    ...new Set(
+      (carIds || []).map((id) => String(id || '').trim()).filter(Boolean),
+    ),
+  ];
+  if (!ids.length) return { ok: true, prepared: [], failed: [] };
+  const results = await Promise.all(
+    ids.map((carId) => prepareVehicleDemoReady(carId, feature)),
+  );
+  const prepared = [];
+  const failed = [];
+  results.forEach((res, idx) => {
+    if (res.ok) prepared.push(ids[idx]);
+    else failed.push({ car_id: ids[idx], error: res.error || 'prepare failed' });
+  });
+  return { ok: failed.length === 0, prepared, failed };
+}
+
+export async function fetchFleetHistoryLogs({
+  limit = 20,
+  car_id,
+  feature,
+  action,
+} = {}) {
   const q = new URLSearchParams({ limit: String(limit) });
-  if (car_id) q.set("car_id", String(car_id));
-  if (feature) q.set("feature", String(feature));
-  if (action) q.set("action", String(action));
+  if (car_id) q.set('car_id', String(car_id));
+  if (feature) q.set('feature', String(feature));
+  if (action) q.set('action', String(action));
   return fetchCampaignJson(`/api/logs/fleet-history?${q.toString()}`);
 }

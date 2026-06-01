@@ -19,13 +19,13 @@ Terminal-free flow using **Deployment Campaigns** in the dashboard.
 
 ## Terminal → UI
 
-| Terminal | UI |
-|----------|-----|
-| `docker logs car_1_agent_adas` | Campaign Logs → Primary Logs |
-| `docker logs car_1_agent_adas_shadow` | Campaign Logs → Candidate Logs |
-| `cat deploy/campaign_runs/run_*.json` | Campaign Logs → Campaign Run JSON |
-| `tail deploy/history/fleet_history.jsonl` | Campaign Logs → Fleet History |
-| `cat deploy/vehicle_runtime/car_1.json` | Vehicle Runtime Summary |
+| Terminal                                  | UI                                |
+| ----------------------------------------- | --------------------------------- |
+| `docker logs car_1_agent_adas`            | Campaign Logs → Primary Logs      |
+| `docker logs car_1_agent_adas_shadow`     | Campaign Logs → Candidate Logs    |
+| `cat deploy/campaign_runs/run_*.json`     | Campaign Logs → Campaign Run JSON |
+| `tail deploy/history/fleet_history.jsonl` | Campaign Logs → Fleet History     |
+| `cat deploy/vehicle_runtime/car_1.json`   | Vehicle Runtime Summary           |
 
 ## Advanced (collapsed by default)
 

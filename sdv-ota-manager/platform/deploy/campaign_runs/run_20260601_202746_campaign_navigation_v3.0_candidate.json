@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260601_202746_campaign_navigation_v3.0_candidate",
+  "campaign_id": "campaign_navigation_v3.0",
+  "campaign_file": "deploy/campaign_runs/.runtime/campaign_navigation_v3.0_runtime_US.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_nav_v3.0",
+  "phase": "candidate",
+  "status": "success",
+  "started_at": "2026-06-01T20:27:46",
+  "finished_at": "2026-06-01T20:28:51",
+  "feature": "Navigation",
+  "target_version": "v3.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "candidate",
+    "pull_requested": true,
+    "pull_policy": "missing",
+    "image": "localhost:5000/sdv/navigation-feature:v3.0"
+  },
+  "resolved_targets": ["car_3","car_6","car_9"],
+  "aggregate": {
+    "total": 3,
+    "success": 3,
+    "failed": 0
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_3",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260601_202746_001",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v3.0",
+      "docker_runtime_container": "car_3_agent_navigation_shadow",
+      "state_file": "deploy/state/car_3.json",
+      "config_file": "config/car/car_3.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_3 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    },
+    {
+      "car_id": "car_6",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260601_202759_002",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v3.0",
+      "docker_runtime_container": "car_6_agent_navigation_shadow",
+      "state_file": "deploy/state/car_6.json",
+      "config_file": "config/car/car_6.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_6 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    },
+    {
+      "car_id": "car_9",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260601_202835_003",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v3.0",
+      "docker_runtime_container": "car_9_agent_navigation_shadow",
+      "state_file": "deploy/state/car_9.json",
+      "config_file": "config/car/car_9.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_9 Navigation B v3.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    }
+  ],
+  "warnings": [],
+  "failures": []
+}

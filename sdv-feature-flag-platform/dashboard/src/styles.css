@@ -1,5 +1,11 @@
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   color: #e8edf5;
   background: #0b1220;
 }
@@ -12,8 +18,16 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 24%),
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 18%),
+    radial-gradient(
+      circle at top left,
+      rgba(59, 130, 246, 0.12),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(16, 185, 129, 0.08),
+      transparent 18%
+    ),
     #0b1220;
 }
 
@@ -397,7 +411,7 @@ td {
 }
 
 .mono {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
 .fleet-grid {
@@ -1539,6 +1553,104 @@ td {
 .campaign-action-step {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.campaign-action-promote-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.campaign-action-step-promote .campaign-action-hint + .campaign-action-hint {
+  margin-top: -2px;
+}
+
+.campaign-promote-complete-msg {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.12);
+  color: #bbf7d0;
+}
+
+.campaign-target-card {
+  margin: 0 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.campaign-target-head h3 {
+  margin: 0 0 4px;
+}
+
+.campaign-target-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.campaign-target-chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.35);
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.campaign-target-chip:hover:not(:disabled) {
+  border-color: rgba(59, 130, 246, 0.65);
+}
+
+.campaign-target-chip-active {
+  border-color: rgba(59, 130, 246, 0.9);
+  background: rgba(59, 130, 246, 0.2);
+  font-weight: 600;
+}
+
+.campaign-target-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.campaign-target-hint-warn {
+  margin: 10px 0 0;
+  color: #fbbf24;
+}
+
+.campaign-target-card-muted {
+  opacity: 0.72;
+}
+
+.campaign-target-chip-all {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.campaign-group-card {
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.campaign-group-chip {
+  min-width: 4.5rem;
+}
+
+.campaign-multi-target-hint {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.campaign-docker-image-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
 }
 

@@ -17,6 +17,13 @@ const {
   registerCampaignValidateRoutes,
 } = require('./services/campaignValidateApi');
 const { registerCampaignRunRoutes } = require('./services/campaignRunApi');
+const {
+  pickCampaignDeployPath,
+  loadFleetVehiclesFromFile,
+} = require('./services/campaignTargetRuntime');
+const {
+  createDockerImageChecker,
+} = require('./services/dockerImageAvailability');
 const { registerVehicleSafetyRoutes } = require('./services/vehicleSafetyApi');
 const {
   startVehicleRuntimeCmdPoller,
@@ -4040,6 +4047,63 @@ app.post('/api/vehicle-runtime/queue-operation', (req, res) => {
   }
 });
 
+app.post('/api/fleet/apply-pending-native', async (req, res) => {
+  const carIds = [
+    ...new Set(
+      (Array.isArray(req.body?.car_ids)
+        ? req.body.car_ids
+        : Array.isArray(req.body?.vehicle_ids)
+          ? req.body.vehicle_ids
+          : []
+      )
+        .map((id) => String(id || '').trim())
+        .filter((id) => /^car_(10|[1-9])$/.test(id)),
+    ),
+  ];
+  if (!carIds.length) {
+    res.status(400).json({ ok: false, error: 'car_ids required' });
+    return;
+  }
+
+  let dm;
+  try {
+    dm = detectDeploymentMgrPath();
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+    return;
+  }
+
+  const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
+  const results = [];
+  try {
+    for (const carId of carIds) {
+      const cmd =
+        `cd ${bashSingleQuote(repoWsl)} && ` +
+        `${bashSingleQuote(dm.wslPath)} apply-pending-native-car ${bashSingleQuote(carId)}`;
+      const r = await execWslBash(cmd, { timeout: 120_000 });
+      const ok = Number(r.code) === 0;
+      results.push({
+        car_id: carId,
+        ok,
+        exit_code: r.code,
+        stdout: r.stdout || '',
+        stderr: r.stderr || '',
+      });
+    }
+    syncRuntimeCmdForCars(carIds);
+    res.json({
+      ok: results.every((row) => row.ok),
+      results,
+    });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      error: err.message || String(err),
+      results,
+    });
+  }
+});
+
 app.post('/api/vehicle-runtime/apply-pending', async (_req, res) => {
   try {
     const data = readPendingDockerRollout();
@@ -4261,34 +4325,45 @@ app.post('/api/fleet/docker-feature-versions/apply', async (req, res) => {
   }
 });
 
+const dockerImageChecker = createDockerImageChecker(execWslBash);
+
 registerReadOnlyDeployRoutes(app, {
   DEPLOY_ROOT,
   PLATFORM_DEPLOY_ROOT,
   OTA_VEHICLE_RUNTIME_DIR,
+  REPO_ROOT,
+  resolveDockerImageAvailability: (images) =>
+    dockerImageChecker.resolveAvailabilityMap(images),
 });
 
 registerCampaignValidateRoutes(app, {
   DEPLOY_ROOT,
   PLATFORM_DEPLOY_ROOT,
+  REPO_ROOT,
   execWslBash,
   detectDeploymentMgrPath,
   toWslPath,
   bashSingleQuote,
+  pickCampaignDeployPath,
+  loadFleetVehiclesFromFile,
 });
 
 registerCampaignRunRoutes(app, {
   DEPLOY_ROOT,
   PLATFORM_DEPLOY_ROOT,
+  REPO_ROOT,
+  OTA_VEHICLE_RUNTIME_DIR,
   execWslBash,
   detectDeploymentMgrPath,
   toWslPath,
   bashSingleQuote,
   syncRuntimeCmdForCars,
   extractCarIdsFromCampaign,
+  pickCampaignDeployPath,
+  loadFleetVehiclesFromFile,
 });
 
 registerVehicleSafetyRoutes(app, { DEPLOY_ROOT, syncRuntimeCmdForCars });
-registerVehicleSafetyRoutes(app, { DEPLOY_ROOT });
 registerTelemetryCollectorConfigRoutes(app, { repoRoot: REPO_ROOT });
 
 const SDV_MQTT_BROKER_URI = String(

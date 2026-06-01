@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "campaign_id": "campaign_adas_v10.0",
+  "name": "ADAS v10.0 candidate validation (local registry)",
+  "description": "Deploy as candidate (shadow), verify logs, then promote to primary. Select deployment target car in Admin Portal before Validate.",
+  "status": "draft",
+  "created_at": "2026-05-26T12:00:00Z",
+  "feature": "ADAS",
+  "target_version": "v10.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "package_id": "ADAS_v10.0",
+  "package_path": "deploy/packages/ADAS/v10.0",
+  "manifest_path": "deploy/packages/ADAS/v10.0/manifest.json",
+  "docker_image": "localhost:5000/sdv/adas-feature:v10.0",
+  "artifact_type": "docker_image",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_v10.0",
+  "target_selector": {
+    "scope": "vehicle",
+    "vehicle_ids": []
+  },
+  "safety_requirements": {
+    "respect_kill_switch": true,
+    "require_ota_ready": true,
+    "require_driver_approval": true
+  },
+  "execution_options": {
+    "sync_config": true,
+    "no_defer_native": true
+  },
+  "docker_runtime": {
+    "enabled": true,
+    "candidate": {
+      "mode": "candidate",
+      "pull_policy": "missing"
+    },
+    "promote": {
+      "mode": "promote",
+      "policy": "manual",
+      "separate_run_required": true
+    }
+  },
+  "approval_required": true
+}

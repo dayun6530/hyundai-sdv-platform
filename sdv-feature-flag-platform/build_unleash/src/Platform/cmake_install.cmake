@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/src/Platform
+# Install script for directory: /mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/src/Platform
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -12,7 +12,7 @@ if(NOT DEFINED CMAKE_INSTALL_CONFIG_NAME)
     string(REGEX REPLACE "^[^A-Za-z0-9_]+" ""
            CMAKE_INSTALL_CONFIG_NAME "${BUILD_TYPE}")
   else()
-    set(CMAKE_INSTALL_CONFIG_NAME "")
+    set(CMAKE_INSTALL_CONFIG_NAME "Release")
   endif()
   message(STATUS "Install configuration: \"${CMAKE_INSTALL_CONFIG_NAME}\"")
 endif()
@@ -44,21 +44,21 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/CenterCommunication/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/CenterCommunication/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-feature-flag-platform/build_unleash/src/Platform/sdv_ota_manager__DeploymentManager/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject/sdv-feature-flag-platform/build_unleash/src/Platform/sdv_ota_manager__DeploymentManager/cmake_install.cmake")
 endif()
 

@@ -2,24 +2,32 @@
  * Mirrors dashboard fleet runtime (vehicle_runtime JSON) into each car CMD window.
  * Foreground car consoles tail logs/<car>/version_events.log (see start_platform_wsl.sh).
  */
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 const CAR_ID_RE = /^car_(10|[1-9])$/;
 const ALL_CAR_IDS = Array.from({ length: 10 }, (_, i) => `car_${i + 1}`);
 
 const DOMAIN_SPECS = [
-  { domainKey: "adas", fleetLabel: "ADAS", processName: "AdasFeature" },
-  { domainKey: "navigation", fleetLabel: "Navigation", processName: "NavigationFeature" },
-  { domainKey: "evenergy", fleetLabel: "Energy", processName: "EvEnergyFeature" },
+  { domainKey: 'adas', fleetLabel: 'ADAS', processName: 'AdasFeature' },
+  {
+    domainKey: 'navigation',
+    fleetLabel: 'Navigation',
+    processName: 'NavigationFeature',
+  },
+  {
+    domainKey: 'evenergy',
+    fleetLabel: 'Energy',
+    processName: 'EvEnergyFeature',
+  },
 ];
 
 /** @type {Map<string, string>} */
 const lastFingerprint = new Map();
 
 function normalizeVersionToken(v) {
-  const s = String(v || "").trim();
-  if (!s) return "";
+  const s = String(v || '').trim();
+  if (!s) return '';
   if (/^v/i.test(s) && s.length >= 2 && /\d/.test(s[1])) {
     return `v${s.slice(1)}`;
   }
@@ -29,31 +37,33 @@ function normalizeVersionToken(v) {
 
 function safeReadJson(filePath) {
   try {
-    return { ok: true, data: JSON.parse(fs.readFileSync(filePath, "utf8")) };
+    return { ok: true, data: JSON.parse(fs.readFileSync(filePath, 'utf8')) };
   } catch (err) {
     return { ok: false, error: err.message || String(err) };
   }
 }
 
 function readFleetFeatureVersions(deployRoot, carId) {
-  const fp = path.join(deployRoot, "state", `${carId}.json`);
+  const fp = path.join(deployRoot, 'state', `${carId}.json`);
   if (!fs.existsSync(fp)) return {};
   const parsed = safeReadJson(fp);
   if (!parsed.ok || !parsed.data?.features) return {};
   const out = {};
   const map = [
-    ["ADAS", "adas"],
-    ["Navigation", "navigation"],
-    ["Energy", "evenergy"],
+    ['ADAS', 'adas'],
+    ['Navigation', 'navigation'],
+    ['Energy', 'evenergy'],
   ];
   for (const [feat, dom] of map) {
     const f = parsed.data.features[feat];
-    if (!f || typeof f !== "object") continue;
+    if (!f || typeof f !== 'object') continue;
     out[dom] = {
-      primary_version: normalizeVersionToken(f.primary_version || f.active_version || ""),
-      shadow_version: normalizeVersionToken(f.shadow_version || ""),
+      primary_version: normalizeVersionToken(
+        f.primary_version || f.active_version || '',
+      ),
+      shadow_version: normalizeVersionToken(f.shadow_version || ''),
       shadow_enabled: Boolean(f.shadow_enabled),
-      primary_image: String(f.primary_image || ""),
+      primary_image: String(f.primary_image || ''),
     };
   }
   return out;
@@ -73,14 +83,20 @@ function buildRuntimeFingerprint(carId, runtimeDir, deployRoot) {
         parts.push(
           [
             spec.domainKey,
-            normalizeVersionToken(dom.primary_version || st.primary_version || ""),
-            normalizeVersionToken(dom.shadow_version || st.shadow_version || ""),
-            String(dom.last_action || ""),
-            dom.shadow_enabled === true || st.shadow_enabled === true ? "1" : "0",
-          ].join(":"),
+            normalizeVersionToken(
+              dom.primary_version || st.primary_version || '',
+            ),
+            normalizeVersionToken(
+              dom.shadow_version || st.shadow_version || '',
+            ),
+            String(dom.last_action || ''),
+            dom.shadow_enabled === true || st.shadow_enabled === true
+              ? '1'
+              : '0',
+          ].join(':'),
         );
       }
-      return parts.join("|");
+      return parts.join('|');
     }
   }
 
@@ -89,18 +105,18 @@ function buildRuntimeFingerprint(carId, runtimeDir, deployRoot) {
     parts.push(
       [
         spec.domainKey,
-        st.primary_version || "",
-        st.shadow_version || "",
-        "",
-        st.shadow_enabled ? "1" : "0",
-      ].join(":"),
+        st.primary_version || '',
+        st.shadow_version || '',
+        '',
+        st.shadow_enabled ? '1' : '0',
+      ].join(':'),
     );
   }
-  return parts.join("|");
+  return parts.join('|');
 }
 
 function formatRuntimeVersionLine(carId, spec, dom, jsonRel) {
-  const pv = normalizeVersionToken(dom.primary_version) || "-";
+  const pv = normalizeVersionToken(dom.primary_version) || '-';
   const sv = normalizeVersionToken(dom.shadow_version);
   let line =
     `[VERSION] car_id=${carId} process=${spec.processName} feature=${spec.fleetLabel}` +
@@ -112,20 +128,28 @@ function formatRuntimeVersionLine(carId, spec, dom, jsonRel) {
 
 function appendCarVersionEventLines(repoRoot, carId, lines) {
   if (!lines.length || !CAR_ID_RE.test(carId)) return;
-  const carLogDir = path.join(repoRoot, "logs", carId);
-  const runSdvLog = path.join(repoRoot, "logs", "run_sdv", `${carId}.log`);
+  const carLogDir = path.join(repoRoot, 'logs', carId);
+  const runSdvLog = path.join(repoRoot, 'logs', 'run_sdv', `${carId}.log`);
   const iso = new Date().toISOString();
-  const payload = lines.map((l) => `[${iso}] ${l}\n`).join("");
+  const payload = lines.map((l) => `[${iso}] ${l}\n`).join('');
   try {
     fs.mkdirSync(carLogDir, { recursive: true });
-    fs.appendFileSync(path.join(carLogDir, "version_events.log"), payload, "utf8");
-    fs.appendFileSync(path.join(carLogDir, "version_events.primary.log"), payload, "utf8");
+    fs.appendFileSync(
+      path.join(carLogDir, 'version_events.log'),
+      payload,
+      'utf8',
+    );
+    fs.appendFileSync(
+      path.join(carLogDir, 'version_events.primary.log'),
+      payload,
+      'utf8',
+    );
   } catch (_) {
     /* ignore */
   }
   try {
     fs.mkdirSync(path.dirname(runSdvLog), { recursive: true });
-    fs.appendFileSync(runSdvLog, payload, "utf8");
+    fs.appendFileSync(runSdvLog, payload, 'utf8');
   } catch (_) {
     /* ignore */
   }
@@ -140,14 +164,18 @@ function syncCarVehicleRuntimeToCmd(deps, carId, options = {}) {
   const { REPO_ROOT, OTA_VEHICLE_RUNTIME_DIR, DEPLOY_ROOT } = deps;
   if (!CAR_ID_RE.test(carId)) return false;
 
-  const fp = buildRuntimeFingerprint(carId, OTA_VEHICLE_RUNTIME_DIR, DEPLOY_ROOT);
+  const fp = buildRuntimeFingerprint(
+    carId,
+    OTA_VEHICLE_RUNTIME_DIR,
+    DEPLOY_ROOT,
+  );
   if (!force && lastFingerprint.get(carId) === fp) {
     return false;
   }
   lastFingerprint.set(carId, fp);
 
   const rtPath = path.join(OTA_VEHICLE_RUNTIME_DIR, `${carId}.json`);
-  const jsonRel = path.relative(REPO_ROOT, rtPath).replace(/\\/g, "/");
+  const jsonRel = path.relative(REPO_ROOT, rtPath).replace(/\\/g, '/');
   const stateFallback = readFleetFeatureVersions(DEPLOY_ROOT, carId);
 
   const lines = [];
@@ -158,7 +186,10 @@ function syncCarVehicleRuntimeToCmd(deps, carId, options = {}) {
   }
 
   for (const spec of DOMAIN_SPECS) {
-    const dom = { ...(stateFallback[spec.domainKey] || {}), ...(runtimeDomains?.[spec.domainKey] || {}) };
+    const dom = {
+      ...(stateFallback[spec.domainKey] || {}),
+      ...(runtimeDomains?.[spec.domainKey] || {}),
+    };
     lines.push(formatRuntimeVersionLine(carId, spec, dom, jsonRel));
   }
 
@@ -167,7 +198,9 @@ function syncCarVehicleRuntimeToCmd(deps, carId, options = {}) {
 }
 
 function syncCarsVehicleRuntimeToCmd(deps, carIds, options = {}) {
-  const ids = (carIds && carIds.length ? carIds : ALL_CAR_IDS).filter((c) => CAR_ID_RE.test(c));
+  const ids = (carIds && carIds.length ? carIds : ALL_CAR_IDS).filter((c) =>
+    CAR_ID_RE.test(c),
+  );
   let n = 0;
   for (const carId of ids) {
     if (syncCarVehicleRuntimeToCmd(deps, carId, options)) n += 1;
@@ -189,7 +222,7 @@ function startVehicleRuntimeCmdPoller(deps, intervalMs = 3000) {
       console.warn(`[vehicle-runtime-cmd-sync] poll error: ${err.message}`);
     }
   }, ms);
-  if (typeof timer.unref === "function") timer.unref();
+  if (typeof timer.unref === 'function') timer.unref();
   console.log(
     `[vehicle-runtime-cmd-sync] polling car_1..car_10 every ${ms}ms → logs/<car>/version_events.log`,
   );
@@ -198,7 +231,7 @@ function startVehicleRuntimeCmdPoller(deps, intervalMs = 3000) {
 
 function extractCarIdsFromCampaign(campaignData) {
   const sel = campaignData?.target_selector;
-  if (sel?.scope === "vehicle" && Array.isArray(sel.vehicle_ids)) {
+  if (sel?.scope === 'vehicle' && Array.isArray(sel.vehicle_ids)) {
     return sel.vehicle_ids.filter((c) => CAR_ID_RE.test(String(c).trim()));
   }
   return [];

@@ -1,14 +1,14 @@
 # Fleet deployment campaigns
 
-A **campaign** defines *what* to deploy: feature, target version, package or Docker image metadata, fleet targeting, and which rollout policy governs stage order.
+A **campaign** defines _what_ to deploy: feature, target version, package or Docker image metadata, fleet targeting, and which rollout policy governs stage order.
 
 Campaign files are **declarative metadata only** in this phase. They do not execute deployments by themselves.
 
 ## Terminology
 
-| Term | Meaning |
-|------|---------|
-| **Primary** | The production line currently serving traffic (Docker primary container, `deploy/state` primary version fields). |
+| Term          | Meaning                                                                                                                    |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Primary**   | The production line currently serving traffic (Docker primary container, `deploy/state` primary version fields).           |
 | **Candidate** | A new version under validation before primary promotion (Docker candidate container, often `*_shadow` in container names). |
 
 Legacy **version_map slots** (internal CLI only): **A ≈ primary line**, **B ≈ candidate line**. User-facing docs and campaign JSON use `target_role: candidate` instead of slot letters. The optional field `legacy_slot` exists only so future tooling can map to today's `fleet-deploy` CLI, which still accepts `A` or `B`.
@@ -34,21 +34,21 @@ Typical flow for the documented ADAS v0.5 local-registry test:
 
 ## Files in this directory
 
-| File | Purpose |
-|------|---------|
-| `campaign_adas_v0.5_car1_canary.json` | Example campaign matching the successful 8-2 Docker E2E test on `car_1` |
+| File                                   | Purpose                                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------------- |
+| `campaign_adas_v0.5_car1_canary.json`  | Example campaign matching the successful 8-2 Docker E2E test on `car_1`       |
 | `campaign_adas_v0.5_group_canary.json` | **Validate-only:** `target_selector.scope=group` (canary → `car_1`, `car_10`) |
-| `campaign_adas_v0.5_region_kr.json` | **Validate-only:** `target_selector.scope=region` (KR region) |
+| `campaign_adas_v0.5_region_kr.json`    | **Validate-only:** `target_selector.scope=region` (KR region)                 |
 
 ### `target_selector` scopes (9-4)
 
 Resolved by `TargetingResolver` (used by `campaign-validate`; reused by future `campaign-run`):
 
-| scope | Required fields | Example |
-|-------|-----------------|---------|
-| `vehicle` | `vehicle_ids[]` | `["car_1"]` |
-| `group` | `group` | `"canary"` |
-| `region` | `region` | `"KR"` |
+| scope          | Required fields   | Example               |
+| -------------- | ----------------- | --------------------- |
+| `vehicle`      | `vehicle_ids[]`   | `["car_1"]`           |
+| `group`        | `group`           | `"canary"`            |
+| `region`       | `region`          | `"KR"`                |
 | `group_region` | `group`, `region` | canary + KR → `car_1` |
 
 Optional filters on `target_selector` (WARN when registry lacks fields): `compatible_models`, `compatible_regions`, `exclude_car_ids`, `require_online`.
