@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/USER/Desktop/feature-flag-platform3/sdv-ota-manager/platform/DeploymentManager
+# Install script for directory: /mnt/c/Users/82107/Desktop/TP4/sdv-ota-manager/platform/DeploymentManager
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

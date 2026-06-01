@@ -28,6 +28,15 @@ namespace {
 using sdv::feature::sub::CommonCallbacks;
 using sdv::feature::sub::ISubFeatureModule;
 
+constexpr auto kRoadEventCooldown = std::chrono::seconds(45);
+constexpr auto kDuplicateRoadSuppress = std::chrono::seconds(10);
+
+int clampBatteryPercent(int value) {
+    if (value < 0) return 0;
+    if (value > 100) return 100;
+    return value;
+}
+
 class EnergyRangeModule final : public ISubFeatureModule {
 public:
     explicit EnergyRangeModule(CommonCallbacks cb, std::function<std::string()> msg)
@@ -98,7 +107,7 @@ static std::vector<std::unique_ptr<ISubFeatureModule>> buildEnergyModules(
 }  // namespace
 
 EvEnergyFeature::EvEnergyFeature(EventBusInterface& eventBus)
-    : Feature("EvEnergyFeature", eventBus), battery_(85) {
+    : Feature("EvEnergyFeature", eventBus), battery_(100) {
     CommonCallbacks cb {
         /*logInfo*/ [this](const std::string& m) { log(LogLevel::info, m); },
         /*logWarn*/ [this](const std::string& m) { log(LogLevel::warn, m); },
@@ -114,10 +123,7 @@ EvEnergyFeature::EvEnergyFeature(EventBusInterface& eventBus)
             return "RANGE: 예상 주행거리 산출 — 배터리 " + std::to_string(battery_) +
                 "% | " + std::to_string(battery_ * 4) + "km";
         },
-        /*regenOnDownhill*/ [this]() {
-            battery_ += 1;
-            log(LogLevel::info, "회생제동으로 배터리 회수: " + std::to_string(battery_) + "%");
-        });
+        /*regenOnDownhill*/ []() {});
     for (auto& m : mods) {
         core->Add(std::make_unique<sdv::feature::sub::LeafNode>(std::move(m), "1.0"));
     }
@@ -138,13 +144,32 @@ void EvEnergyFeature::execute() {
     sendTelemetry("INFO", "EV_STARTUP",
         std::string("{\"version\":\"") + v + "\",\"battery_init\":" + std::to_string(battery_) + "}");
 
+    auto lastBatteryDrainAt = std::chrono::steady_clock::now();
+    constexpr auto kBatteryDrainInterval = std::chrono::minutes(1);
+
     while (!isStopRequested()) {
         sleepTelemetryPublishInterval();
 
         auto events = pollEvents();
 
         if (!flag_.isEnabled()) {
+            // Feature OFF during the loop: pause drain timing to avoid "catch-up" drops on re-enable.
+            lastBatteryDrainAt = std::chrono::steady_clock::now();
             continue;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        while (now - lastBatteryDrainAt >= kBatteryDrainInterval) {
+            lastBatteryDrainAt += kBatteryDrainInterval;
+            if (battery_ > 0) {
+                battery_ = clampBatteryPercent(battery_ - 1);
+                log(LogLevel::info, "배터리 자연 소모: " + std::to_string(battery_) + "% (분당 1%)");
+                sendTelemetry("INFO", "EV_BATTERY_DRAIN",
+                    std::string("{\"battery\":") + std::to_string(battery_) + ",\"drain_per_minute\":1}");
+            }
+            if (checkBatteryEmptyAndQuit()) {
+                return;
+            }
         }
 
         for (const auto& event : events) {
@@ -155,6 +180,9 @@ void EvEnergyFeature::execute() {
 
             case EventId::RoadInfoUpdate:
                 processRoadInfo(event.getMessage());
+                if (checkBatteryEmptyAndQuit()) {
+                    return;
+                }
                 break;
 
             case EventId::QuitTheSystem:
@@ -197,6 +225,9 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
 
             case EventId::RoadInfoUpdate:
                 processRoadInfo(event.getMessage());
+                if (checkBatteryEmptyAndQuit()) {
+                    return;
+                }
                 break;
 
             default:
@@ -206,9 +237,65 @@ void EvEnergyFeature::runEvEnergyMainLoop() {
     }
 }
 
+bool EvEnergyFeature::checkBatteryEmptyAndQuit() {
+    if (battery_ > 0) {
+        return false;
+    }
+    battery_ = 0;
+    log(LogLevel::warn, "배터리 0% 도달 — 차량 시스템 종료 이벤트 전송");
+    sendTelemetry("WARN", "EV_BATTERY_EMPTY", "{\"battery\":0,\"action\":\"QuitTheSystem\"}");
+    sendDomainEvent(EventId::QuitTheSystem, "EV_BATTERY_EMPTY");
+    return true;
+}
+
+void EvEnergyFeature::applyRoadBatteryModifiers(const std::string& message) {
+    const auto now = std::chrono::steady_clock::now();
+
+    if (message.find("오르막") != std::string::npos) {
+        if (!flag_.isSubFeatureEnabled("ECO")) {
+            log(LogLevel::info, "오르막 감지 (ECO OFF — SOC 보정 생략)");
+            return;
+        }
+        if ((now - lastUphillDrainAt_) < kRoadEventCooldown) {
+            log(LogLevel::info, "오르막 SOC 보정 쿨다운 중 — 생략");
+            return;
+        }
+        lastUphillDrainAt_ = now;
+        if (battery_ > 0) {
+            battery_ = clampBatteryPercent(battery_ - 1);
+            log(LogLevel::warn,
+                "오르막 추가 소모: " + std::to_string(battery_) + "% (ECO 활성, 45초 쿨다운)");
+            sendTelemetry("WARN", "EV_UPHILL_DRAIN",
+                std::string("{\"road_info\":\"") + message + "\",\"battery\":" + std::to_string(battery_) +
+                ",\"delta\":-1}");
+        }
+        return;
+    }
+
+    if (message.find("내리막") != std::string::npos) {
+        if (!flag_.isSubFeatureEnabled("REGEN")) {
+            log(LogLevel::info, "REGEN: OFF — 회생 SOC 보정 생략");
+            return;
+        }
+        if (battery_ >= 100) {
+            log(LogLevel::info, "배터리 만충 — 회생 보정 생략");
+            return;
+        }
+        if ((now - lastDownhillRegenAt_) < kRoadEventCooldown) {
+            log(LogLevel::info, "회생 SOC 보정 쿨다운 중 — 생략");
+            return;
+        }
+        lastDownhillRegenAt_ = now;
+        battery_ = clampBatteryPercent(battery_ + 1);
+        log(LogLevel::info, "회생제동으로 배터리 회수: " + std::to_string(battery_) + "% (45초 쿨다운)");
+        sendTelemetry("INFO", "EV_REGEN_APPLIED",
+            std::string("{\"road_info\":\"") + message + "\",\"battery\":" + std::to_string(battery_) +
+            ",\"delta\":1}");
+    }
+}
+
 void EvEnergyFeature::processVehicleLocation(const std::string& message) {
     log(LogLevel::info, "차량 위치 수신: " + message);
-    battery_ -= 3;
 
     // 팀원 브랜치 반영: 위치 수신 Telemetry 전송
     sendTelemetry("INFO", "EV_LOCATION_RX",
@@ -244,34 +331,23 @@ void EvEnergyFeature::processVehicleLocation(const std::string& message) {
 }
 
 void EvEnergyFeature::processRoadInfo(const std::string& message) {
+    const auto now = std::chrono::steady_clock::now();
+    if (!lastRoadMessage_.empty() && message == lastRoadMessage_ &&
+        (now - lastRoadMessageAt_) < kDuplicateRoadSuppress) {
+        return;
+    }
+    lastRoadMessage_ = message;
+    lastRoadMessageAt_ = now;
+
     log(LogLevel::info, "도로 정보 수신: " + message);
-    
-    // 내 브랜치 반영: 평지 판별 로직 유지
-    const bool anyHill = (message.find("오르막") != std::string::npos) || (message.find("내리막") != std::string::npos);
+
+    const bool anyHill = (message.find("오르막") != std::string::npos) ||
+        (message.find("내리막") != std::string::npos);
     if (!anyHill) {
         log(LogLevel::info, "평지 주행: 표준 에너지 모드 유지");
     }
 
-    // 팀원 브랜치 반영: 오르막/내리막 Telemetry 및 배터리 회수 로직
-    if (message.find("오르막") != std::string::npos) {
-        if (flag_.isSubFeatureEnabled("ECO")) {
-            log(LogLevel::warn, "오르막 감지: 에너지 소모 증가 예상, 에코 모드 권장");
-            sendTelemetry("WARN", "EV_UPHILL_WARNING",
-                std::string("{\"road_info\":\"") + message + "\",\"battery\":" + std::to_string(battery_) + "}");
-        } else {
-            log(LogLevel::info, "오르막 감지 (ECO OFF — 일반 경고만)");
-        }
-    } else if (message.find("내리막") != std::string::npos) {
-        if (flag_.isSubFeatureEnabled("REGEN")) {
-            log(LogLevel::info, "내리막 감지: 회생제동 최적화 모드 활성화");
-            battery_ += 1;
-            log(LogLevel::info, "회생제동으로 배터리 회수: " + std::to_string(battery_) + "%");
-            sendTelemetry("INFO", "EV_REGEN_APPLIED",
-                std::string("{\"road_info\":\"") + message + "\",\"battery\":" + std::to_string(battery_) + "}");
-        } else {
-            log(LogLevel::info, "REGEN: OFF — 회생제동 보정 생략");
-        }
-    }
+    applyRoadBatteryModifiers(message);
 
     // 내 브랜치 반영: subTree_ 처리
     const auto enabled = [this](const char* k) { return flag_.isSubFeatureEnabled(k); };
@@ -282,7 +358,7 @@ void EvEnergyFeature::processRoadInfo(const std::string& message) {
     sendDomainEvent(EventId::EnergyStateUpdate,
         std::string("ENERGY_STATE roadHint=processed battery=") + std::to_string(battery_) +
         "|SHADOW_ROAD|" + message);
-}  // namespace sdv::feature
+}
 
 }
 #ifndef SDV_FEATURE_NO_MAIN
