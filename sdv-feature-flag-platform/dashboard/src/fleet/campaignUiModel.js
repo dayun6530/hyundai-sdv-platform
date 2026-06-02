@@ -162,6 +162,30 @@ export function deploymentTargetKey(body) {
   return ids ? `vehicles:${ids}` : '';
 }
 
+export function findLatestSuccessfulPromoteRun(runs, opts = null) {
+  const carIds = Array.isArray(opts) ? opts : opts?.carIds;
+  const targetVersion = Array.isArray(opts) ? null : opts?.targetVersion;
+  const campaignId = Array.isArray(opts) ? null : opts?.campaignId;
+  const filterIds = Array.isArray(carIds) && carIds.length ? carIds : null;
+  for (const run of runs || []) {
+    if (String(run?.phase || '').toLowerCase() !== 'promote') continue;
+    if (!isRunSuccess(run)) continue;
+    if (campaignId && String(run.campaign_id || '') !== campaignId) continue;
+    if (filterIds?.length) {
+      if (!sameCarIdSet(filterIds, run.resolved_targets || [])) continue;
+    }
+    if (
+      targetVersion &&
+      run.target_version &&
+      !versionsMatch(run.target_version, targetVersion)
+    ) {
+      continue;
+    }
+    return run;
+  }
+  return null;
+}
+
 export function findLatestSuccessfulCandidateRun(runs, opts = null) {
   const carIds = Array.isArray(opts) ? opts : opts?.carIds;
   const targetVersion = Array.isArray(opts) ? null : opts?.targetVersion;

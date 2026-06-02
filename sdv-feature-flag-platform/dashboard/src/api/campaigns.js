@@ -10,9 +10,9 @@ function fetchNoStore(url, options = {}) {
   });
 }
 
-async function fetchCampaignJson(url) {
+async function fetchCampaignJson(url, options = {}) {
   try {
-    const res = await fetchNoStore(url);
+    const res = await fetchNoStore(url, options);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       return {
@@ -73,6 +73,16 @@ export async function fetchRolloutPolicies() {
   return fetchCampaignJson('/api/rollout-policies');
 }
 
+/** Align deploy/version_map.json slot B (or legacy_slot) with the selected campaign. */
+export async function syncCampaignVersionMap(campaignId) {
+  const id = encodeURIComponent(String(campaignId || '').trim());
+  return fetchCampaignJson(`/api/campaigns/${id}/sync-version-map`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{}',
+  });
+}
+
 export async function fetchDockerLogs(carId, feature, role, tail = 60) {
   const car = encodeURIComponent(String(carId || '').trim());
   const feat = encodeURIComponent(String(feature || '').trim());
@@ -85,14 +95,17 @@ export async function fetchDockerLogs(carId, feature, role, tail = 60) {
 
 function buildDeployTargetBody(target) {
   if (!target || typeof target !== 'object') return undefined;
+  const vehicle_ids = (Array.isArray(target.vehicle_ids)
+    ? target.vehicle_ids
+    : []
+  )
+    .map((id) => String(id || '').trim())
+    .filter(Boolean);
+  if (vehicle_ids.length) return { vehicle_ids };
   const region = String(target.region || '')
     .trim()
     .toUpperCase();
   if (region) return { region };
-  const vehicle_ids = (Array.isArray(target.vehicle_ids) ? target.vehicle_ids : [])
-    .map((id) => String(id || '').trim())
-    .filter(Boolean);
-  if (vehicle_ids.length) return { vehicle_ids };
   return undefined;
 }
 

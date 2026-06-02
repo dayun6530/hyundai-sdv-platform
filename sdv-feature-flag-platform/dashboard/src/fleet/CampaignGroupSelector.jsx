@@ -1,59 +1,79 @@
-import { FLEET_REGIONS, carsInRegion } from './campaignDeployTargets.js';
+import {
+  FLEET_REGIONS,
+  carsInRegion,
+  resolveDeploymentCarIds,
+} from './campaignDeployTargets.js';
 
 export default function CampaignGroupSelector({
-  selectedRegion,
-  onSelectRegion,
+  selectedRegions,
+  onToggleRegion,
   vehicles,
   disabled,
   vehiclesDisabled,
+  selectedModels,
+  noCampaignSelected,
 }) {
-  const regionCars = selectedRegion ? carsInRegion(vehicles, selectedRegion) : [];
+  const previewIds = resolveDeploymentCarIds({
+    vehicles,
+    regions: selectedRegions,
+    models: selectedModels,
+  });
 
   return (
-    <div className="card campaign-target-card campaign-group-card">
-      <div className="campaign-target-head">
-        <h3>Deployment group</h3>
-        <p className="tiny subtle">
-          Deploy to every vehicle in the region (from fleet registry). Click the
-          same region again to deselect. Cleared when you pick individual
-          vehicles above.
+    <div
+      className={`card campaign-target-card campaign-group-card campaign-filter-card${noCampaignSelected ? ' campaign-target-card-muted campaign-deploy-section-inactive' : ''}`}
+      aria-disabled={noCampaignSelected || undefined}
+    >
+      <div className="campaign-target-head campaign-filter-card-head">
+        <h3>Deployment region</h3>
+        <p className="tiny subtle campaign-filter-card-desc">
+          Toggle KR / US / EU (multi-select); combines with model filter.
         </p>
       </div>
       <div
         className="campaign-target-grid"
         role="group"
-        aria-label="Deployment group region"
+        aria-label="Deployment region"
       >
         {FLEET_REGIONS.map((region) => {
-          const active = selectedRegion === region;
+          const active = selectedRegions.includes(region);
           const count = carsInRegion(vehicles, region).length;
           return (
             <button
               key={region}
               type="button"
               className={`campaign-target-chip campaign-group-chip${active ? ' campaign-target-chip-active' : ''}`}
-              disabled={disabled || vehiclesDisabled}
+              disabled={disabled || vehiclesDisabled || noCampaignSelected}
               aria-pressed={active}
-              onClick={() => onSelectRegion(region)}
+              onClick={() => onToggleRegion(region)}
             >
               {region}
-              {active && count ? ` (${count})` : ''}
+              {count ? ` (${count})` : ''}
             </button>
           );
         })}
       </div>
-      {selectedRegion ? (
-        <p className="tiny subtle">
-          Region <span className="mono">{selectedRegion}</span> →{' '}
-          <span className="mono">{regionCars.join(', ') || '—'}</span>
-        </p>
-      ) : (
-        <p className="tiny campaign-target-hint-warn">
-          {vehiclesDisabled
-            ? 'Individual vehicles selected — region group is disabled.'
-            : 'Optional: select KR, US, or EU for a regional rollout.'}
-        </p>
-      )}
+      <div className="campaign-filter-card-foot">
+        {selectedRegions.length ? (
+          <p className="tiny subtle campaign-filter-card-status">
+            <span className="mono">{selectedRegions.join(', ')}</span>
+            {previewIds.length ? (
+              <>
+                {' '}
+                → <span className="mono">{previewIds.join(', ')}</span>
+              </>
+            ) : null}
+          </p>
+        ) : (
+          <p className="tiny campaign-target-hint-warn campaign-filter-card-status">
+            {noCampaignSelected
+              ? 'Select a campaign row above to filter by region.'
+              : vehiclesDisabled
+                ? 'Disabled — individual vehicles or deployment group selected.'
+                : 'Optional: KR, US, EU.'}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

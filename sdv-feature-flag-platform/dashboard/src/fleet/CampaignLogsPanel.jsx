@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchDockerLogs, fetchFleetHistoryLogs } from "../api/campaigns.js";
-import { formatDockerRuntimeSummary, runStatusClass } from "./campaignUiModel.js";
+import { formatDockerLogDisplay } from "./dockerLogFormat.js";
+import { runStatusClass } from "./campaignUiModel.js";
 import { RawJsonDetails, StatusBadge } from "./campaignShared.jsx";
 
 const LOG_TABS = [
   { id: "primary", label: "Primary Logs", hint: "replaces: docker logs car_1_agent_adas" },
   { id: "candidate", label: "Candidate Logs", hint: "replaces: docker logs car_1_agent_adas_shadow" },
   { id: "fleet-history", label: "Fleet History", hint: "replaces: tail deploy/history/fleet_history.jsonl" },
-  { id: "run-json", label: "Campaign Run JSON", hint: "replaces: cat deploy/campaign_runs/run_*.json" },
 ];
 
 const DEFAULT_TAIL = 60;
@@ -46,6 +46,8 @@ function DockerLogsView({ data, loading, role }) {
         <dd className="mono">{lineCount}</dd>
         <dt>Tail</dt>
         <dd className="mono">{data.tail ?? DEFAULT_TAIL}</dd>
+        <dt>Timestamps</dt>
+        <dd className="tiny">{data.timestamps ? "docker (local time)" : "—"}</dd>
       </dl>
       <pre className="campaign-log-box mono tiny">{data.text || "(empty)"}</pre>
     </div>
@@ -114,86 +116,9 @@ function FleetHistoryView({ data, loading, error }) {
   );
 }
 
-function CampaignRunJsonView({ run, loading, runId }) {
-  if (!runId) {
-    return <p className="empty-state tiny">No run selected — click a row in Campaign Run History.</p>;
-  }
-  if (loading) return <p className="tiny subtle">Loading run detail…</p>;
-  if (!run) return <p className="tiny subtle">Run detail not available.</p>;
-
-  const agg = run.aggregate || {};
-  const dr = run.docker_runtime || {};
-  const firstPv = Array.isArray(run.per_vehicle) ? run.per_vehicle[0] : null;
-
-  return (
-    <div>
-      <div className="vd-badge-row" style={{ marginBottom: 10 }}>
-        <StatusBadge text={run.phase || "?"} className="status-blue" />
-        <StatusBadge text={run.status || "?"} className={runStatusClass(run.status)} />
-        {dr.mode ? <StatusBadge text={dr.mode} className="status-blue" /> : null}
-        {firstPv?.docker_runtime_result ? (
-          <StatusBadge
-            text={`docker ${firstPv.docker_runtime_result}`}
-            className={runStatusClass(firstPv.docker_runtime_result)}
-          />
-        ) : null}
-      </div>
-      <dl className="campaign-kv campaign-kv-wide">
-        <dt>Run ID</dt>
-        <dd className="mono tiny">{run.run_id}</dd>
-        <dt>Aggregate</dt>
-        <dd className="mono">
-          {agg.success ?? 0} ok / {agg.failed ?? 0} failed / {agg.total ?? 0} total
-        </dd>
-        <dt>Docker image</dt>
-        <dd className="mono tiny">{dr.image || firstPv?.docker_runtime_image || "—"}</dd>
-        <dt>Docker runtime</dt>
-        <dd className="tiny">{formatDockerRuntimeSummary(dr)}</dd>
-      </dl>
-      {Array.isArray(run.per_vehicle) && run.per_vehicle.length ? (
-        <div className="table-wrap" style={{ marginTop: 8 }}>
-          <table className="campaign-runs-table">
-            <thead>
-              <tr>
-                <th>Vehicle</th>
-                <th>Result</th>
-                <th>Mode</th>
-                <th>Docker</th>
-                <th>Image</th>
-              </tr>
-            </thead>
-            <tbody>
-              {run.per_vehicle.map((pv) => (
-                <tr key={pv.car_id}>
-                  <td className="mono">{pv.car_id}</td>
-                  <td>
-                    <StatusBadge text={pv.result || "—"} className={runStatusClass(pv.result)} />
-                  </td>
-                  <td className="tiny mono">{pv.docker_runtime_mode || "—"}</td>
-                  <td>
-                    <StatusBadge
-                      text={pv.docker_runtime_result || "—"}
-                      className={runStatusClass(pv.docker_runtime_result)}
-                    />
-                  </td>
-                  <td className="mono tiny">{pv.docker_runtime_image || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      <RawJsonDetails label="Raw run JSON" data={run} />
-    </div>
-  );
-}
-
 export default function CampaignLogsPanel({
   carId,
   feature,
-  selectedRunId,
-  selectedRun,
-  runDetailLoading,
   refreshToken = 0,
   preferredTab = "",
   onPreferredTabApplied,
@@ -211,7 +136,7 @@ export default function CampaignLogsPanel({
     setError("");
     const res = await fetchDockerLogs(carId, feature, "primary", DEFAULT_TAIL);
     if (!res.ok) setError(res.error || "Failed to load primary logs");
-    else setPrimaryLogs(res);
+    else setPrimaryLogs(formatDockerLogDisplay(res));
     setLoading(false);
   }, [carId, feature]);
 
@@ -221,7 +146,7 @@ export default function CampaignLogsPanel({
     setError("");
     const res = await fetchDockerLogs(carId, feature, "candidate", DEFAULT_TAIL);
     if (!res.ok) setError(res.error || "Failed to load candidate logs");
-    else setCandidateLogs(res);
+    else setCandidateLogs(formatDockerLogDisplay(res));
     setLoading(false);
   }, [carId, feature]);
 
@@ -251,9 +176,9 @@ export default function CampaignLogsPanel({
       fetchFleetHistoryLogs({ limit: 20, car_id: carId, feature }),
     ]);
     if (!pRes.ok) setError(pRes.error || "Failed to load primary logs");
-    else setPrimaryLogs(pRes);
+    else setPrimaryLogs(formatDockerLogDisplay(pRes));
     if (!cRes.ok && !pRes.ok) setError(cRes.error || "Failed to load candidate logs");
-    else if (cRes.ok) setCandidateLogs(cRes);
+    else if (cRes.ok) setCandidateLogs(formatDockerLogDisplay(cRes));
     if (fRes.ok) setFleetHistory(fRes);
     setLoading(false);
   }, [carId, feature]);
@@ -287,7 +212,9 @@ export default function CampaignLogsPanel({
     return (
       <div className="card campaign-logs-card">
         <h3>Campaign Logs</h3>
-        <p className="tiny subtle">Select a single-vehicle campaign to view primary / candidate logs and history.</p>
+        <p className="tiny subtle">
+          Select a vehicle above to view primary / candidate logs and history.
+        </p>
       </div>
     );
   }
@@ -298,14 +225,12 @@ export default function CampaignLogsPanel({
         <div>
           <h3>Campaign Logs</h3>
           <p className="tiny subtle">
-            {carId} · {feature} — tail {DEFAULT_TAIL} lines (read-only)
+            {carId} · {feature} — tail {DEFAULT_TAIL} lines, newest first (read-only)
           </p>
         </div>
-        {activeTab !== "run-json" ? (
-          <button type="button" className="btn" onClick={refreshActive} disabled={loading}>
-            {loading ? "Refreshing…" : "Refresh logs"}
-          </button>
-        ) : null}
+        <button type="button" className="btn" onClick={refreshActive} disabled={loading}>
+          {loading ? "Refreshing…" : "Refresh logs"}
+        </button>
       </div>
 
       <div className="campaign-log-tabs">
@@ -322,7 +247,7 @@ export default function CampaignLogsPanel({
         ))}
       </div>
 
-      {error && activeTab !== "run-json" ? (
+      {error ? (
         <div className="campaign-logs-alert campaign-logs-alert-error" style={{ marginTop: 10 }}>
           {error}
         </div>
@@ -337,9 +262,6 @@ export default function CampaignLogsPanel({
         ) : null}
         {activeTab === "fleet-history" ? (
           <FleetHistoryView data={fleetHistory} loading={loading} error={error} />
-        ) : null}
-        {activeTab === "run-json" ? (
-          <CampaignRunJsonView run={selectedRun} loading={runDetailLoading} runId={selectedRunId} />
         ) : null}
       </div>
     </div>

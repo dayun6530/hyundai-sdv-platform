@@ -50,7 +50,7 @@ function actionHintValidate({
   if (fail > 0) {
     const detail = firstValidateFailMessage(validateResult);
     if (/version_map/i.test(detail)) {
-      return `FAIL: ${detail} — select campaign_adas_v6.0_car3_canary (car_3) or align deploy/version_map.json slot B to target_version.`;
+      return `FAIL: ${detail} — re-select the campaign (auto-syncs version_map) or align deploy/version_map.json slot B manually.`;
     }
     return detail ? `FAIL: ${detail}` : 'Fix FAIL items before Run Candidate.';
   }
@@ -132,6 +132,7 @@ function actionHintDrop({
 
 export default function CampaignActionBar({
   selectedCampaignId,
+  actionsEnabled,
   onValidate,
   validateLoading,
   onRunCandidate,
@@ -153,9 +154,11 @@ export default function CampaignActionBar({
   imageAvailable,
   candidateStagedInRuntime,
 }) {
+  const enabled =
+    actionsEnabled !== undefined ? actionsEnabled : Boolean(selectedCampaignId);
   const imageOk = imageAvailable !== false;
   const runDisabled =
-    !selectedCampaignId ||
+    !enabled ||
     !deploymentHasTarget ||
     !canRunCandidate ||
     !imageOk ||
@@ -168,7 +171,7 @@ export default function CampaignActionBar({
     canRunCandidate,
   });
   const promoteDisabled =
-    !selectedCampaignId ||
+    !enabled ||
     !deploymentHasTarget ||
     !canPromote ||
     !imageOk ||
@@ -176,7 +179,7 @@ export default function CampaignActionBar({
     runCandidateLoading ||
     dropCandidateLoading;
   const dropDisabled =
-    !selectedCampaignId ||
+    !enabled ||
     !deploymentHasTarget ||
     !canDropCandidate ||
     promoteLoading ||
@@ -199,7 +202,7 @@ export default function CampaignActionBar({
             type="button"
             className="btn btn-primary"
             disabled={
-              !selectedCampaignId ||
+              !enabled ||
               !deploymentHasTarget ||
               validateLoading ||
               promoteLoading ||
@@ -287,10 +290,8 @@ export default function CampaignActionBar({
       </div>
       {updateModeWarnings?.length ? (
         <div className="campaign-logs-alert campaign-logs-alert-muted tiny campaign-action-ota-warn">
-          OTA: {updateModeWarnings.join(' · ')} — use{' '}
-          <strong>Prepare Demo READY</strong> above, then click{' '}
-          <strong>Validate</strong> (warnings only; they do not block Run
-          Candidate when fail=0).
+          OTA: {updateModeWarnings.join(' · ')} — Validate / Run Candidate /
+          Promote apply Prepare Demo READY automatically before each step.
         </div>
       ) : null}
     </div>

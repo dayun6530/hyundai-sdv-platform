@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "features": {
+    "ADAS": {
+      "A": {
+        "version": "v0.1",
+        "role": "stable",
+        "binary": "AdasFeature"
+      },
+      "B": {
+        "version": "v7.7",
+        "role": "candidate",
+        "binary": "AdasFeature",
+        "package_id": "ADAS_v7.7",
+        "package_path": "deploy/packages/ADAS/v7.7"
+      }
+    },
+    "Navigation": {
+      "A": {
+        "version": "v1.0",
+        "role": "stable",
+        "binary": "NavigationFeature"
+      },
+      "B": {
+        "version": "v7.7",
+        "role": "candidate",
+        "binary": "NavigationFeature",
+        "package_id": "Navigation_v7.7",
+        "package_path": "deploy/packages/Navigation/v7.7"
+      }
+    },
+    "Energy": {
+      "A": {
+        "version": "v0.5",
+        "role": "stable",
+        "binary": "EvEnergyFeature"
+      },
+      "B": {
+        "version": "v0.6",
+        "role": "candidate",
+        "binary": "EvEnergyFeature"
+      }
+    }
+  }
+}

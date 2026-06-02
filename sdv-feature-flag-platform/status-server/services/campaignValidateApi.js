@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
+const {
+  registerCampaignVersionMapSyncRoutes,
+} = require('./campaignVersionMapSync');
+
 const SAFE_ID_RE = /^[a-zA-Z0-9._-]+$/;
 const VALIDATE_TIMEOUT_MS = 90_000;
 
@@ -179,6 +183,12 @@ function registerCampaignValidateRoutes(app, deps) {
         items: [{ level: 'FAIL', message: err.message || String(err) }],
       });
     }
+  });
+
+  registerCampaignVersionMapSyncRoutes(app, {
+    DEPLOY_ROOT,
+    findCampaignByCampaignId,
+    validateId,
   });
 }
 

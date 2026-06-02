@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applyPendingNativeForCars,
   fetchCampaignDetail,
@@ -11,6 +11,7 @@ import {
   fetchVehicleRuntimeSummary,
   prepareAllTargetsDemoReady,
   runCampaignPhase,
+  syncCampaignVersionMap,
   validateCampaign,
 } from '../api/campaigns.js';
 import { fetchFleetVehicles } from '../api/fleet.js';
@@ -24,7 +25,6 @@ import {
   formatDockerRuntimeSummary,
   formatPolicyFlow,
   formatTargetSelector,
-  inferSingleVehicleId,
   isPrimaryPromotedRow,
   latestRunLabel,
   runStatusClass,
@@ -35,13 +35,29 @@ import {
 import { RawJsonDetails, StatusBadge } from './campaignShared.jsx';
 import CampaignActionBar from './CampaignActionBar.jsx';
 import CampaignGroupSelector from './CampaignGroupSelector.jsx';
+import CampaignModelSelector from './CampaignModelSelector.jsx';
+import CampaignRolloutGroupSelector from './CampaignRolloutGroupSelector.jsx';
+import CampaignPercentDeployCard from './CampaignPercentDeployCard.jsx';
 import CampaignTargetSelector from './CampaignTargetSelector.jsx';
 import {
+  aggregateValidateResults,
+  allocateCarsByPercent,
+  buildPercentDeployKey,
+  defaultPercentRows,
+  enrichPercentRows,
+  isPercentConfigValid,
+} from './campaignPercentDeploy.js';
+import {
   ALL_CAR_IDS,
+  FLEET_MODELS,
+  FLEET_REGIONS,
+  FLEET_ROLLOUT_GROUPS,
   allCarsSelected,
   buildRuntimeTargetBody,
-  carsInRegion,
+  computeRolloutGroupProgress,
   formatDeployTargetLabel,
+  nextRolloutGroupAfter,
+  resolveDeploymentCarIds,
   sortCarIds,
 } from './campaignDeployTargets.js';
 import CampaignDemoFlow from './CampaignDemoFlow.jsx';
@@ -50,8 +66,183 @@ import CampaignLogsPanel from './CampaignLogsPanel.jsx';
 import CampaignExecutionResultPanel from './CampaignExecutionResultPanel.jsx';
 import CampaignSelectedHeader from './CampaignSelectedHeader.jsx';
 import CampaignValidateResultPanel from './CampaignValidateResultPanel.jsx';
-import VehicleSafetyPreconditionsCard from './VehicleSafetyPreconditionsCard.jsx';
 import { isRunSuccess } from './campaignUiModel.js';
+
+function percentCandidateAsRunResult(percentRunCandidateResult) {
+  if (!percentRunCandidateResult) return null;
+  return {
+    ok: percentRunCandidateResult.ok,
+    status: percentRunCandidateResult.ok ? 'SUCCESS' : 'FAIL',
+    phase: 'candidate',
+    items: (percentRunCandidateResult.segments || []).flatMap((s) =>
+      (s.res?.items || []).map((item) => ({
+        ...item,
+        message: `[${s.feature} ${s.version}] ${item.message || ''}`,
+      })),
+    ),
+  };
+}
+
+function percentPromoteAsRunResult(percentPromoteResult) {
+  if (!percentPromoteResult) return null;
+  return {
+    ok: percentPromoteResult.ok,
+    status: percentPromoteResult.ok ? 'SUCCESS' : 'FAIL',
+    phase: 'promote',
+    items: (percentPromoteResult.segments || []).map((s) => ({
+      level: s.res?.ok ? 'OK' : 'FAIL',
+      message: `${s.feature} ${s.version} → ${(s.carIds || []).join(', ')}`,
+    })),
+  };
+}
+
+const RUNS_PAGE_SIZE = 10;
+
+function CampaignRunHistoryTable({
+  runs,
+  runsLoading,
+  runsError,
+  selectedRunId,
+  onSelectRunId,
+  onRefresh,
+  selectedRun,
+  runDetailLoading,
+  onCloseRunDetail,
+  runsPage,
+  onRunsPageChange,
+}) {
+  const totalRuns = runs?.length || 0;
+  const totalPages = Math.max(1, Math.ceil(totalRuns / RUNS_PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, runsPage), totalPages);
+  const pageStart = (safePage - 1) * RUNS_PAGE_SIZE;
+  const paginatedRuns = (runs || []).slice(
+    pageStart,
+    pageStart + RUNS_PAGE_SIZE,
+  );
+
+  return (
+    <div className="card campaign-runs-card">
+      <div className="card-header">
+        <h3>Campaign Run History</h3>
+        <button
+          type="button"
+          className="btn"
+          onClick={onRefresh}
+          disabled={runsLoading}
+        >
+          Refresh runs
+        </button>
+      </div>
+      {runsError ? <p className="text-error tiny">{runsError}</p> : null}
+      {runsLoading ? <p className="tiny subtle">Loading runs…</p> : null}
+      {totalRuns > RUNS_PAGE_SIZE ? (
+        <p className="tiny subtle campaign-runs-page-summary">
+          Showing {pageStart + 1}–{Math.min(pageStart + RUNS_PAGE_SIZE, totalRuns)}{' '}
+          of {totalRuns} runs
+        </p>
+      ) : null}
+      <div className="table-wrap">
+        <table className="campaign-runs-table">
+          <thead>
+            <tr>
+              <th>Run</th>
+              <th>Phase</th>
+              <th>Status</th>
+              <th>Started</th>
+              <th>Finished</th>
+              <th>Targets</th>
+              <th>OK / Fail</th>
+              <th>Docker</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!totalRuns && !runsLoading ? (
+              <tr>
+                <td colSpan={8} className="tiny subtle">
+                  No runs recorded.
+                </td>
+              </tr>
+            ) : null}
+            {paginatedRuns.map((run) => {
+              const agg = run.aggregate || {};
+              const selected = run.run_id === selectedRunId;
+              return (
+                <tr
+                  key={run.run_id}
+                  className={
+                    selected
+                      ? 'campaign-row-selected'
+                      : 'campaign-row-clickable'
+                  }
+                  onClick={() =>
+                    onSelectRunId(selected ? '' : run.run_id)
+                  }
+                >
+                  <td className="mono tiny">
+                    {truncateMiddle(run.run_id, 32)}
+                  </td>
+                  <td>
+                    <StatusBadge text={run.phase} className="status-blue" />
+                  </td>
+                  <td>
+                    <StatusBadge
+                      text={run.status}
+                      className={runStatusClass(run.status)}
+                    />
+                  </td>
+                  <td className="tiny mono">{run.started_at || '—'}</td>
+                  <td className="tiny mono">{run.finished_at || '—'}</td>
+                  <td className="tiny">
+                    {(run.resolved_targets || []).join(', ')}
+                  </td>
+                  <td className="tiny mono">
+                    {agg.success ?? 0}/{agg.failed ?? 0}
+                  </td>
+                  <td
+                    className="tiny"
+                    title={run.docker_runtime?.image || ''}
+                  >
+                    {formatDockerRuntimeSummary(run.docker_runtime)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 ? (
+        <div className="campaign-runs-pagination">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={safePage <= 1 || runsLoading}
+            onClick={() => onRunsPageChange(safePage - 1)}
+          >
+            Previous
+          </button>
+          <span className="tiny subtle campaign-runs-page-indicator">
+            Page {safePage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={safePage >= totalPages || runsLoading}
+            onClick={() => onRunsPageChange(safePage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
+      {selectedRunId ? (
+        <RunDetailDrawer
+          run={selectedRun}
+          loading={runDetailLoading}
+          onClose={onCloseRunDetail}
+        />
+      ) : null}
+    </div>
+  );
+}
 
 function PolicyStagesStepper({ policy }) {
   const stages = policy?.stages;
@@ -112,74 +303,120 @@ function PolicyStagesStepper({ policy }) {
 
 function RuntimeSummaryCard({
   carId,
+  carOptions,
+  onSelectCarId,
   feature,
   summary,
   loading,
   error,
   preconditionWarnings,
 }) {
-  if (!carId) {
-    return (
-      <div className="card campaign-runtime-card">
-        <h3>Vehicle Runtime Summary</h3>
-        <p className="tiny subtle">
-          Select a single-vehicle campaign to show primary / candidate runtime.
-        </p>
-      </div>
-    );
-  }
-  if (loading) {
-    return (
-      <div className="card campaign-runtime-card">
-        <h3>Vehicle Runtime — {carId}</h3>
-        <p className="tiny subtle">Loading runtime summary…</p>
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="card campaign-runtime-card">
-        <h3>Vehicle Runtime — {carId}</h3>
-        <p className="text-error tiny">{error}</p>
-      </div>
-    );
-  }
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef(null);
+
+  useEffect(() => {
+    if (!pickerOpen) return undefined;
+    const onDoc = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [pickerOpen]);
 
   const f = summary?.features?.[feature] || summary?.features?.ADAS || {};
   const candidateEnabled = Boolean(f.shadow_enabled);
   const dockerOk =
     String(f.docker_runtime_result || '').toLowerCase() === 'success';
   const configSynced = versionsMatch(f.primary_version, f.config_version);
+  const showRuntimeBody = Boolean(carId && !loading && !error && summary);
 
   return (
     <div className="card campaign-runtime-card">
       <div className="card-header campaign-runtime-head">
         <div>
-          <h3>Vehicle Runtime — {carId}</h3>
+          <h3 className="campaign-runtime-title">
+            Vehicle Runtime —{' '}
+            <span className="campaign-runtime-car-picker" ref={pickerRef}>
+              <button
+                type="button"
+                className={`campaign-runtime-car-select-btn${pickerOpen ? ' campaign-runtime-car-select-btn-open' : ''}${carId ? ' campaign-runtime-car-select-btn-filled' : ''}`}
+                aria-expanded={pickerOpen}
+                onClick={() => setPickerOpen((v) => !v)}
+              >
+                {carId || 'SELECT CAR'}
+                <span
+                  className="campaign-runtime-car-select-caret"
+                  aria-hidden
+                >
+                  ▾
+                </span>
+              </button>
+              {pickerOpen ? (
+                <ul
+                  className="campaign-runtime-car-select-menu"
+                  role="listbox"
+                >
+                  <li>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={!carId}
+                      className={`campaign-runtime-car-select-item campaign-runtime-car-select-item-reset${!carId ? ' campaign-runtime-car-select-item-active' : ''}`}
+                      onClick={() => {
+                        onSelectCarId('');
+                        setPickerOpen(false);
+                      }}
+                    >
+                      SELECT CAR
+                    </button>
+                  </li>
+                  {carOptions.map((id) => (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={carId === id}
+                        className={`campaign-runtime-car-select-item campaign-runtime-car-select-item-car${carId === id ? ' campaign-runtime-car-select-item-active' : ''}`}
+                        onClick={() => {
+                          onSelectCarId(id);
+                          setPickerOpen(false);
+                        }}
+                      >
+                        {id}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </span>
+          </h3>
           <p className="tiny subtle">
-            Primary / candidate lanes from deploy state, vehicle runtime, and
-            config.
+            {carId
+              ? 'Primary / candidate lanes from deploy state, vehicle runtime, and config.'
+              : 'Choose a vehicle to view primary / candidate runtime.'}
           </p>
         </div>
-        {dockerOk ? (
+        {showRuntimeBody && dockerOk ? (
           <StatusBadge text="docker OK" className="status-green" />
         ) : null}
-        {f.primary_version ? (
+        {showRuntimeBody && f.primary_version ? (
           <StatusBadge
             text={`primary ${f.primary_version}`}
             className="status-green"
           />
         ) : null}
-        {configSynced ? (
+        {showRuntimeBody && configSynced ? (
           <StatusBadge text="Config synced" className="status-green" />
         ) : null}
-        {!candidateEnabled ? (
+        {showRuntimeBody && !candidateEnabled ? (
           <StatusBadge text="Candidate inactive" className="status-gray" />
         ) : null}
-        {candidateEnabled ? (
+        {showRuntimeBody && candidateEnabled ? (
           <StatusBadge text="Candidate active" className="status-blue" />
         ) : null}
-        {f.last_action ? (
+        {showRuntimeBody && f.last_action ? (
           <StatusBadge
             text={`Last action ${f.last_action}`}
             className="status-blue"
@@ -190,7 +427,13 @@ function RuntimeSummaryCard({
         ) : null}
       </div>
 
-      {preconditionWarnings?.length ? (
+      {!carId ? null : loading ? (
+        <p className="tiny subtle">Loading runtime summary…</p>
+      ) : error ? (
+        <p className="text-error tiny">{error}</p>
+      ) : null}
+
+      {showRuntimeBody && preconditionWarnings?.length ? (
         <ul className="warning-list tiny" style={{ marginTop: 10 }}>
           {preconditionWarnings.map((w) => (
             <li key={w}>{w}</li>
@@ -198,87 +441,110 @@ function RuntimeSummaryCard({
         </ul>
       ) : null}
 
-      <div className="campaign-runtime-grid">
-        <div className="campaign-lane-card campaign-lane-primary">
-          <div className="campaign-lane-title">Primary</div>
-          <dl className="campaign-kv">
-            <dt>Version</dt>
-            <dd className="mono">{f.primary_version || '—'}</dd>
-            <dt>Image</dt>
-            <dd className="mono tiny" title={f.primary_image || ''}>
-              {truncateMiddle(f.primary_image, 48) || '—'}
-            </dd>
-            <dt>Container</dt>
-            <dd className="mono tiny">{f.primary_container || '—'}</dd>
-          </dl>
-        </div>
-        <div className="campaign-lane-card campaign-lane-candidate">
-          <div className="campaign-lane-title">Candidate</div>
-          <dl className="campaign-kv">
-            <dt>Candidate</dt>
+      {showRuntimeBody ? (
+        <>
+          <div className="campaign-runtime-grid">
+            <div className="campaign-lane-card campaign-lane-primary">
+              <div className="campaign-lane-title">Primary</div>
+              <dl className="campaign-kv">
+                <dt>Version</dt>
+                <dd className="mono">{f.primary_version || '—'}</dd>
+                <dt>Image</dt>
+                <dd className="mono tiny" title={f.primary_image || ''}>
+                  {truncateMiddle(f.primary_image, 48) || '—'}
+                </dd>
+                <dt>Container</dt>
+                <dd className="mono tiny">{f.primary_container || '—'}</dd>
+              </dl>
+            </div>
+            <div className="campaign-lane-card campaign-lane-candidate">
+              <div className="campaign-lane-title">Candidate</div>
+              <dl className="campaign-kv">
+                <dt>Candidate</dt>
+                <dd>
+                  {candidateEnabled ? (
+                    <StatusBadge text="enabled" className="status-blue" />
+                  ) : (
+                    <StatusBadge text="inactive" className="status-gray" />
+                  )}
+                </dd>
+                <dt>Version</dt>
+                <dd className="mono">{f.candidate_version || '—'}</dd>
+                <dt>Image</dt>
+                <dd className="mono tiny" title={f.candidate_image || ''}>
+                  {truncateMiddle(f.candidate_image, 48) || '—'}
+                </dd>
+                <dt>Container</dt>
+                <dd className="mono tiny">{f.candidate_container || '—'}</dd>
+              </dl>
+            </div>
+          </div>
+
+          <h4 className="campaign-runtime-subhead">Runtime</h4>
+          <dl className="campaign-kv campaign-kv-wide">
+            <dt>Last action</dt>
+            <dd className="mono">{f.last_action || '—'}</dd>
+            <dt>Docker result</dt>
             <dd>
-              {candidateEnabled ? (
-                <StatusBadge text="enabled" className="status-blue" />
+              {f.docker_runtime_result ? (
+                <StatusBadge
+                  text={f.docker_runtime_result}
+                  className={runStatusClass(f.docker_runtime_result)}
+                />
               ) : (
-                <StatusBadge text="inactive" className="status-gray" />
+                '—'
               )}
             </dd>
-            <dt>Version</dt>
-            <dd className="mono">{f.candidate_version || '—'}</dd>
-            <dt>Image</dt>
-            <dd className="mono tiny" title={f.candidate_image || ''}>
-              {truncateMiddle(f.candidate_image, 48) || '—'}
-            </dd>
-            <dt>Container</dt>
-            <dd className="mono tiny">{f.candidate_container || '—'}</dd>
+            <dt>Docker mode</dt>
+            <dd className="mono">{f.docker_runtime_mode || '—'}</dd>
+            <dt>Docker action</dt>
+            <dd className="mono">{f.docker_runtime_action || '—'}</dd>
           </dl>
-        </div>
-      </div>
 
-      <h4 className="campaign-runtime-subhead">Runtime</h4>
-      <dl className="campaign-kv campaign-kv-wide">
-        <dt>Last action</dt>
-        <dd className="mono">{f.last_action || '—'}</dd>
-        <dt>Docker result</dt>
-        <dd>
-          {f.docker_runtime_result ? (
-            <StatusBadge
-              text={f.docker_runtime_result}
-              className={runStatusClass(f.docker_runtime_result)}
-            />
-          ) : (
-            '—'
-          )}
-        </dd>
-        <dt>Docker mode</dt>
-        <dd className="mono">{f.docker_runtime_mode || '—'}</dd>
-        <dt>Docker action</dt>
-        <dd className="mono">{f.docker_runtime_action || '—'}</dd>
-      </dl>
+          <h4 className="campaign-runtime-subhead">Config</h4>
+          <dl className="campaign-kv campaign-kv-wide">
+            <dt>Config version</dt>
+            <dd className="mono">{f.config_version || '—'}</dd>
+            <dt>Config image</dt>
+            <dd className="mono tiny" title={f.config_image || ''}>
+              {truncateMiddle(f.config_image, 48) || '—'}
+            </dd>
+          </dl>
 
-      <h4 className="campaign-runtime-subhead">Config</h4>
-      <dl className="campaign-kv campaign-kv-wide">
-        <dt>Config version</dt>
-        <dd className="mono">{f.config_version || '—'}</dd>
-        <dt>Config image</dt>
-        <dd className="mono tiny" title={f.config_image || ''}>
-          {truncateMiddle(f.config_image, 48) || '—'}
-        </dd>
-      </dl>
-
-      {summary?.warnings?.length ? (
-        <ul className="warning-list tiny" style={{ marginTop: 10 }}>
-          {summary.warnings.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
+          {summary?.warnings?.length ? (
+            <ul className="warning-list tiny" style={{ marginTop: 10 }}>
+              {summary.warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          ) : null}
+        </>
       ) : null}
     </div>
   );
 }
 
-function RunDetailDrawer({ run, loading }) {
-  if (loading) return <p className="tiny subtle">Loading run detail…</p>;
+function RunDetailDrawer({ run, loading, onClose }) {
+  if (loading) {
+    return (
+      <div className="campaign-run-detail">
+        <div className="campaign-run-detail-head">
+          <p className="tiny subtle" style={{ margin: 0 }}>
+            Loading run detail…
+          </p>
+          {onClose ? (
+            <button
+              type="button"
+              className="btn btn-secondary campaign-run-detail-close"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
   if (!run) return null;
   const agg = run.aggregate || {};
   return (
@@ -290,6 +556,16 @@ function RunDetailDrawer({ run, loading }) {
           text={run.status || '?'}
           className={runStatusClass(run.status)}
         />
+        {onClose ? (
+          <button
+            type="button"
+            className="btn btn-secondary campaign-run-detail-close"
+            onClick={onClose}
+            aria-label="Close run detail"
+          >
+            Close
+          </button>
+        ) : null}
       </div>
       <dl className="campaign-kv campaign-kv-wide">
         <dt>Targets</dt>
@@ -357,15 +633,12 @@ function RunDetailDrawer({ run, loading }) {
           </ul>
         </div>
       ) : null}
-      <p className="tiny subtle" style={{ marginTop: 8 }}>
-        Full JSON: open the <strong>Campaign Run JSON</strong> tab in Campaign
-        Logs below.
-      </p>
+      <RawJsonDetails label="Raw run JSON" data={run} />
     </div>
   );
 }
 
-export default function CampaignManagementPanel() {
+export default function CampaignManagementPanel({ onVersionMapChanged }) {
   const [campaigns, setCampaigns] = useState([]);
   const [latestByCampaign, setLatestByCampaign] = useState(new Map());
   const [policyFlowById, setPolicyFlowById] = useState(new Map());
@@ -384,7 +657,9 @@ export default function CampaignManagementPanel() {
   const [selectedRunId, setSelectedRunId] = useState('');
   const [selectedRun, setSelectedRun] = useState(null);
   const [runDetailLoading, setRunDetailLoading] = useState(false);
+  const [runsPage, setRunsPage] = useState(1);
 
+  const [runtimeViewCarId, setRuntimeViewCarId] = useState('');
   const [runtimeSummary, setRuntimeSummary] = useState(null);
   const [runtimeLoading, setRuntimeLoading] = useState(false);
   const [runtimeError, setRuntimeError] = useState('');
@@ -408,8 +683,19 @@ export default function CampaignManagementPanel() {
   const [logsRefreshToken, setLogsRefreshToken] = useState(0);
   const [preferredLogsTab, setPreferredLogsTab] = useState('');
   const [deploymentCarIds, setDeploymentCarIds] = useState([]);
-  const [deploymentRegion, setDeploymentRegion] = useState('');
+  const [deploymentRegions, setDeploymentRegions] = useState([]);
+  const [deploymentModels, setDeploymentModels] = useState([]);
+  const [deploymentGroup, setDeploymentGroup] = useState('');
+  const [percentRows, setPercentRows] = useState(() => defaultPercentRows());
+  const [percentShuffleSeed, setPercentShuffleSeed] = useState(() => Date.now());
+  const [percentValidateCache, setPercentValidateCache] = useState(null);
+  const [percentCandidateComplete, setPercentCandidateComplete] = useState(false);
+  const [percentRunCandidateResult, setPercentRunCandidateResult] = useState(null);
+  const [percentPromoteResult, setPercentPromoteResult] = useState(null);
   const [fleetVehicles, setFleetVehicles] = useState([]);
+  const [versionMapSyncLoading, setVersionMapSyncLoading] = useState(false);
+  const [versionMapSyncNotice, setVersionMapSyncNotice] = useState('');
+  const [versionMapSyncError, setVersionMapSyncError] = useState('');
 
   const loadList = useCallback(async () => {
     setListLoading(true);
@@ -446,7 +732,7 @@ export default function CampaignManagementPanel() {
     setRunsError('');
     const [detRes, runsRes] = await Promise.all([
       fetchCampaignDetail(campaignId),
-      fetchCampaignRuns({ campaign_id: campaignId, limit: 10 }),
+      fetchCampaignRuns({ campaign_id: campaignId, limit: 100 }),
     ]);
     if (!detRes.ok) {
       setDetail(null);
@@ -505,20 +791,14 @@ export default function CampaignManagementPanel() {
   }, [loadList]);
 
   useEffect(() => {
-    if (selectedCampaignId || !campaigns.length) return;
-    const preferred =
-      campaigns.find((c) => c.campaign_id === 'campaign_navigation_v3.0') ||
-      campaigns.find((c) => c.campaign_id === 'campaign_adas_v7.7') ||
-      campaigns[0];
-    if (preferred?.campaign_id) setSelectedCampaignId(preferred.campaign_id);
-  }, [campaigns, selectedCampaignId]);
-
-  useEffect(() => {
     if (!selectedCampaignId) return;
     loadDetail(selectedCampaignId);
     setSelectedRunId('');
     setSelectedRun(null);
+    setRunsPage(1);
   }, [selectedCampaignId, loadDetail]);
+
+  const percentMode = !selectedCampaignId;
 
   const campaign = detail?.campaign;
   const policy = detail?.rollout_policy;
@@ -533,46 +813,220 @@ export default function CampaignManagementPanel() {
       ? true
       : Boolean(listCampaign?.image_available);
 
-  const resolvedCarIds = useMemo(() => {
-    if (deploymentRegion) {
-      return carsInRegion(fleetVehicles, deploymentRegion);
-    }
-    return sortCarIds(deploymentCarIds);
-  }, [deploymentRegion, deploymentCarIds, fleetVehicles]);
+  const rolloutGroupProgress = useMemo(
+    () =>
+      computeRolloutGroupProgress(
+        runs,
+        fleetVehicles,
+        selectedCampaignId,
+        campaign?.target_version,
+      ),
+    [runs, fleetVehicles, selectedCampaignId, campaign?.target_version],
+  );
+
+  const resolvedCarIds = useMemo(
+    () =>
+      resolveDeploymentCarIds({
+        vehicles: fleetVehicles,
+        carIds: deploymentCarIds,
+        regions: deploymentRegions,
+        models: deploymentModels,
+        group: deploymentGroup,
+      }),
+    [
+      fleetVehicles,
+      deploymentCarIds,
+      deploymentRegions,
+      deploymentModels,
+      deploymentGroup,
+    ],
+  );
 
   const deploymentTargetBody = useMemo(
     () =>
       buildRuntimeTargetBody({
+        vehicles: fleetVehicles,
         carIds: deploymentCarIds,
-        region: deploymentRegion,
+        regions: deploymentRegions,
+        models: deploymentModels,
+        group: deploymentGroup,
       }),
-    [deploymentCarIds, deploymentRegion],
+    [
+      fleetVehicles,
+      deploymentCarIds,
+      deploymentRegions,
+      deploymentModels,
+      deploymentGroup,
+    ],
   );
+
+  const deploymentFilterActive = Boolean(
+    deploymentRegions.length || deploymentModels.length,
+  );
+
+  const rolloutGroupFilterActive = Boolean(deploymentGroup);
 
   const currentDeployTargetKey = useMemo(
     () => deploymentTargetKey(deploymentTargetBody),
     [deploymentTargetBody],
   );
 
-  const deploymentHasTarget = Boolean(
-    deploymentRegion || deploymentCarIds.length,
+  const deploymentHasTarget = resolvedCarIds.length > 0;
+
+  const noCampaignSelected = !selectedCampaignId;
+
+  const effectiveResolvedCarIds = useMemo(
+    () => (percentMode ? [...ALL_CAR_IDS] : resolvedCarIds),
+    [percentMode, resolvedCarIds],
   );
+
+  const effectiveDeploymentHasTarget = percentMode
+    ? true
+    : deploymentHasTarget;
+
+  const effectiveDeployTargetKey = useMemo(() => {
+    if (percentMode) {
+      return deploymentTargetKey({ vehicle_ids: ALL_CAR_IDS });
+    }
+    return currentDeployTargetKey;
+  }, [percentMode, currentDeployTargetKey]);
 
   const deployToLabel = formatDeployTargetLabel({
     carIds: deploymentCarIds,
-    region: deploymentRegion,
+    regions: deploymentRegions,
+    models: deploymentModels,
+    group: deploymentGroup,
     vehicles: fleetVehicles,
   });
 
-  const runtimeCarId = useMemo(() => {
-    if (resolvedCarIds.length >= 1) return resolvedCarIds[0];
-    const sel = campaign?.target_selector || detail?.campaign?.target_selector;
-    return inferSingleVehicleId(sel, runs.length ? runs : detail?.latest_runs);
-  }, [campaign, detail, runs, resolvedCarIds]);
+  const percentConfigValid = useMemo(
+    () => isPercentConfigValid(percentRows, campaigns),
+    [percentRows, campaigns],
+  );
+
+  const percentEnrichedRows = useMemo(
+    () => enrichPercentRows(percentRows, campaigns),
+    [percentRows, campaigns],
+  );
+
+  const percentConfigFingerprint = useMemo(
+    () =>
+      buildPercentDeployKey(effectiveDeployTargetKey, percentEnrichedRows, {
+        random: false,
+        seed: 0,
+      }),
+    [effectiveDeployTargetKey, percentEnrichedRows],
+  );
+
+  const prevPercentConfigFingerprint = useRef(percentConfigFingerprint);
+  useEffect(() => {
+    if (prevPercentConfigFingerprint.current === percentConfigFingerprint) {
+      return;
+    }
+    prevPercentConfigFingerprint.current = percentConfigFingerprint;
+    setPercentShuffleSeed(Date.now());
+  }, [percentConfigFingerprint]);
+
+  const percentSegments = useMemo(() => {
+    if (!percentMode || !percentConfigValid) return [];
+    return allocateCarsByPercent(effectiveResolvedCarIds, percentEnrichedRows, {
+      random: true,
+      seed: percentShuffleSeed,
+    });
+  }, [
+    percentMode,
+    percentConfigValid,
+    percentEnrichedRows,
+    effectiveResolvedCarIds,
+    percentShuffleSeed,
+  ]);
+
+  const percentDeployKey = useMemo(
+    () =>
+      buildPercentDeployKey(effectiveDeployTargetKey, percentEnrichedRows, {
+        random: true,
+        seed: percentShuffleSeed,
+      }),
+    [effectiveDeployTargetKey, percentEnrichedRows, percentShuffleSeed],
+  );
+
+  const percentActionsEnabled = percentMode && percentConfigValid;
+
+  const percentValidateResult = useMemo(() => {
+    if (!percentValidateCache) return null;
+    if (percentValidateCache._deployTargetKey !== percentDeployKey) return null;
+    return percentValidateCache;
+  }, [percentValidateCache, percentDeployKey]);
+
+  const loadPercentRuns = useCallback(async () => {
+    setRunsLoading(true);
+    setRunsError('');
+    const campaignIds = [
+      ...new Set(
+        enrichPercentRows(percentRows, campaigns)
+          .map((r) => r.campaignId)
+          .filter(Boolean),
+      ),
+    ];
+    try {
+      let merged = [];
+      if (campaignIds.length) {
+        const batches = await Promise.all(
+          campaignIds.map((id) =>
+            fetchCampaignRuns({ campaign_id: id, limit: 50 }),
+          ),
+        );
+        for (const res of batches) {
+          if (res.ok) merged.push(...(res.runs || []));
+        }
+      } else {
+        const res = await fetchCampaignRuns({ limit: 100 });
+        if (res.ok) merged = res.runs || [];
+      }
+      merged.sort((a, b) =>
+        String(b.started_at || '').localeCompare(String(a.started_at || '')),
+      );
+      setRuns(merged);
+    } catch (err) {
+      setRunsError(err.message || 'Failed to load runs');
+      setRuns([]);
+    }
+    setRunsLoading(false);
+  }, [percentRows, campaigns]);
 
   useEffect(() => {
-    loadRuntime(runtimeCarId);
-  }, [runtimeCarId, loadRuntime]);
+    if (!percentMode) return;
+    setRunsPage(1);
+    loadPercentRuns();
+  }, [percentMode, percentDeployKey, loadPercentRuns]);
+
+  useEffect(() => {
+    const totalPages = Math.max(
+      1,
+      Math.ceil((runs?.length || 0) / RUNS_PAGE_SIZE),
+    );
+    if (runsPage > totalPages) setRunsPage(totalPages);
+  }, [runs.length, runsPage]);
+
+  const closeRunDetail = useCallback(() => {
+    setSelectedRunId('');
+    setSelectedRun(null);
+  }, []);
+
+  const runtimeCarId = runtimeViewCarId;
+
+  const displayFeature = useMemo(() => {
+    if (percentMode) {
+      return (
+        percentEnrichedRows.find((r) => r.feature)?.feature || 'Navigation'
+      );
+    }
+    return feature;
+  }, [percentMode, percentEnrichedRows, feature]);
+
+  useEffect(() => {
+    loadRuntime(runtimeViewCarId);
+  }, [runtimeViewCarId, loadRuntime]);
 
   useEffect(() => {
     loadRunDetail(selectedRunId);
@@ -593,6 +1047,24 @@ export default function CampaignManagementPanel() {
 
   const runCandidateResult = runCandidateCache[selectedCampaignId] || null;
   const promoteResult = promoteCache[selectedCampaignId] || null;
+
+  const displayValidateResult = percentMode
+    ? percentValidateResult
+    : validateResult;
+
+  const displayRunCandidateResult = percentMode
+    ? percentCandidateAsRunResult(percentRunCandidateResult)
+    : runCandidateResult;
+
+  const displayPromoteResult = percentMode
+    ? percentPromoteAsRunResult(percentPromoteResult)
+    : promoteResult;
+
+  const displayPromoteForBanner = percentMode
+    ? percentPromoteResult?.ok
+      ? { ok: true, phase: 'promote' }
+      : null
+    : promoteResult;
 
   const latestCandidateSuccess = useMemo(() => {
     const fromRuns = findLatestSuccessfulCandidateRun(runs, {
@@ -643,7 +1115,7 @@ export default function CampaignManagementPanel() {
   );
 
   const refreshCandidateStaged = useCallback(async () => {
-    if (!selectedCampaignId || !deploymentHasTarget) {
+    if (percentMode || !selectedCampaignId || !deploymentHasTarget) {
       setCandidateStaged(null);
       return;
     }
@@ -658,6 +1130,7 @@ export default function CampaignManagementPanel() {
     });
     setCandidateStagedLoading(false);
   }, [
+    percentMode,
     selectedCampaignId,
     deploymentHasTarget,
     deploymentTargetBody,
@@ -667,6 +1140,42 @@ export default function CampaignManagementPanel() {
   useEffect(() => {
     refreshCandidateStaged();
   }, [refreshCandidateStaged]);
+
+  useEffect(() => {
+    if (!percentMode) return;
+    setPercentValidateCache((cur) => {
+      if (!cur || cur._deployTargetKey === percentDeployKey) return cur;
+      return null;
+    });
+    setPercentCandidateComplete(false);
+    setPercentRunCandidateResult(null);
+    setPercentPromoteResult(null);
+  }, [percentMode, percentDeployKey]);
+
+  const canRunCandidatePercent = useMemo(() => {
+    if (!percentActionsEnabled || !percentValidateResult) return false;
+    if (runCandidateLoading || promoteLoading) return false;
+    return (percentValidateResult.summary?.fail ?? 0) === 0;
+  }, [
+    percentActionsEnabled,
+    percentValidateResult,
+    runCandidateLoading,
+    promoteLoading,
+  ]);
+
+  const canPromotePercent = useMemo(() => {
+    if (!percentActionsEnabled || !percentValidateResult) return false;
+    if ((percentValidateResult.summary?.fail ?? 0) > 0) return false;
+    if (!percentCandidateComplete) return false;
+    if (runCandidateLoading || promoteLoading) return false;
+    return true;
+  }, [
+    percentActionsEnabled,
+    percentValidateResult,
+    percentCandidateComplete,
+    runCandidateLoading,
+    promoteLoading,
+  ]);
 
   const canRunCandidate = useMemo(() => {
     if (
@@ -697,8 +1206,20 @@ export default function CampaignManagementPanel() {
     promoteCandidateReady,
   ]);
 
+  const activeValidateResult = percentMode
+    ? percentValidateResult
+    : validateResult;
+  const activeImageAvailable = percentMode ? true : imageAvailable;
+  const activeCanRunCandidate = percentMode
+    ? canRunCandidatePercent
+    : canRunCandidate;
+  const activeCanPromote = percentMode ? canPromotePercent : canPromote;
+  const activeActionsEnabled = percentMode
+    ? percentActionsEnabled
+    : Boolean(selectedCampaignId);
+
   const updateModeWarnings = useMemo(() => {
-    const items = validateResult?.items || [];
+    const items = activeValidateResult?.items || [];
     return items
       .filter(
         (i) =>
@@ -706,10 +1227,10 @@ export default function CampaignManagementPanel() {
           /update_mode|not READY/i.test(String(i.message || '')),
       )
       .map((i) => i.message);
-  }, [validateResult]);
+  }, [activeValidateResult]);
 
   const preconditionWarnings = useMemo(() => {
-    const items = validateResult?.items || [];
+    const items = activeValidateResult?.items || [];
     return items
       .filter(
         (i) =>
@@ -717,12 +1238,61 @@ export default function CampaignManagementPanel() {
           /update_mode|READY|OTA|approval/i.test(String(i.message || '')),
       )
       .map((i) => i.message);
-  }, [validateResult]);
+  }, [activeValidateResult]);
+
+  const applyDemoReadyBeforeAction = useCallback(
+    async ({ carIds, feature: feat, segments }) => {
+      if (segments?.length) {
+        for (const seg of segments) {
+          const res = await prepareAllTargetsDemoReady(seg.carIds, seg.feature);
+          if (!res.ok) {
+            const detail = (res.failed || [])
+              .map((f) => f.car_id)
+              .join(', ');
+            return {
+              ok: false,
+              error: `Prepare Demo READY failed (${detail || 'unknown'})`,
+            };
+          }
+        }
+        return { ok: true };
+      }
+      if (carIds?.length && feat) {
+        const res = await prepareAllTargetsDemoReady(carIds, feat);
+        if (!res.ok) {
+          const detail = (res.failed || []).map((f) => f.car_id).join(', ');
+          return {
+            ok: false,
+            error: `Prepare Demo READY failed (${detail || 'unknown'})`,
+          };
+        }
+      }
+      return { ok: true };
+    },
+    [],
+  );
+
+  const afterDemoReadyRefresh = useCallback(async () => {
+    if (runtimeCarId) {
+      await loadRuntime(runtimeCarId);
+    }
+    await refreshCandidateStaged();
+  }, [runtimeCarId, loadRuntime, refreshCandidateStaged]);
 
   const runValidate = useCallback(async () => {
     if (!selectedCampaignId || !deploymentHasTarget) return;
     setValidateLoading(true);
     setValidateError('');
+    const prep = await applyDemoReadyBeforeAction({
+      carIds: resolvedCarIds,
+      feature,
+    });
+    if (!prep.ok) {
+      setValidateError(prep.error);
+      setValidateLoading(false);
+      return;
+    }
+    await afterDemoReadyRefresh();
     const res = await validateCampaign(
       selectedCampaignId,
       deploymentTargetBody,
@@ -747,6 +1317,10 @@ export default function CampaignManagementPanel() {
     deploymentTargetBody,
     currentDeployTargetKey,
     refreshCandidateStaged,
+    resolvedCarIds,
+    feature,
+    applyDemoReadyBeforeAction,
+    afterDemoReadyRefresh,
   ]);
 
   const runCandidate = useCallback(async () => {
@@ -761,6 +1335,16 @@ export default function CampaignManagementPanel() {
 
     setRunCandidateLoading(true);
     setRunCandidateError('');
+    const prep = await applyDemoReadyBeforeAction({
+      carIds: resolvedCarIds,
+      feature,
+    });
+    if (!prep.ok) {
+      setRunCandidateError(prep.error);
+      setRunCandidateLoading(false);
+      return;
+    }
+    await afterDemoReadyRefresh();
     const res = await runCampaignPhase(
       selectedCampaignId,
       'candidate',
@@ -806,6 +1390,10 @@ export default function CampaignManagementPanel() {
     loadRuntime,
     runtimeCarId,
     refreshCandidateStaged,
+    resolvedCarIds,
+    feature,
+    applyDemoReadyBeforeAction,
+    afterDemoReadyRefresh,
   ]);
 
   const canDropCandidate = useMemo(
@@ -880,9 +1468,15 @@ export default function CampaignManagementPanel() {
       return;
     if (!promoteCandidateReady) return;
 
-    if (resolvedCarIds.length) {
-      await prepareAllTargetsDemoReady(resolvedCarIds, feature);
+    const prep = await applyDemoReadyBeforeAction({
+      carIds: resolvedCarIds,
+      feature,
+    });
+    if (!prep.ok) {
+      setPromoteError(prep.error);
+      return;
     }
+    await afterDemoReadyRefresh();
 
     setPromoteLoading(true);
     setPromotePhase('campaign');
@@ -929,11 +1523,22 @@ export default function CampaignManagementPanel() {
           campaign.target_version,
         );
         if (synced) {
-          setPromoteCompleteMessage(
+          let msg =
             resolvedCarIds.length > 1
               ? `Promote complete — primary ${campaign.target_version} on ${resolvedCarIds.length} vehicles.`
-              : `Promote complete — primary ${campaign.target_version} on ${resolvedCarIds[0]}.`,
-          );
+              : `Promote complete — primary ${campaign.target_version} on ${resolvedCarIds[0]}.`;
+          const nextGroup = deploymentGroup
+            ? nextRolloutGroupAfter(deploymentGroup)
+            : null;
+          if (deploymentGroup && nextGroup) {
+            msg += ` Next: select ${nextGroup} and repeat validate → candidate → promote.`;
+          } else if (
+            deploymentGroup ===
+            FLEET_ROLLOUT_GROUPS[FLEET_ROLLOUT_GROUPS.length - 1]
+          ) {
+            msg += ' Full fleet rollout complete for this version.';
+          }
+          setPromoteCompleteMessage(msg);
         } else {
           setPromoteCompleteMessage(
             'Promote command finished; refresh vehicle_runtime if JSON still lags.',
@@ -976,14 +1581,196 @@ export default function CampaignManagementPanel() {
     refreshCandidateStaged,
     waitForPromoteOnTargets,
     campaign?.target_version,
+    deploymentGroup,
+    applyDemoReadyBeforeAction,
+    afterDemoReadyRefresh,
   ]);
 
-  const onSafetyChanged = useCallback(async () => {
-    if (runtimeCarId) {
-      await loadRuntime(runtimeCarId);
+  const runPercentValidate = useCallback(async () => {
+    if (!percentActionsEnabled || !percentSegments.length) return;
+    setValidateLoading(true);
+    setValidateError('');
+    const prep = await applyDemoReadyBeforeAction({
+      segments: percentSegments,
+    });
+    if (!prep.ok) {
+      setValidateError(prep.error);
+      setValidateLoading(false);
+      return;
     }
-    await refreshCandidateStaged();
-  }, [runtimeCarId, loadRuntime, refreshCandidateStaged]);
+    await afterDemoReadyRefresh();
+    const segmentResults = [];
+    for (const seg of percentSegments) {
+      const res = await validateCampaign(seg.campaignId, {
+        vehicle_ids: seg.carIds,
+      });
+      segmentResults.push({ ...seg, res });
+    }
+    const aggregated = aggregateValidateResults(segmentResults);
+    setPercentValidateCache({
+      ...aggregated,
+      _deployTargetKey: percentDeployKey,
+    });
+    setPercentCandidateComplete(false);
+    if ((aggregated.summary?.fail ?? 0) > 0) {
+      setValidateError('One or more proportion segments failed validation.');
+    } else {
+      setValidateError('');
+    }
+    setValidateLoading(false);
+  }, [
+    percentActionsEnabled,
+    percentSegments,
+    percentDeployKey,
+    applyDemoReadyBeforeAction,
+    afterDemoReadyRefresh,
+  ]);
+
+  const runPercentCandidate = useCallback(async () => {
+    if (!canRunCandidatePercent || !percentSegments.length) return;
+    setRunCandidateLoading(true);
+    setRunCandidateError('');
+    setPercentCandidateComplete(false);
+    const prep = await applyDemoReadyBeforeAction({
+      segments: percentSegments,
+    });
+    if (!prep.ok) {
+      setRunCandidateError(prep.error);
+      setRunCandidateLoading(false);
+      return;
+    }
+    await afterDemoReadyRefresh();
+    const segmentResults = [];
+    let allOk = true;
+    for (const seg of percentSegments) {
+      const res = await runCampaignPhase(seg.campaignId, 'candidate', {
+        vehicle_ids: seg.carIds,
+      });
+      segmentResults.push({ ...seg, res });
+      if (!res.ok) allOk = false;
+    }
+    setPercentRunCandidateResult({ ok: allOk, segments: segmentResults });
+    setPercentCandidateComplete(allOk);
+    if (!allOk) {
+      setRunCandidateError(
+        'One or more proportion segments failed candidate deploy.',
+      );
+    } else {
+      setRunCandidateError('');
+    }
+    setRunCandidateLoading(false);
+    await loadList();
+    await loadPercentRuns();
+  }, [
+    canRunCandidatePercent,
+    percentSegments,
+    loadList,
+    loadPercentRuns,
+    applyDemoReadyBeforeAction,
+    afterDemoReadyRefresh,
+  ]);
+
+  const runPercentDropCandidate = useCallback(async () => {
+    if (!percentActionsEnabled || !percentSegments.length) return;
+    setDropCandidateLoading(true);
+    setDropCandidateError('');
+    let allOk = true;
+    for (const seg of percentSegments) {
+      const res = await dropCampaignCandidate(seg.campaignId, {
+        vehicle_ids: seg.carIds,
+      });
+      if (!res.ok) allOk = false;
+    }
+    if (!allOk) {
+      setDropCandidateError('Drop candidate failed on one or more segments.');
+    } else {
+      setDropCandidateError('');
+      setPercentCandidateComplete(false);
+      setPercentRunCandidateResult(null);
+    }
+    setDropCandidateLoading(false);
+  }, [percentActionsEnabled, percentSegments]);
+
+  const runPercentPromote = useCallback(async () => {
+    if (!canPromotePercent || !percentSegments.length) return;
+    setPromoteLoading(true);
+    setPromotePhase('campaign');
+    setPromoteError('');
+    setPromoteCompleteMessage('');
+
+    try {
+      const prep = await applyDemoReadyBeforeAction({
+        segments: percentSegments,
+      });
+      if (!prep.ok) {
+        setPromoteError(prep.error);
+        return;
+      }
+      await afterDemoReadyRefresh();
+
+      const segmentResults = [];
+      let allOk = true;
+      for (const seg of percentSegments) {
+        setPromotePhase(`promote ${seg.feature} ${seg.version}`);
+        const res = await runCampaignPhase(seg.campaignId, 'promote', {
+          vehicle_ids: seg.carIds,
+        });
+        segmentResults.push({ ...seg, res });
+        if (!res.ok) allOk = false;
+      }
+      setPercentPromoteResult({ ok: allOk, segments: segmentResults });
+
+      if (allOk) {
+        const allCars = sortCarIds(
+          percentSegments.flatMap((s) => s.carIds || []),
+        );
+        setPromotePhase('docker');
+        try {
+          await postVehicleRuntimeApplyPending();
+        } catch {
+          /* optional */
+        }
+        setPromotePhase('apply-native');
+        await applyPendingNativeForCars(allCars);
+        setPromotePhase('verify');
+        let synced = true;
+        for (const seg of percentSegments) {
+          const ok = await waitForPromoteOnTargets(
+            seg.carIds,
+            seg.feature,
+            seg.version,
+          );
+          if (!ok) synced = false;
+        }
+        setPromoteCompleteMessage(
+          synced
+            ? 'Percent deploy complete — all segments promoted on target vehicles.'
+            : 'Promote commands finished; refresh vehicle_runtime if JSON lags.',
+        );
+      } else {
+        setPromoteError('Promote failed on one or more segments.');
+      }
+      await loadList();
+      await loadPercentRuns();
+    } finally {
+      setPromoteLoading(false);
+      setPromotePhase('');
+    }
+  }, [
+    canPromotePercent,
+    percentSegments,
+    loadList,
+    loadPercentRuns,
+    waitForPromoteOnTargets,
+    applyDemoReadyBeforeAction,
+    afterDemoReadyRefresh,
+  ]);
+
+  useEffect(() => {
+    if (!deploymentGroup) return;
+    if (rolloutGroupProgress[deploymentGroup]?.unlocked) return;
+    setDeploymentGroup('');
+  }, [deploymentGroup, rolloutGroupProgress]);
 
   useEffect(() => {
     if (!selectedCampaignId) return;
@@ -1011,18 +1798,78 @@ export default function CampaignManagementPanel() {
     setPromoteCompleteMessage('');
   }, [selectedCampaignId, currentDeployTargetKey]);
 
+  useEffect(() => {
+    if (!selectedCampaignId) {
+      setVersionMapSyncNotice('');
+      setVersionMapSyncError('');
+      setVersionMapSyncLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setVersionMapSyncLoading(true);
+    setVersionMapSyncNotice('');
+    setVersionMapSyncError('');
+
+    (async () => {
+      const res = await syncCampaignVersionMap(selectedCampaignId);
+      if (cancelled) return;
+      setVersionMapSyncLoading(false);
+      if (!res.ok) {
+        setVersionMapSyncError(res.error || 'version_map sync failed');
+        return;
+      }
+      if (res.unchanged) {
+        setVersionMapSyncNotice('');
+        return;
+      }
+      setVersionMapSyncNotice(
+        res.message ||
+          `${res.feature} slot ${res.slot} → ${res.assigned?.version || ''}`,
+      );
+      setValidateCache((prev) => {
+        if (!prev[selectedCampaignId]) return prev;
+        const next = { ...prev };
+        delete next[selectedCampaignId];
+        return next;
+      });
+      await onVersionMapChanged?.();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCampaignId, onVersionMapChanged]);
+
   const onSelectCampaign = (id) => {
-    setSelectedCampaignId(id);
-    setDeploymentCarIds([]);
-    setDeploymentRegion('');
-    setValidateError('');
-    setRunCandidateError('');
-    setPromoteError('');
-    setPromoteCompleteMessage('');
+    setSelectedCampaignId((cur) => {
+      const next = cur === id ? '' : id;
+      if (next !== cur) {
+        setDeploymentCarIds([]);
+        setDeploymentRegions([]);
+        setDeploymentModels([]);
+        setDeploymentGroup('');
+        setValidateError('');
+        setRunCandidateError('');
+        setPromoteError('');
+        setPromoteCompleteMessage('');
+        setPercentValidateCache(null);
+        setPercentCandidateComplete(false);
+        setPercentRunCandidateResult(null);
+        setPercentPromoteResult(null);
+        if (next) {
+          setDetail(null);
+          setRuns([]);
+        }
+      }
+      return next;
+    });
   };
 
   const onToggleCar = (carId) => {
-    setDeploymentRegion('');
+    setDeploymentGroup('');
+    setDeploymentRegions([]);
+    setDeploymentModels([]);
     setDeploymentCarIds((prev) => {
       const set = new Set(prev);
       if (set.has(carId)) set.delete(carId);
@@ -1032,15 +1879,42 @@ export default function CampaignManagementPanel() {
   };
 
   const onToggleAllCars = () => {
-    setDeploymentRegion('');
+    setDeploymentGroup('');
+    setDeploymentRegions([]);
+    setDeploymentModels([]);
     setDeploymentCarIds((prev) =>
       allCarsSelected(prev) ? [] : [...ALL_CAR_IDS],
     );
   };
 
-  const onSelectRegion = (region) => {
+  const onToggleRegion = (region) => {
+    setDeploymentGroup('');
     setDeploymentCarIds([]);
-    setDeploymentRegion((prev) => (prev === region ? '' : region));
+    setDeploymentRegions((prev) => {
+      const set = new Set(prev);
+      if (set.has(region)) set.delete(region);
+      else set.add(region);
+      return FLEET_REGIONS.filter((r) => set.has(r));
+    });
+  };
+
+  const onToggleModel = (model) => {
+    setDeploymentGroup('');
+    setDeploymentCarIds([]);
+    setDeploymentModels((prev) => {
+      const set = new Set(prev);
+      if (set.has(model)) set.delete(model);
+      else set.add(model);
+      return FLEET_MODELS.filter((m) => set.has(m));
+    });
+  };
+
+  const onSelectRolloutGroup = (group) => {
+    if (!rolloutGroupProgress[group]?.unlocked) return;
+    setDeploymentCarIds([]);
+    setDeploymentRegions([]);
+    setDeploymentModels([]);
+    setDeploymentGroup((cur) => (cur === group ? '' : group));
   };
 
   const refreshAll = async () => {
@@ -1055,6 +1929,7 @@ export default function CampaignManagementPanel() {
 
   const refreshRuns = () => {
     if (selectedCampaignId) loadDetail(selectedCampaignId);
+    else if (percentMode) loadPercentRuns();
   };
 
   const policyFlow = campaign?.rollout_policy_id
@@ -1062,6 +1937,9 @@ export default function CampaignManagementPanel() {
     : '';
 
   const promoteDemoComplete = useMemo(() => {
+    if (percentMode) {
+      return Boolean(percentPromoteResult?.ok);
+    }
     const fromRuns = (runs || []).some(
       (r) =>
         String(r.phase || '').toLowerCase() === 'promote' && isRunSuccess(r),
@@ -1071,7 +1949,7 @@ export default function CampaignManagementPanel() {
       (promoteResult?.ok &&
         String(promoteResult.phase || '').toLowerCase() === 'promote')
     );
-  }, [runs, promoteResult]);
+  }, [percentMode, percentPromoteResult, runs, promoteResult]);
 
   return (
     <div className="campaign-section">
@@ -1197,8 +2075,19 @@ export default function CampaignManagementPanel() {
         </div>
       </div>
 
-      {selectedCampaignId ? (
-        <div className="campaign-detail-flow">
+      <div className="campaign-detail-flow">
+        {versionMapSyncLoading ? (
+          <p className="tiny subtle campaign-vm-sync-hint">Syncing version_map…</p>
+        ) : null}
+        {!versionMapSyncLoading && versionMapSyncNotice ? (
+          <p className="tiny campaign-vm-sync-ok">
+            version_map updated: {versionMapSyncNotice}
+          </p>
+        ) : null}
+        {!versionMapSyncLoading && versionMapSyncError ? (
+          <p className="tiny campaign-vm-sync-err">{versionMapSyncError}</p>
+        ) : null}
+        {selectedCampaignId ? (
           <CampaignSelectedHeader
             campaign={campaign}
             policy={policy}
@@ -1206,79 +2095,133 @@ export default function CampaignManagementPanel() {
             deployToLabel={deployToLabel}
             imageAvailable={listCampaign?.image_available}
           />
+        ) : (
+          <div className="card campaign-detail-card campaign-percent-intro">
+            <p className="tiny subtle">
+              <strong>Percent deploy:</strong> leave all campaign rows
+              unselected. Splits the full fleet (car_1–car_10) by proportion
+              below (must total 100%), then Validate → Run Candidate → Promote
+              Primary per segment.
+            </p>
+          </div>
+        )}
 
-          <CampaignTargetSelector
-            selectedCarIds={deploymentCarIds}
-            onToggleCar={onToggleCar}
-            onToggleAll={onToggleAllCars}
-            disabled={!selectedCampaignId}
-            regionActive={Boolean(deploymentRegion)}
-          />
+        <CampaignTargetSelector
+          selectedCarIds={deploymentCarIds}
+          onToggleCar={onToggleCar}
+          onToggleAll={onToggleAllCars}
+          disabled={noCampaignSelected}
+          noCampaignSelected={noCampaignSelected}
+          filterActive={deploymentFilterActive || rolloutGroupFilterActive}
+        />
 
+        <div className="campaign-region-model-row">
           <CampaignGroupSelector
-            selectedRegion={deploymentRegion}
-            onSelectRegion={onSelectRegion}
+            selectedRegions={deploymentRegions}
+            onToggleRegion={onToggleRegion}
+            selectedModels={deploymentModels}
             vehicles={fleetVehicles}
-            disabled={!selectedCampaignId}
-            vehiclesDisabled={deploymentCarIds.length > 0}
-          />
-
-          {deploymentHasTarget && resolvedCarIds.length > 1 ? (
-            <p className="tiny subtle campaign-multi-target-hint">
-              Multi-target deploy: Validate checks all selected vehicles (
-              {resolvedCarIds.length}).
-            </p>
-          ) : null}
-
-          <CampaignActionBar
-            selectedCampaignId={selectedCampaignId}
-            onValidate={runValidate}
-            validateLoading={validateLoading}
-            onRunCandidate={runCandidate}
-            runCandidateLoading={runCandidateLoading}
-            canRunCandidate={canRunCandidate}
-            onPromote={runPromote}
-            promoteLoading={promoteLoading}
-            promotePhase={promotePhase}
-            promoteCompleteMessage={promoteCompleteMessage}
-            canPromote={canPromote}
-            validateResult={validateResult}
-            updateModeWarnings={updateModeWarnings}
-            hasFailedCandidateRun={hasFailedCandidateRun}
-            deploymentHasTarget={deploymentHasTarget}
-            targetVehicleCount={resolvedCarIds.length}
-            imageAvailable={imageAvailable}
-            candidateStagedInRuntime={
-              candidateStagedForTarget && !latestCandidateSuccess
+            disabled={noCampaignSelected}
+            noCampaignSelected={noCampaignSelected}
+            vehiclesDisabled={
+              deploymentCarIds.length > 0 || rolloutGroupFilterActive
             }
-            onDropCandidate={runDropCandidate}
-            dropCandidateLoading={dropCandidateLoading}
-            canDropCandidate={canDropCandidate}
           />
 
-          {dropCandidateError ? (
-            <p className="tiny campaign-logs-alert campaign-logs-alert-fail">
-              {dropCandidateError}
-            </p>
-          ) : null}
-
-          {promoteCompleteMessage && !promoteLoading ? (
-            <p className="tiny campaign-logs-alert campaign-promote-complete-msg">
-              {promoteCompleteMessage}
-            </p>
-          ) : null}
-
-          <VehicleSafetyPreconditionsCard
-            carId={runtimeCarId}
-            feature={feature}
-            onChanged={onSafetyChanged}
+          <CampaignModelSelector
+            selectedModels={deploymentModels}
+            onToggleModel={onToggleModel}
+            selectedRegions={deploymentRegions}
+            vehicles={fleetVehicles}
+            disabled={noCampaignSelected}
+            noCampaignSelected={noCampaignSelected}
+            vehiclesDisabled={
+              deploymentCarIds.length > 0 || rolloutGroupFilterActive
+            }
           />
+        </div>
 
-          <CampaignFinalStateBanner
+        <CampaignRolloutGroupSelector
+          selectedGroup={deploymentGroup}
+          onSelectGroup={onSelectRolloutGroup}
+          rolloutProgress={rolloutGroupProgress}
+          vehicles={fleetVehicles}
+          disabled={noCampaignSelected}
+          noCampaignSelected={noCampaignSelected}
+          filterDisabled={deploymentCarIds.length > 0 || deploymentFilterActive}
+        />
+
+        <CampaignPercentDeployCard
+          rows={percentRows}
+          onChangeRows={setPercentRows}
+          campaigns={campaigns}
+          resolvedCarIds={effectiveResolvedCarIds}
+          disabled={Boolean(selectedCampaignId)}
+          shuffleSeed={percentShuffleSeed}
+          onReshuffle={() => setPercentShuffleSeed(Date.now())}
+        />
+
+        {selectedCampaignId && deploymentHasTarget && resolvedCarIds.length > 1 ? (
+          <p className="tiny subtle campaign-multi-target-hint">
+            Multi-target deploy: Validate checks all selected vehicles (
+            {resolvedCarIds.length}).
+          </p>
+        ) : null}
+
+        <CampaignActionBar
+          actionsEnabled={activeActionsEnabled}
+          selectedCampaignId={selectedCampaignId || '__percent__'}
+          onValidate={percentMode ? runPercentValidate : runValidate}
+          validateLoading={validateLoading}
+          onRunCandidate={percentMode ? runPercentCandidate : runCandidate}
+          runCandidateLoading={runCandidateLoading}
+          canRunCandidate={activeCanRunCandidate}
+          onPromote={percentMode ? runPercentPromote : runPromote}
+          promoteLoading={promoteLoading}
+          promotePhase={promotePhase}
+          promoteCompleteMessage={promoteCompleteMessage}
+          canPromote={activeCanPromote}
+          validateResult={activeValidateResult}
+          updateModeWarnings={updateModeWarnings}
+          hasFailedCandidateRun={percentMode ? false : hasFailedCandidateRun}
+          deploymentHasTarget={
+            percentMode ? effectiveDeploymentHasTarget : deploymentHasTarget
+          }
+          targetVehicleCount={
+            percentMode ? effectiveResolvedCarIds.length : resolvedCarIds.length
+          }
+          imageAvailable={activeImageAvailable}
+          candidateStagedInRuntime={
+            !percentMode &&
+            candidateStagedForTarget &&
+            !latestCandidateSuccess
+          }
+          onDropCandidate={
+            percentMode ? runPercentDropCandidate : runDropCandidate
+          }
+          dropCandidateLoading={dropCandidateLoading}
+          canDropCandidate={
+            percentMode ? percentActionsEnabled : canDropCandidate
+          }
+        />
+
+        {dropCandidateError ? (
+          <p className="tiny campaign-logs-alert campaign-logs-alert-fail">
+            {dropCandidateError}
+          </p>
+        ) : null}
+
+        {promoteCompleteMessage && !promoteLoading ? (
+          <p className="tiny campaign-logs-alert campaign-promote-complete-msg">
+            {promoteCompleteMessage}
+          </p>
+        ) : null}
+
+        <CampaignFinalStateBanner
             runs={runs}
             runtimeSummary={runtimeSummary}
-            feature={feature}
-            promoteResult={promoteResult}
+            feature={displayFeature}
+            promoteResult={displayPromoteForBanner}
           />
 
           <section className="campaign-results-stack">
@@ -1286,40 +2229,46 @@ export default function CampaignManagementPanel() {
               <details className="campaign-result-collapsed">
                 <summary>Validate result</summary>
                 <CampaignValidateResultPanel
-                  result={validateResult}
+                  result={displayValidateResult}
                   error={validateError}
                   loading={validateLoading}
                 />
               </details>
             ) : (
               <CampaignValidateResultPanel
-                result={validateResult}
+                result={displayValidateResult}
                 error={validateError}
                 loading={validateLoading}
               />
             )}
 
-            {(runCandidateResult || runCandidateLoading) && (
+            {(displayRunCandidateResult || runCandidateLoading) && (
               <CampaignExecutionResultPanel
-                title="Run Candidate Result"
+                title={
+                  percentMode
+                    ? 'Run Candidate Result (percent)'
+                    : 'Run Candidate Result'
+                }
                 subtitle="campaign-run --phase candidate"
                 mode="run"
                 runPhase="candidate"
                 loadingLabel="Running candidate phase…"
-                result={runCandidateResult}
+                result={displayRunCandidateResult}
                 error={runCandidateError}
                 loading={runCandidateLoading}
               />
             )}
 
-            {(promoteResult || promoteLoading) && (
+            {(displayPromoteResult || promoteLoading) && (
               <CampaignExecutionResultPanel
-                title="Promote Primary Result"
+                title={
+                  percentMode ? 'Promote Result (percent)' : 'Promote Primary Result'
+                }
                 subtitle="campaign-run --phase promote"
                 mode="run"
                 runPhase="promote"
                 loadingLabel="Promoting candidate to primary…"
-                result={promoteResult}
+                result={displayPromoteResult}
                 error={promoteError}
                 loading={promoteLoading}
               />
@@ -1327,8 +2276,10 @@ export default function CampaignManagementPanel() {
           </section>
 
           <RuntimeSummaryCard
-            carId={runtimeCarId}
-            feature={feature}
+            carId={runtimeViewCarId}
+            carOptions={ALL_CAR_IDS}
+            onSelectCarId={setRuntimeViewCarId}
+            feature={displayFeature}
             summary={runtimeSummary}
             loading={runtimeLoading}
             error={runtimeError}
@@ -1336,103 +2287,28 @@ export default function CampaignManagementPanel() {
           />
 
           <CampaignLogsPanel
-            carId={runtimeCarId}
-            feature={feature}
-            selectedRunId={selectedRunId}
-            selectedRun={selectedRun}
-            runDetailLoading={runDetailLoading}
+            carId={runtimeViewCarId}
+            feature={displayFeature}
             refreshToken={logsRefreshToken}
             preferredTab={preferredLogsTab}
             onPreferredTabApplied={() => setPreferredLogsTab('')}
           />
 
-          <div className="card campaign-runs-card">
-            <div className="card-header">
-              <h3>Campaign Run History</h3>
-              <button
-                type="button"
-                className="btn"
-                onClick={refreshRuns}
-                disabled={runsLoading}
-              >
-                Refresh runs
-              </button>
-            </div>
-            {runsError ? <p className="text-error tiny">{runsError}</p> : null}
-            {runsLoading ? <p className="tiny subtle">Loading runs…</p> : null}
-            <div className="table-wrap">
-              <table className="campaign-runs-table">
-                <thead>
-                  <tr>
-                    <th>Run</th>
-                    <th>Phase</th>
-                    <th>Status</th>
-                    <th>Started</th>
-                    <th>Finished</th>
-                    <th>Targets</th>
-                    <th>OK / Fail</th>
-                    <th>Docker</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!runs.length && !runsLoading ? (
-                    <tr>
-                      <td colSpan={8} className="tiny subtle">
-                        No runs recorded.
-                      </td>
-                    </tr>
-                  ) : null}
-                  {runs.map((run) => {
-                    const agg = run.aggregate || {};
-                    const selected = run.run_id === selectedRunId;
-                    return (
-                      <tr
-                        key={run.run_id}
-                        className={
-                          selected
-                            ? 'campaign-row-selected'
-                            : 'campaign-row-clickable'
-                        }
-                        onClick={() => setSelectedRunId(run.run_id)}
-                      >
-                        <td className="mono tiny">
-                          {truncateMiddle(run.run_id, 32)}
-                        </td>
-                        <td>
-                          <StatusBadge
-                            text={run.phase}
-                            className="status-blue"
-                          />
-                        </td>
-                        <td>
-                          <StatusBadge
-                            text={run.status}
-                            className={runStatusClass(run.status)}
-                          />
-                        </td>
-                        <td className="tiny mono">{run.started_at || '—'}</td>
-                        <td className="tiny mono">{run.finished_at || '—'}</td>
-                        <td className="tiny">
-                          {(run.resolved_targets || []).join(', ')}
-                        </td>
-                        <td className="tiny mono">
-                          {agg.success ?? 0}/{agg.failed ?? 0}
-                        </td>
-                        <td
-                          className="tiny"
-                          title={run.docker_runtime?.image || ''}
-                        >
-                          {formatDockerRuntimeSummary(run.docker_runtime)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <RunDetailDrawer run={selectedRun} loading={runDetailLoading} />
-          </div>
+          <CampaignRunHistoryTable
+            runs={runs}
+            runsLoading={runsLoading}
+            runsError={runsError}
+            selectedRunId={selectedRunId}
+            onSelectRunId={setSelectedRunId}
+            onRefresh={refreshRuns}
+            selectedRun={selectedRun}
+            runDetailLoading={runDetailLoading}
+            onCloseRunDetail={closeRunDetail}
+            runsPage={runsPage}
+            onRunsPageChange={setRunsPage}
+          />
 
+        {selectedCampaignId ? (
           <details className="card campaign-advanced-details">
             <summary className="campaign-advanced-summary">
               Advanced · campaign JSON &amp; rollout policy
@@ -1599,15 +2475,8 @@ export default function CampaignManagementPanel() {
               </div>
             </div>
           </details>
-        </div>
-      ) : (
-        <div className="card campaign-detail-card">
-          <p className="tiny subtle">
-            Select a campaign row to view detail, policy stages, runs, and
-            vehicle runtime.
-          </p>
-        </div>
-      )}
+        ) : null}
+      </div>
     </div>
   );
 }

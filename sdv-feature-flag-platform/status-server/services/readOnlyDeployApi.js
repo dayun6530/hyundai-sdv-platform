@@ -206,8 +206,31 @@ function isWslRuntime() {
   );
 }
 
+function formatDockerLogTimestampLine(line) {
+  const match = /^(\d{4}-\d{2}-\d{2}T[^\s]+)\s+(.*)$/.exec(String(line || ''));
+  if (!match) return String(line || '');
+  const [, iso, message] = match;
+  let label = iso;
+  try {
+    const d = new Date(iso);
+    if (!Number.isNaN(d.getTime())) {
+      label = d.toLocaleString('sv-SE', { hour12: false });
+    }
+  } catch {
+    /* keep raw docker timestamp */
+  }
+  return `[${label}] ${message}`;
+}
+
+function formatDockerLogOutput(text) {
+  const raw = String(text || '').trimEnd();
+  if (!raw) return { text: '', lines: [] };
+  const lines = raw.split(/\r?\n/).map(formatDockerLogTimestampLine);
+  return { text: lines.join('\n'), lines };
+}
+
 async function dockerLogsTail(container, tail) {
-  const args = ['logs', container, '--tail', String(tail)];
+  const args = ['logs', '--timestamps', '--tail', String(tail), container];
   const opts = { maxBuffer: 512 * 1024, timeout: 20_000, windowsHide: true };
   const runDirect = process.platform !== 'win32' || isWslRuntime();
   try {
@@ -933,8 +956,7 @@ function registerReadOnlyDeployRoutes(app, deps) {
 
       try {
         const { stdout, stderr } = await dockerLogsTail(container, tail);
-        const text = String(stdout || stderr || '').trimEnd();
-        const lines = text ? text.split(/\r?\n/) : [];
+        const { text, lines } = formatDockerLogOutput(stdout || stderr || '');
         res.json({
           ok: true,
           car_id: carId,
@@ -944,6 +966,7 @@ function registerReadOnlyDeployRoutes(app, deps) {
           tail,
           lines,
           text,
+          timestamps: true,
           status: 'ok',
         });
       } catch (err) {
