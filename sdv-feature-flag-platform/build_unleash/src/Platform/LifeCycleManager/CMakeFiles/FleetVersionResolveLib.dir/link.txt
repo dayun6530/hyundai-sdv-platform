@@ -1,2 +1,0 @@
-/usr/bin/ar qc libFleetVersionResolveLib.a CMakeFiles/FleetVersionResolveLib.dir/src/FleetVersionResolve.cpp.o
-/usr/bin/ranlib libFleetVersionResolveLib.a

@@ -1,0 +1,4 @@
+# Python 3.7 (CARLA 0.9.15 egg) — bridge + pygame_map_bridge
+websockets>=10.0,<12
+Pillow>=9.0,<10
+pygame>=2.0

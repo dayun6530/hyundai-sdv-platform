@@ -6,6 +6,7 @@
 
 class QLabel;
 class QFrame;
+class QProgressBar;
 
 namespace sdv::dash {
 
@@ -21,14 +22,16 @@ private slots:
 private:
     struct CardUi {
         QLabel* title{nullptr};
+        QLabel* badge{nullptr};
         QLabel* ver{nullptr};
-        QLabel* state{nullptr};
-        QLabel* hb{nullptr};
-        QLabel* cpu{nullptr};
-        QLabel* mem{nullptr};
+        QLabel* health{nullptr};
+        QProgressBar* cpuBar{nullptr};
+        QProgressBar* memBar{nullptr};
+        QLabel* cpuLbl{nullptr};
+        QLabel* memLbl{nullptr};
         QFrame* frame{nullptr};
     };
-    void styleCard(QFrame* f, const QString& accent);
+    void styleCard(QFrame* f, const QString& accentRgb);
     void fillCard(CardUi& c, const QString& displayName, const QJsonObject& fleetFeat,
                   const QJsonObject& mqttFeat, const QJsonObject& ota);
 

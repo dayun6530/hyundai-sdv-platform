@@ -1,12 +1,17 @@
 #include "DashboardDataHub.h"
 
+#include <QDateTime>
+#include <QHash>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QRandomGenerator>
 #include <QUrl>
 #include <QUrlQuery>
+#include <QtMath>
+#include <QRegularExpression>
 
 #ifdef SDV_HAVE_QT_MQTT
 #include <QtMqtt/QMqttClient>
@@ -15,13 +20,41 @@
 
 using sdv::dash::DashboardDataHub;
 
+namespace {
+
+bool shouldEmitHttpError(const QString& key)
+{
+    static QHash<QString, qint64> lastMs;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const qint64 prev = lastMs.value(key, 0);
+    if (now - prev < 15000) {
+        return false;
+    }
+    lastMs[key] = now;
+    return true;
+}
+
+QString formatHttpError(const QString& endpoint, const QString& errorString, const QString& apiBase)
+{
+    QString line = QStringLiteral("[%1] HTTP error: %2").arg(endpoint, errorString);
+    if (errorString.contains(QStringLiteral("refused"), Qt::CaseInsensitive)) {
+        line += QStringLiteral(" — status-server not running at %1 (see below)").arg(apiBase);
+    }
+    return line;
+}
+
+}  // namespace
+
 DashboardDataHub::DashboardDataHub(QObject* parent)
     : QObject(parent), nam_(new QNetworkAccessManager(this)) {
     connect(&fleetTimer_, &QTimer::timeout, this, &DashboardDataHub::pollFleet);
+    connect(&cockpitTimer_, &QTimer::timeout, this, &DashboardDataHub::pollCockpit);
     connect(&historyTimer_, &QTimer::timeout, this, &DashboardDataHub::pollHistory);
     fleetTimer_.start(400);
+    cockpitTimer_.start(500);
     historyTimer_.start(2800);
     pollFleet();
+    pollCockpit();
     pollHistory();
     setupMqtt();
 }
@@ -43,12 +76,7 @@ void DashboardDataHub::setCarId(const QString& carId) {
         return;
     }
     carId_ = next;
-#ifdef SDV_HAVE_QT_MQTT
-    if (mqtt_) {
-        teardownMqtt();
-        setupMqtt();
-    }
-#endif
+    pollCockpit();
 }
 
 void DashboardDataHub::setMqttEndpoint(const QString& host, int port) {
@@ -76,6 +104,81 @@ void DashboardDataHub::pollFleet() {
     connect(fleetReply_, &QNetworkReply::finished, this, &DashboardDataHub::onFleetReplyFinished);
 }
 
+void DashboardDataHub::postCockpitSpeed(const double speedKmh)
+{
+    if (apiBase_.isEmpty()) {
+        return;
+    }
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - lastSpeedPostMs_ < 350) {
+        return;
+    }
+    lastSpeedPostMs_ = now;
+    if (speedPostReply_) {
+        return;
+    }
+
+    QUrl url(apiBase_ + QStringLiteral("/api/fleet/cockpit/speed"));
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+    req.setRawHeader("Accept", "application/json");
+
+    QJsonObject body;
+    body.insert(QStringLiteral("car_id"), carId_);
+    body.insert(QStringLiteral("speed_kmh"), qRound(qMax(0.0, speedKmh)));
+    body.insert(QStringLiteral("source"), QStringLiteral("SDV_Dashboard_pygame"));
+
+    speedPostReply_ = nam_->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(speedPostReply_, &QNetworkReply::finished, this, [this]() {
+        if (speedPostReply_) {
+            speedPostReply_->deleteLater();
+            speedPostReply_ = nullptr;
+        }
+    });
+}
+
+void DashboardDataHub::pollCockpit() {
+    if (cockpitReply_ || apiBase_.isEmpty()) {
+        return;
+    }
+    QUrl url(apiBase_ + QStringLiteral("/api/fleet/cockpit/all"));
+    QNetworkRequest req(url);
+    req.setRawHeader("Accept", "application/json");
+    cockpitReply_ = nam_->get(req);
+    connect(cockpitReply_, &QNetworkReply::finished, this, &DashboardDataHub::onCockpitReplyFinished);
+}
+
+void DashboardDataHub::onCockpitReplyFinished() {
+    auto* reply = cockpitReply_;
+    cockpitReply_ = nullptr;
+    if (!reply) {
+        return;
+    }
+    reply->deleteLater();
+    if (reply->error() != QNetworkReply::NoError) {
+        if (shouldEmitHttpError(QStringLiteral("fleet/cockpit/all"))) {
+            emit httpLogLine(formatHttpError(QStringLiteral("fleet/cockpit/all"), reply->errorString(), apiBase_));
+        }
+        return;
+    }
+    const auto doc = QJsonDocument::fromJson(reply->readAll());
+    if (!doc.isObject()) {
+        return;
+    }
+    const QJsonObject root = doc.object();
+    const QJsonArray cockpits = root.value(QStringLiteral("cockpits")).toArray();
+    const int fleetOnline = root.value(QStringLiteral("fleet_online")).toInt(0);
+    const int fleetTotal = root.value(QStringLiteral("fleet_total")).toInt(10);
+    emit fleetCockpitsUpdated(cockpits, fleetOnline, fleetTotal);
+    for (const auto& item : cockpits) {
+        const QJsonObject o = item.toObject();
+        if (o.value(QStringLiteral("car_id")).toString() == carId_) {
+            emit cockpitTelemetryUpdated(o);
+            break;
+        }
+    }
+}
+
 void DashboardDataHub::onFleetReplyFinished() {
     auto* reply = fleetReply_;
     fleetReply_ = nullptr;
@@ -84,7 +187,9 @@ void DashboardDataHub::onFleetReplyFinished() {
     }
     reply->deleteLater();
     if (reply->error() != QNetworkReply::NoError) {
-        emit httpLogLine(QStringLiteral("[fleet/state] HTTP error: %1").arg(reply->errorString()));
+        if (shouldEmitHttpError(QStringLiteral("fleet/state"))) {
+            emit httpLogLine(formatHttpError(QStringLiteral("fleet/state"), reply->errorString(), apiBase_));
+        }
         return;
     }
     const QByteArray body = reply->readAll();
@@ -109,7 +214,9 @@ void DashboardDataHub::pollHistory() {
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emit httpLogLine(QStringLiteral("[fleet-history] HTTP error: %1").arg(reply->errorString()));
+            if (shouldEmitHttpError(QStringLiteral("fleet-history"))) {
+                emit httpLogLine(formatHttpError(QStringLiteral("fleet-history"), reply->errorString(), apiBase_));
+            }
             return;
         }
         const auto doc = QJsonDocument::fromJson(reply->readAll());
@@ -131,12 +238,11 @@ void DashboardDataHub::setupMqtt() {
     QObject::connect(mqtt_, &QMqttClient::connected, this, [this]() {
         emit mqttConnectivityChanged(true);
         emit httpLogLine(QStringLiteral("[MQTT] Connected %1:%2").arg(mqttHost_).arg(mqttPort_));
-        const QString topic = fleetTopicForCar(carId_);
-        auto* sub = mqtt_->subscribe(QMqttTopicFilter(topic), 1);
+        auto* sub = mqtt_->subscribe(QMqttTopicFilter(QStringLiteral("/sdv/vehicle/+/flags/state")), 1);
         if (!sub) {
-            emit httpLogLine(QStringLiteral("[MQTT] subscribe failed for ") + topic);
+            emit httpLogLine(QStringLiteral("[MQTT] subscribe failed for fleet wildcard"));
         } else {
-            emit httpLogLine(QStringLiteral("[MQTT] Subscribed ") + topic);
+            emit httpLogLine(QStringLiteral("[MQTT] Subscribed /sdv/vehicle/+/flags/state"));
         }
     });
     QObject::connect(mqtt_, &QMqttClient::disconnected, this, [this]() {
@@ -150,7 +256,13 @@ void DashboardDataHub::setupMqtt() {
                          if (!doc.isObject()) {
                              return;
                          }
-                         emit mqttFeaturesPayload(doc.object());
+                         QJsonObject env = doc.object();
+                         const QRegularExpression re(QStringLiteral(R"(/sdv/vehicle/(car_\d+)/flags/state)"));
+                         const auto match = re.match(topic.name());
+                         if (match.hasMatch()) {
+                             env.insert(QStringLiteral("car_id"), match.captured(1));
+                         }
+                         emit mqttFeaturesPayload(env);
                      });
     mqtt_->connectToHost();
 #else

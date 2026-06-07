@@ -1,14 +1,47 @@
 #pragma once
 
-#include <QComboBox>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QLabel>
+#include <QHash>
 #include <QMainWindow>
 #include <QString>
 #include <QTimer>
 
-class QWebEngineView;
+#include "ui/NavSidebar.h"
+
+class QScrollArea;
+class QSplitter;
+
+namespace sdv::dash::mapbox {
+class MapboxBridge;
+}
+
+namespace sdv::dash::ops {
+class OpsTelemetryPipeline;
+}
+
+namespace sdv::dash::ota {
+class OtaDeploymentService;
+class OtaDeploymentViewModel;
+}
+
+namespace sdv::dash::carla::integration {
+class CarlaIntegrationController;
+}
+
+namespace sdv::dash::carla::control {
+class CarlaControlManager;
+}
+
+namespace sdv::dash::twin {
+class DigitalTwinController;
+}
+
+namespace sdv::dash::ui {
+class CockpitPanel;
+class TopBar;
+class GlassPanel;
+}
 
 namespace sdv::dash {
 
@@ -28,38 +61,70 @@ public:
     void applyLaunchOptions(const QString& apiBase,
                             const QString& carId,
                             const QString& mqttHost,
-                            int mqttPort);
+                            int mqttPort,
+                            const QString& rosWsUrl = QStringLiteral("ws://127.0.0.1:9090"),
+                            const QString& mapboxToken = QString(),
+                            const QString& carlaMode = QStringLiteral("off"));
 
-    /// Switch fleet/MQTT/OTA focus to another car (used by launch scripts via IPC).
     void selectVehicle(const QString& carId);
 
 private slots:
     void onFleetStates(const QJsonArray& states);
+    void onFleetCockpits(const QJsonArray& cockpits, int fleetOnline, int fleetTotal);
+    void onCockpitTelemetry(const QJsonObject& telemetry);
     void onMqttFeatures(const QJsonObject& env);
     void onTimeline(const QJsonArray& records);
     void onHttpLine(const QString& line);
-    void onCarComboChanged(int idx);
     void onCockpitCarSelected(const QString& carId);
     void onTrafficAnimTick();
+    void onNavSectionSelected(sdv::dash::ui::NavSidebar::Section section);
 
 private:
     QJsonObject pickCar(const QJsonArray& states, const QString& carId) const;
+    QJsonObject enrichedCarState(const QJsonObject& car) const;
     void syncCockpitState(const QJsonObject& carState);
+    void scrollRightPanelTo(QWidget* widget);
+    void applyImmersivePygameChrome(bool enabled);
 
+    sdv::dash::ops::OpsTelemetryPipeline* opsPipeline_{nullptr};
+    sdv::dash::carla::integration::CarlaIntegrationController* carlaIntegration_{nullptr};
+    sdv::dash::carla::control::CarlaControlManager* carlaControl_{nullptr};
+    sdv::dash::twin::DigitalTwinController* digitalTwin_{nullptr};
+    sdv::dash::mapbox::MapboxBridge* mapboxBridge_{nullptr};
     DashboardDataHub* hub_{nullptr};
-    QWebEngineView* cockpit_{nullptr};
+    bool carlaBridgePygameCockpit_{false};
+
+    sdv::dash::ui::TopBar* topBar_{nullptr};
+    sdv::dash::ui::NavSidebar* navSidebar_{nullptr};
+    sdv::dash::ui::CockpitPanel* cockpitPanel_{nullptr};
+
     FeatureStatusWidget* features_{nullptr};
     OTADeploymentWidget* ota_{nullptr};
+    sdv::dash::ota::OtaDeploymentService* otaService_{nullptr};
+    sdv::dash::ota::OtaDeploymentViewModel* otaViewModel_{nullptr};
     ABTestingWidget* ab_{nullptr};
     ShadowCompareWidget* shadow_{nullptr};
     HealthMonitorWidget* health_{nullptr};
     EventTimelineWidget* timeline_{nullptr};
 
-    QComboBox* carCombo_{nullptr};
-    QLabel* mqttLed_{nullptr};
+    QWidget* opsPanel_{nullptr};
+    sdv::dash::ui::GlassPanel* featuresPanel_{nullptr};
+    sdv::dash::ui::GlassPanel* otaPanel_{nullptr};
+    sdv::dash::ui::GlassPanel* abPanel_{nullptr};
+    sdv::dash::ui::GlassPanel* shadowPanel_{nullptr};
+    sdv::dash::ui::GlassPanel* healthPanel_{nullptr};
+    sdv::dash::ui::GlassPanel* settingsPanel_{nullptr};
+    QScrollArea* rightScroll_{nullptr};
+    QSplitter* bodySplit_{nullptr};
+
     QJsonArray lastFleet_;
     QJsonObject lastMqtt_;
+    QJsonObject lastCockpit_;
+    QHash<QString, QJsonObject> lastFleetCockpits_;
+    int fleetOnline_{0};
+    int fleetTotal_{10};
     QString carId_;
+    bool mqttUp_{false};
     QTimer trafficAnim_;
 };
 

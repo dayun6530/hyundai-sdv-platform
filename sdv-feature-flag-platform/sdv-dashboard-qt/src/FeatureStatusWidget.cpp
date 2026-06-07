@@ -1,18 +1,23 @@
 #include "FeatureStatusWidget.h"
 
+#include "ui/DashboardTheme.h"
+#include "ui/UiAnimation.h"
+
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QJsonArray>
 #include <QLabel>
+#include <QProgressBar>
 #include <QTimer>
 #include <QVBoxLayout>
 
 using sdv::dash::FeatureStatusWidget;
+using sdv::dash::ui::DashboardTheme;
+using sdv::dash::ui::UiAnimation;
 
 namespace {
 
-// ON/OFF follows status-server merged features.*.flag (from MQTT flags/state + test-ui).
-bool isFeatureFlagOn(const QJsonObject& fleetFeat) {
+bool isFeatureFlagOn(const QJsonObject& fleetFeat)
+{
     if (fleetFeat.value(QStringLiteral("kill_switch")).toBool()) {
         return false;
     }
@@ -23,107 +28,135 @@ bool isFeatureFlagOn(const QJsonObject& fleetFeat) {
     return false;
 }
 
-QString deriveState(const QJsonObject& fleetFeat) {
-    return isFeatureFlagOn(fleetFeat) ? QStringLiteral("ON") : QStringLiteral("OFF");
-}
-
-QString stateColor(const QString& s) {
-    if (s == QLatin1String("ON")) {
-        return QStringLiteral("#34d399");
-    }
-    return QStringLiteral("#94a3b8");
-}
-
-int estCpu(bool on, bool heavy) {
+int estCpu(const bool on, const bool heavy)
+{
     if (!on) {
         return 6;
     }
     return heavy ? 38 : 22;
 }
 
-int estMem(bool on) {
+int estMem(const bool on)
+{
     return on ? 168 : 96;
 }
 
 }  // namespace
 
-void FeatureStatusWidget::styleCard(QFrame* f, const QString& accent) {
-    f->setFrameShape(QFrame::StyledPanel);
-    f->setStyleSheet(QStringLiteral(
-        "QFrame { background-color:#07111d;border:1px solid %1;border-radius:7px;padding:3px; }"
-        "QLabel { color:#d6e2f2; font-size:9px; }")
-                         .arg(accent));
+void FeatureStatusWidget::styleCard(QFrame* f, const QString& accentRgb)
+{
+    f->setObjectName(QStringLiteral("featureCard"));
+    f->setStyleSheet(DashboardTheme::featureCardStyle(accentRgb));
+    f->setCursor(Qt::PointingHandCursor);
 }
 
 void FeatureStatusWidget::fillCard(CardUi& c, const QString& displayName, const QJsonObject& fleetFeat,
-                                   const QJsonObject& mqttFeat, const QJsonObject& ota) {
-    Q_UNUSED(ota);
-    Q_UNUSED(mqttFeat);
+                                   const QJsonObject& /*mqttFeat*/, const QJsonObject& /*ota*/)
+{
     const QString verRaw = fleetFeat.value(QStringLiteral("active_version")).toString(QStringLiteral("—"));
     const QString ver =
-        verRaw.startsWith(QLatin1String("v"), Qt::CaseInsensitive) ? verRaw : QStringLiteral("v %1").arg(verRaw);
+        verRaw.startsWith(QLatin1String("v"), Qt::CaseInsensitive) ? verRaw : QStringLiteral("v%1").arg(verRaw);
     const bool on = isFeatureFlagOn(fleetFeat);
-    const QString st = deriveState(fleetFeat);
-    c.title->setText(QStringLiteral("<b>%1</b>").arg(displayName));
-    c.ver->setText(ver);
-    c.state->setText(st);
-    c.state->setStyleSheet(QStringLiteral("color:%1;font-weight:700;font-size:9px").arg(stateColor(st)));
-    c.cpu->setText(QStringLiteral("CPU %1%").arg(estCpu(on, displayName == QLatin1String("ADAS"))));
-    c.mem->setText(QStringLiteral("MEM %1 MB").arg(estMem(on)));
-    c.hb->setText(hbOn_ ? QStringLiteral("●") : QStringLiteral("○"));
-    c.hb->setStyleSheet(on ? QStringLiteral("color:#22c55e") : QStringLiteral("color:#475569"));
+
+    c.title->setText(QStringLiteral("%1 · %2").arg(displayName, ver));
+    c.ver->setText(fleetFeat.value(QStringLiteral("active_slot")).toString().isEmpty()
+                       ? QString()
+                       : QStringLiteral("slot %1").arg(fleetFeat.value(QStringLiteral("active_slot")).toString()));
+    c.badge->setText(on ? QStringLiteral("RUNNING") : QStringLiteral("STANDBY"));
+    c.badge->setStyleSheet(on
+        ? QStringLiteral(
+              "QLabel { color: #4ade80; background: rgba(4,30,18,0.85);"
+              " border: 1px solid rgba(74,222,128,0.55); border-radius: 8px;"
+              " padding: 4px 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; }")
+        : QStringLiteral(
+              "QLabel { color: #94a3b8; background: rgba(15,23,42,0.85);"
+              " border: 1px solid rgba(100,116,139,0.45); border-radius: 8px;"
+              " padding: 4px 10px; font-size: 12px; font-weight: 700; }"));
+
+    const int cpu = estCpu(on, displayName == QLatin1String("ADAS"));
+    const int mem = estMem(on);
+    UiAnimation::animateProgress(c.cpuBar, cpu);
+    UiAnimation::animateProgress(c.memBar, qBound(8, mem / 3, 94));
+    c.cpuLbl->setText(QStringLiteral("CPU %1%").arg(cpu));
+    c.memLbl->setText(QStringLiteral("MEM %1 MB").arg(mem));
+
+    c.health->setText(hbOn_ && on ? QStringLiteral("● Health OK") : QStringLiteral("○ Health"));
+    c.health->setStyleSheet(on && hbOn_ ? QStringLiteral("color: #4ade80; font-size: 12px; font-weight: 600;")
+                                        : QStringLiteral("color: #64748b; font-size: 12px;"));
 }
 
-FeatureStatusWidget::FeatureStatusWidget(QWidget* parent) : QWidget(parent) {
+FeatureStatusWidget::FeatureStatusWidget(QWidget* parent) : QWidget(parent)
+{
     auto* h = new QHBoxLayout(this);
     h->setContentsMargins(0, 0, 0, 0);
-    h->setSpacing(5);
+    h->setSpacing(8);
 
     auto mkCard = [&](CardUi& c, const QString& accent) {
         c.frame = new QFrame(this);
         styleCard(c.frame, accent);
         auto* v = new QVBoxLayout(c.frame);
+        v->setContentsMargins(14, 12, 14, 12);
+        v->setSpacing(10);
+
+        auto* head = new QHBoxLayout();
         c.title = new QLabel(c.frame);
+        c.title->setStyleSheet(QStringLiteral("color: #f1f5f9; font-size: 24px; font-weight: 800;"));
+        c.title->setMinimumHeight(30);
+        c.badge = new QLabel(QStringLiteral("—"), c.frame);
+        head->addWidget(c.title, 1);
+        head->addWidget(c.badge, 0, Qt::AlignRight | Qt::AlignVCenter);
+        v->addLayout(head);
+
         c.ver = new QLabel(c.frame);
-        c.state = new QLabel(c.frame);
-        c.hb = new QLabel(c.frame);
-        c.cpu = new QLabel(c.frame);
-        c.mem = new QLabel(c.frame);
-        v->setContentsMargins(5, 5, 5, 5);
-        v->setSpacing(3);
-        v->addWidget(c.title);
+        c.ver->setStyleSheet(QStringLiteral("color: #7dd3fc; font-size: 13px; font-weight: 600;"));
         v->addWidget(c.ver);
-        v->addWidget(c.state);
-        auto* row = new QHBoxLayout();
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(2);
-        auto* hbLab = new QLabel(QStringLiteral("HB"), c.frame);
-        hbLab->setStyleSheet(QStringLiteral("color:#64748b;font-size:8px"));
-        row->addWidget(hbLab);
-        row->addStretch();
-        row->addWidget(c.hb);
-        v->addLayout(row);
-        v->addWidget(c.cpu);
-        v->addWidget(c.mem);
+
+        c.cpuBar = new QProgressBar(c.frame);
+        c.cpuBar->setRange(0, 100);
+        c.cpuBar->setTextVisible(false);
+        c.cpuBar->setFixedHeight(10);
+        c.cpuBar->setStyleSheet(DashboardTheme::progressBarStyle(QStringLiteral("#22d3ee")));
+        c.cpuLbl = new QLabel(c.frame);
+        c.cpuLbl->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 13px; font-weight: 600;"));
+        v->addWidget(c.cpuLbl);
+        v->addWidget(c.cpuBar);
+
+        c.memBar = new QProgressBar(c.frame);
+        c.memBar->setRange(0, 100);
+        c.memBar->setTextVisible(false);
+        c.memBar->setFixedHeight(10);
+        c.memBar->setStyleSheet(DashboardTheme::progressBarStyle(QStringLiteral("#38bdf8")));
+        c.memLbl = new QLabel(c.frame);
+        c.memLbl->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 13px; font-weight: 600;"));
+        v->addWidget(c.memLbl);
+        v->addWidget(c.memBar);
+
+        c.health = new QLabel(c.frame);
+        v->addWidget(c.health);
+
         h->addWidget(c.frame, 1);
+        UiAnimation::attachPulse(c.badge, 1600);
     };
 
-    mkCard(adas_, QStringLiteral("#1e3a5f"));
-    mkCard(nav_, QStringLiteral("#1a3f3a"));
-    mkCard(energy_, QStringLiteral("#3f2a1a"));
+    mkCard(adas_, QStringLiteral("34, 211, 238"));
+    mkCard(nav_, QStringLiteral("52, 211, 153"));
+    mkCard(energy_, QStringLiteral("251, 191, 36"));
 
     connect(&hbTimer_, &QTimer::timeout, this, &FeatureStatusWidget::pulseHeartbeat);
     hbTimer_.start(520);
+    UiAnimation::fadeIn(this);
 }
 
-void FeatureStatusWidget::pulseHeartbeat() {
+void FeatureStatusWidget::pulseHeartbeat()
+{
     hbOn_ = !hbOn_;
     if (!lastCar_.isEmpty()) {
         updateCards(lastCar_, lastMqtt_);
     }
 }
 
-void FeatureStatusWidget::updateCards(const QJsonObject& carState, const QJsonObject& mqttFeatures) {
+void FeatureStatusWidget::updateCards(const QJsonObject& carState, const QJsonObject& mqttFeatures)
+{
     lastCar_ = carState;
     lastMqtt_ = mqttFeatures;
     QJsonObject feats = carState.value(QStringLiteral("features")).toObject();
@@ -146,11 +179,10 @@ void FeatureStatusWidget::updateCards(const QJsonObject& carState, const QJsonOb
     }
 
     const QJsonObject mqttRoot = mqttFeatures.value(QStringLiteral("features")).toObject();
-    const QJsonObject adasM = mqttRoot.value(QStringLiteral("AdasFeature")).toObject();
-    const QJsonObject navM = mqttRoot.value(QStringLiteral("NavigationFeature")).toObject();
-    const QJsonObject evM = mqttRoot.value(QStringLiteral("EvEnergyFeature")).toObject();
-
-    fillCard(adas_, QStringLiteral("ADAS"), feats.value(QStringLiteral("ADAS")).toObject(), adasM, ota);
-    fillCard(nav_, QStringLiteral("Navigation"), feats.value(QStringLiteral("Navigation")).toObject(), navM, ota);
-    fillCard(energy_, QStringLiteral("EV Energy"), feats.value(QStringLiteral("Energy")).toObject(), evM, ota);
+    fillCard(adas_, QStringLiteral("ADAS"), feats.value(QStringLiteral("ADAS")).toObject(),
+             mqttRoot.value(QStringLiteral("AdasFeature")).toObject(), ota);
+    fillCard(nav_, QStringLiteral("Navigation"), feats.value(QStringLiteral("Navigation")).toObject(),
+             mqttRoot.value(QStringLiteral("NavigationFeature")).toObject(), ota);
+    fillCard(energy_, QStringLiteral("EV Energy"), feats.value(QStringLiteral("Energy")).toObject(),
+             mqttRoot.value(QStringLiteral("EvEnergyFeature")).toObject(), ota);
 }

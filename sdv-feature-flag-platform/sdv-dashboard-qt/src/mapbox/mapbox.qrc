@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/mapbox">
+        <file alias="index.html">web/index.html</file>
+        <file alias="minimap.html">web/minimap.html</file>
+        <file alias="bridge.js">web/bridge.js</file>
+        <file alias="route-snap.js">web/route-snap.js</file>
+        <file alias="vehicle-layer.js">web/vehicle-layer.js</file>
+        <file alias="mapbox-scene.js">web/mapbox-scene.js</file>
+        <file alias="vendor/three.min.js">web/vendor/three.min.js</file>
+        <file alias="minimap.js">web/minimap.js</file>
+    </qresource>
+</RCC>

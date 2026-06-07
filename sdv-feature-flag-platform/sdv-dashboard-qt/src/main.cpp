@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include <QApplication>
+#include <QCoreApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QLocalServer>
@@ -72,6 +73,7 @@ static void applyDarkTheme(QApplication& app) {
 }
 
 int main(int argc, char* argv[]) {
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("SDV_Dashboard"));
     QApplication::setOrganizationName(QStringLiteral("Hyundai SDV Demo"));
@@ -98,16 +100,34 @@ int main(int argc, char* argv[]) {
                               QStringLiteral("Vehicle id car_1..car_10"),
                               QStringLiteral("id"),
                               QStringLiteral("car_1"));
+    QCommandLineOption rosWsOpt(QStringList() << QStringLiteral("ros-ws-url"),
+                                QStringLiteral("sdv_ros_bridge WebSocket URL (use 'off' to disable)"),
+                                QStringLiteral("url"),
+                                QStringLiteral("ws://127.0.0.1:9090"));
+    QCommandLineOption mapboxTokenOpt(QStringList() << QStringLiteral("mapbox-token"),
+                                    QStringLiteral("Mapbox access token (or set MAPBOX_TOKEN env)"),
+                                    QStringLiteral("token"));
+    QCommandLineOption carlaModeOpt(
+        QStringList() << QStringLiteral("carla-mode"),
+        QStringLiteral("CARLA integration: off | sim | carla-ws | bridge"),
+        QStringLiteral("mode"),
+        QStringLiteral("off"));
     parser.addOption(apiOpt);
     parser.addOption(mqttHost);
     parser.addOption(mqttPort);
     parser.addOption(carOpt);
+    parser.addOption(rosWsOpt);
+    parser.addOption(mapboxTokenOpt);
+    parser.addOption(carlaModeOpt);
     parser.process(app);
+
+    const QString mapboxToken = parser.value(mapboxTokenOpt).trimmed();
 
     const QString carId = parser.value(carOpt).trimmed().isEmpty() ? QStringLiteral("car_1")
                                                                     : parser.value(carOpt).trimmed();
 
-    if (tryForwardCarToRunningInstance(carId)) {
+    const bool forceNew = qEnvironmentVariableIsSet("SDV_FORCE_NEW");
+    if (!forceNew && tryForwardCarToRunningInstance(carId)) {
         return 0;
     }
 
@@ -119,8 +139,11 @@ int main(int argc, char* argv[]) {
 
     sdv::dash::MainWindow win;
     attachIpcServer(ipcServer, &win);
+    const QString carlaMode = qEnvironmentVariableIsSet("SDV_CARLA_MODE")
+        ? QString::fromUtf8(qgetenv("SDV_CARLA_MODE"))
+        : parser.value(carlaModeOpt);
     win.applyLaunchOptions(parser.value(apiOpt), carId, parser.value(mqttHost),
-                           parser.value(mqttPort).toInt());
+                           parser.value(mqttPort).toInt(), parser.value(rosWsOpt), mapboxToken, carlaMode);
 
     win.show();
     return QApplication::exec();
