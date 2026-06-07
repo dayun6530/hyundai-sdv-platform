@@ -43,4 +43,7 @@ CampaignLoadResult loadCampaignFromFile(const std::string& workDir, const std::s
 /// Legacy slot for fleet-deploy: candidate → B, primary → A; explicit legacy_slot wins when set.
 std::string fleetDeploySlotForCampaign(const CampaignDocument& doc);
 
+/// Accepts primary/candidate or internal legacy A/B (case-insensitive) for CLI/API compatibility.
+std::string normalizeFleetDeploySlotArg(const std::string& slotOrRole);
+
 }  // namespace sdv::platform::deployment

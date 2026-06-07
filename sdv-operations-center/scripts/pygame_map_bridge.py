@@ -160,6 +160,77 @@ def _load_no_rendering_module(script: Path):
 CAMERA_FPS = 15
 CAMERA_JPEG_QUALITY = 82
 
+_KOREAN_FONT_PATHS = (
+    Path(r"C:\Windows\Fonts\malgun.ttf"),
+    Path(r"C:\Windows\Fonts\malgunbd.ttf"),
+    Path("/usr/share/fonts/truetype/nanum/NanumGothic.ttf"),
+    Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+    Path("/System/Library/Fonts/Supplemental/AppleGothic.ttf"),
+)
+_UI_FONT_CACHE: dict[int, Any] = {}
+
+
+def _korean_font(size: int) -> Any:
+    cached = _UI_FONT_CACHE.get(size)
+    if cached is not None:
+        return cached
+    for path in _KOREAN_FONT_PATHS:
+        if path.is_file():
+            font = pygame.font.Font(str(path), size)
+            _UI_FONT_CACHE[size] = font
+            return font
+    try:
+        font = pygame.font.SysFont(
+            "malgungothic,nanumgothic,applegothic,notosanscjkkr,sans",
+            size,
+        )
+    except Exception:
+        font = pygame.font.Font(pygame.font.get_default_font(), size)
+    _UI_FONT_CACHE[size] = font
+    return font
+
+
+def _wrap_ui_text(text: str, font: Any, max_width: int) -> list[str]:
+    raw = str(text or "").strip()
+    if not raw:
+        return [""]
+    lines: list[str] = []
+    for paragraph in raw.splitlines():
+        paragraph = paragraph.strip()
+        if not paragraph:
+            lines.append("")
+            continue
+        current = ""
+        for ch in paragraph:
+            if ch == " " and current and font.size(current + " ")[0] > max_width:
+                lines.append(current)
+                current = ""
+                continue
+            trial = current + ch
+            if font.size(trial)[0] <= max_width:
+                current = trial
+            else:
+                if current:
+                    lines.append(current)
+                current = ch
+        if current:
+            lines.append(current)
+    return lines or [""]
+
+
+def _focus_pygame_window() -> None:
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        info = pygame.display.get_wm_info()
+        hwnd = info.get("window")
+        if hwnd:
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+    except Exception:
+        pass
+
 
 def _surface_to_jpeg_b64(surface: pygame.Surface, quality: int = CAMERA_JPEG_QUALITY) -> str:
     buf = io.BytesIO()
@@ -203,6 +274,14 @@ class PygameMapSession:
         self._pg_world: Any = None
         self._pending_car_id: Optional[str] = None
         self._car_switch_lock = threading.Lock()
+        self._promote_prompt_lock = threading.Lock()
+        self._promote_prompt: Optional[dict[str, Any]] = None
+        self._promote_prompt_ws: Any = None
+        self._promote_btn_yes: Optional[Any] = None
+        self._promote_btn_no: Optional[Any] = None
+        self._display_surface: Any = None
+        self._display_hidden_flag = pygame.HIDDEN if hasattr(pygame, "HIDDEN") else 0
+        self._prompt_window_visible = False
         self.active_car_id = "car_1"
         # Interface expected by carla_integration_bridge handlers
         self.active_camera = "pygame_map"
@@ -223,6 +302,196 @@ class PygameMapSession:
             f"Connected — pygame map {width}x{height} → Dashboard front_camera @ {CAMERA_FPS} FPS"
         )
         print(f"  ws://{HOST_TELEMETRY}:{PORT_TELEMETRY}  control ws://{HOST_CONTROL}:{PORT_CONTROL}")
+
+    def set_promote_prompt(self, msg: dict[str, Any], websocket: Any) -> None:
+        with self._promote_prompt_lock:
+            self._promote_prompt = {
+                "request_id": str(msg.get("request_id") or ""),
+                "feature": str(msg.get("feature") or ""),
+                "version": str(msg.get("version") or ""),
+                "message": str(msg.get("message") or "").strip(),
+                "detail": str(msg.get("detail") or "").strip(),
+            }
+            self._promote_prompt_ws = websocket
+        print(
+            "Promote Primary confirm — pygame 창에서 예(Y/Enter) / 아니오(N/Esc) 또는 버튼 클릭"
+        )
+
+    def answer_promote_prompt(self, accepted: bool) -> None:
+        """Thread-safe entry for WS handler (async thread) and pygame input."""
+        if not self._has_promote_prompt():
+            return
+        self._answer_promote_prompt(accepted)
+
+    def _show_prompt_window(self) -> None:
+        if self._prompt_window_visible:
+            return
+        try:
+            pygame.display.set_caption(
+                "SDV Primary 확인 — 예(Y/Enter) · 아니오(N/Esc) · 버튼 클릭"
+            )
+            self._display_surface = pygame.display.set_mode(
+                (self.width, self.height), 0
+            )
+            self._prompt_window_visible = True
+            _focus_pygame_window()
+        except Exception as exc:
+            print(f"show prompt window failed: {exc}")
+
+    def _hide_prompt_window(self) -> None:
+        if not self._prompt_window_visible:
+            return
+        try:
+            self._display_surface = pygame.display.set_mode(
+                (self.width, self.height), self._display_hidden_flag
+            )
+            pygame.display.set_caption("SDV CARLA pygame map")
+            self._prompt_window_visible = False
+        except Exception as exc:
+            print(f"hide prompt window failed: {exc}")
+
+    def clear_promote_prompt(self) -> None:
+        with self._promote_prompt_lock:
+            self._promote_prompt = None
+            self._promote_prompt_ws = None
+            self._promote_btn_yes = None
+            self._promote_btn_no = None
+
+    def _get_promote_hit_rects(self) -> tuple[Optional[Any], Optional[Any]]:
+        with self._promote_prompt_lock:
+            return self._promote_btn_yes, self._promote_btn_no
+
+    def _has_promote_prompt(self) -> bool:
+        with self._promote_prompt_lock:
+            return self._promote_prompt is not None
+
+    def _answer_promote_prompt(self, accepted: bool) -> None:
+        with self._promote_prompt_lock:
+            prompt = dict(self._promote_prompt) if self._promote_prompt else None
+            ws = self._promote_prompt_ws
+            self._promote_prompt = None
+            self._promote_prompt_ws = None
+            self._promote_btn_yes = None
+            self._promote_btn_no = None
+        if not prompt or ws is None or not self._loop:
+            return
+        payload = json.dumps({
+            "type": "promote_primary_response",
+            "request_id": prompt.get("request_id", ""),
+            "accepted": accepted,
+        })
+
+        async def _send() -> None:
+            try:
+                await ws.send(payload)
+            except Exception as exc:
+                print(f"promote_primary_response send failed: {exc}")
+
+        try:
+            if self._loop and self._loop.is_running():
+                asyncio.run_coroutine_threadsafe(_send(), self._loop)
+            else:
+                print("promote_primary_response skipped: asyncio loop not running")
+        except Exception as exc:
+            print(f"promote_primary_response schedule failed: {exc}")
+        label = "accepted" if accepted else "declined"
+        print(f"Promote Primary confirm {label} in pygame cockpit")
+
+    def _render_promote_overlay(self, display: pygame.Surface, nrm: Any) -> None:
+        with self._promote_prompt_lock:
+            prompt = dict(self._promote_prompt) if self._promote_prompt else None
+        if not prompt:
+            if self._prompt_window_visible:
+                self._hide_prompt_window()
+            self._promote_btn_yes = None
+            self._promote_btn_no = None
+            return
+
+        if not self._prompt_window_visible:
+            self._show_prompt_window()
+            display = self._display_surface or display
+
+        w, h = self.width, self.height
+        overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 170))
+        display.blit(overlay, (0, 0))
+
+        panel_w = min(760, w - 80)
+        panel_h = min(360, h - 120)
+        panel_x = (w - panel_w) // 2
+        panel_y = (h - panel_h) // 2
+        panel = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
+        pygame.draw.rect(display, nrm.COLOR_ALUMINIUM_5, panel)
+        border = getattr(nrm, "COLOR_BUTTER_0", getattr(nrm, "COLOR_YELLOW_2", (252, 233, 79)))
+        pygame.draw.rect(display, border, panel, 3)
+
+        title_font = _korean_font(26)
+        body_font = _korean_font(22)
+        hint_font = _korean_font(18)
+        btn_font = _korean_font(20)
+
+        title = title_font.render("Primary 업데이트 확인", True, nrm.COLOR_WHITE)
+        display.blit(title, title.get_rect(centerx=panel.centerx, top=panel_y + 24))
+
+        feature = prompt.get("feature") or ""
+        version = prompt.get("version") or ""
+        default_msg = (
+            f"{feature} feature의 새 버전을 Primary로 업데이트하시겠습니까?"
+            if feature
+            else "새 버전을 Primary로 업데이트하시겠습니까?"
+        )
+        message = prompt.get("message") or default_msg
+        y = panel_y + 72
+        for line in _wrap_ui_text(message, body_font, panel_w - 48):
+            if not line:
+                y += body_font.get_linesize() // 2
+                continue
+            surf = body_font.render(line, True, nrm.COLOR_WHITE)
+            display.blit(surf, (panel_x + 24, y))
+            y += surf.get_height() + 6
+
+        detail = prompt.get("detail") or ""
+        if not detail and version:
+            detail = f"Feature: {feature}\n버전: {version}" if feature else f"버전: {version}"
+        if detail:
+            y += 8
+            for line in detail.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                surf = body_font.render(line, True, nrm.COLOR_ALUMINIUM_1)
+                display.blit(surf, (panel_x + 24, y))
+                y += surf.get_height() + 4
+
+        btn_w, btn_h, gap = 160, 44, 24
+        total_w = btn_w * 2 + gap
+        btn_y = panel.bottom - btn_h - 28
+        btn_x0 = panel.centerx - total_w // 2
+        yes_rect = pygame.Rect(btn_x0, btn_y, btn_w, btn_h)
+        no_rect = pygame.Rect(btn_x0 + btn_w + gap, btn_y, btn_w, btn_h)
+        with self._promote_prompt_lock:
+            self._promote_btn_yes = yes_rect
+            self._promote_btn_no = no_rect
+
+        yes_color = getattr(nrm, "COLOR_CHAMELEON_0", getattr(nrm, "COLOR_GREEN", (138, 226, 52)))
+        no_color = getattr(nrm, "COLOR_SCARLET_RED_0", getattr(nrm, "COLOR_RED", (239, 41, 41)))
+        pygame.draw.rect(display, yes_color, yes_rect)
+        pygame.draw.rect(display, no_color, no_rect)
+        yes_label = btn_font.render("예 (Y)", True, nrm.COLOR_WHITE)
+        no_label = btn_font.render("아니오 (N)", True, nrm.COLOR_WHITE)
+        display.blit(yes_label, yes_label.get_rect(center=yes_rect.center))
+        display.blit(no_label, no_label.get_rect(center=no_rect.center))
+
+        hint = hint_font.render(
+            "키보드: Y / Enter = 예   ·   N / Esc = 아니오",
+            True,
+            nrm.COLOR_ALUMINIUM_1,
+        )
+        display.blit(hint, hint.get_rect(centerx=panel.centerx, bottom=panel.bottom - 8))
+
+    @staticmethod
+    def _wrap_text(text: str, font: Any, max_width: int) -> list[str]:
+        return _wrap_ui_text(text, font, max_width)
 
     def register_stream_client(self, ws: Any) -> None:
         with self._clients_lock:
@@ -276,8 +545,9 @@ class PygameMapSession:
         os.environ.setdefault("SDL_VIDEODRIVER", "windib")
         pygame.init()
         display = pygame.display.set_mode(
-            (self.width, self.height), pygame.HIDDEN if hasattr(pygame, "HIDDEN") else 0
+            (self.width, self.height), self._display_hidden_flag
         )
+        self._display_surface = display
         patch_no_rendering_vehicles(nrm)
 
         args = SimpleNamespace(
@@ -324,8 +594,29 @@ class PygameMapSession:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     session._running = False
-                elif event.type == pygame.KEYUP and input_control._is_quit_shortcut(event.key):
+                    continue
+                if event.type == pygame.KEYUP and input_control._is_quit_shortcut(event.key):
                     session._running = False
+                    continue
+                if not session._has_promote_prompt():
+                    continue
+                if event.type in (pygame.KEYDOWN, pygame.KEYUP):
+                    if event.type != pygame.KEYDOWN:
+                        continue
+                    key = event.key
+                    if key in (pygame.K_y, pygame.K_RETURN, pygame.K_KP_ENTER):
+                        session.answer_promote_prompt(True)
+                    elif key in (pygame.K_n, pygame.K_ESCAPE):
+                        session.answer_promote_prompt(False)
+                elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+                    if event.type != pygame.MOUSEBUTTONDOWN or event.button not in (1,):
+                        continue
+                    yes_rect, no_rect = session._get_promote_hit_rects()
+                    pos = event.pos
+                    if yes_rect and yes_rect.collidepoint(pos):
+                        session.answer_promote_prompt(True)
+                    elif no_rect and no_rect.collidepoint(pos):
+                        session.answer_promote_prompt(False)
 
         input_control._parse_keys = _parse_keys_from_dashboard
         input_control._parse_events = _parse_events_minimal
@@ -333,7 +624,8 @@ class PygameMapSession:
         def _parse_input_dashboard_only(clock: Any) -> None:
             """Map pan/zoom + sync dashboard gear/throttle into pygame HUD (no local keyboard drive)."""
             input_control._parse_events()
-            input_control._parse_mouse()
+            if not session._has_promote_prompt():
+                input_control._parse_mouse()
             if session.controller is not None and isinstance(input_control.control, carla.VehicleControl):
                 _parse_keys_from_dashboard(clock.get_time())
 
@@ -388,10 +680,12 @@ class PygameMapSession:
                 if session.controller:
                     session.controller.tick()
 
+                display = session._display_surface or display
                 display.fill(nrm.COLOR_ALUMINIUM_4)
                 pg_world.render(display)
                 hud.render(display)
                 input_control.render(display)
+                session._render_promote_overlay(display, nrm)
                 pygame.display.flip()
         except Exception as exc:
             print(f"pygame loop ended: {exc}")

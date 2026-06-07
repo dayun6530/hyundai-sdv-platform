@@ -166,4 +166,21 @@ std::string fleetDeploySlotForCampaign(const CampaignDocument& doc) {
     return "B";
 }
 
+std::string normalizeFleetDeploySlotArg(const std::string& slotOrRole) {
+    if (slotOrRole.empty()) {
+        return {};
+    }
+    const std::string s = toLower(slotOrRole);
+    if (s == "primary" || s == "a") {
+        return "A";
+    }
+    if (s == "candidate" || s == "b") {
+        return "B";
+    }
+    if (slotOrRole == "A" || slotOrRole == "B") {
+        return slotOrRole;
+    }
+    return {};
+}
+
 }  // namespace sdv::platform::deployment

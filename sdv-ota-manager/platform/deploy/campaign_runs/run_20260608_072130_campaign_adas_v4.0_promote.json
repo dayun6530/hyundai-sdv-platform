@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260608_072130_campaign_adas_v4.0_promote",
+  "campaign_id": "campaign_adas_v4.0",
+  "campaign_file": "deploy/campaign_runs/.runtime/campaign_adas_v4.0_runtime.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_adas_v4.0",
+  "phase": "promote",
+  "status": "success",
+  "started_at": "2026-06-08T07:21:30",
+  "finished_at": "2026-06-08T07:22:15",
+  "feature": "ADAS",
+  "target_version": "v4.0",
+  "target_role": "primary",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "promote",
+    "pull_requested": false,
+    "pull_policy": "",
+    "image": "localhost:5000/sdv/adas-feature:v4.0"
+  },
+  "resolved_targets": ["car_1"],
+  "aggregate": {
+    "total": 1,
+    "success": 1,
+    "failed": 0
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_1",
+      "result": "success",
+      "reason": "",
+      "deploy_id": "deploy_20260608_072132_001",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "promote",
+      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v4.0",
+      "docker_runtime_container": "car_1_agent_adas",
+      "state_file": "deploy/state/car_1.json",
+      "config_file": "config/car/car_1.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_1 ADAS B v4.0 --sync-config --no-defer-native --docker-runtime=promote"
+    }
+  ],
+  "warnings": [],
+  "failures": []
+}

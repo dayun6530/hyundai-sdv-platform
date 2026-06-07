@@ -1,5 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const {
+  roleToLegacySlot,
+  legacySlotToRole,
+  roleToLabel,
+} = require('./roleMapping');
 
 const FEATURE_BINARY = {
   ADAS: 'AdasFeature',
@@ -43,12 +48,18 @@ function syncVersionMapFromCampaign(deployRoot, campaign) {
     throw err;
   }
 
-  let slotRaw = String(campaign.legacy_slot || 'B')
-    .trim()
-    .toUpperCase();
-  if (slotRaw !== 'A' && slotRaw !== 'B') {
-    slotRaw = 'B';
+  let slotRaw = 'B';
+  if (campaign.target_role) {
+    slotRaw = roleToLegacySlot(campaign.target_role) || 'B';
+  } else {
+    slotRaw = String(campaign.legacy_slot || campaign.internal_legacy_slot || 'B')
+      .trim()
+      .toUpperCase();
+    if (slotRaw !== 'A' && slotRaw !== 'B') {
+      slotRaw = 'B';
+    }
   }
+  const targetRole = legacySlotToRole(slotRaw) || 'candidate';
 
   const vmPath = path.join(deployRoot, 'version_map.json');
   const vmBakPath = `${vmPath}.bak`;
@@ -109,6 +120,9 @@ function syncVersionMapFromCampaign(deployRoot, campaign) {
       ok: true,
       unchanged: true,
       feature,
+      role: targetRole,
+      role_label: roleToLabel(targetRole),
+      internal_legacy_slot: slotRaw,
       slot: slotRaw,
       assigned,
       previous,
@@ -143,12 +157,15 @@ function syncVersionMapFromCampaign(deployRoot, campaign) {
     ok: true,
     unchanged: false,
     feature,
+    role: targetRole,
+    role_label: roleToLabel(targetRole),
+    internal_legacy_slot: slotRaw,
     slot: slotRaw,
     previous,
     assigned,
     version_map_path: 'deploy/version_map.json',
     backup_path: 'deploy/version_map.json.bak',
-    message: `${feature} slot ${slotRaw} → ${targetVersion}`,
+    message: `${feature} ${roleToLabel(targetRole)} → ${targetVersion}`,
   };
 }
 

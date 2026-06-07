@@ -91,6 +91,19 @@ export async function setDriverApproval(car_id, approved) {
   return data;
 }
 
+export async function applyKillSwitch(body) {
+  const res = await fetchNoStore("/api/fleet/kill-switch", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error || `Kill switch request failed: ${res.status}`);
+  }
+  return data;
+}
+
 export async function runFleetAction(payload) {
   const res = await fetch("/api/fleet/action", {
     method: "POST",

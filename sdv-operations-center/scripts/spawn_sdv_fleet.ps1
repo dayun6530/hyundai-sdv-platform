@@ -12,7 +12,7 @@ param(
     [string]$CarlaRoot = "C:\Users\82107\desktop\CARLA_0.9.15\WindowsNoEditor",
     [ValidateRange(1, 10)]
     [int]$FleetCount = 10,
-    [int]$WaitAfterSec = 8
+    [int]$WaitAfterSec = 15
 )
 
 $ErrorActionPreference = "Stop"

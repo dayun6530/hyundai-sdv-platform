@@ -5,6 +5,7 @@ const {
 } = require('./campaignValidateApi');
 const { repairVehicleRuntimeFromFleetState } = require('./vehicleRuntimeFleetSync');
 const { recordRollbackStackAfterPromote } = require('./rollbackStackSync');
+const { assertSafetyReadyForCars } = require('./safetyPreconditionsApi');
 
 const RUN_PHASES = new Set(['candidate', 'promote']);
 const RUN_TIMEOUT_MS = 300_000;
@@ -212,6 +213,50 @@ function registerCampaignRunRoutes(app, deps) {
                 fleetVehicles,
               })
             : { relPath: hit.campaignPath, runtime_target: null };
+
+        const carIdsForSafety =
+          picked.runtime_target?.vehicle_ids?.length
+            ? picked.runtime_target.vehicle_ids
+            : typeof extractCarIdsFromCampaign === 'function'
+              ? extractCarIdsFromCampaign(hit.data)
+              : [];
+
+        const featureForSafety = String(hit.data?.feature || 'ADAS').trim();
+        const safetyAction =
+          phase === 'promote' ? 'promote' : 'candidate-deploy';
+
+        if (carIdsForSafety.length) {
+          const safetyGate = assertSafetyReadyForCars(DEPLOY_ROOT, carIdsForSafety, {
+            feature: featureForSafety,
+            action: safetyAction,
+          });
+          if (!safetyGate.ok) {
+            res.status(409).json({
+              ok: false,
+              execution: true,
+              campaign_id: campaignId,
+              phase,
+              status: 'FAIL',
+              error: safetyGate.message,
+              safety_blocked: true,
+              failed_checks: safetyGate.failed_checks,
+              safety_results: safetyGate.results,
+              summary: { total: 0, success: 0, failed: 1 },
+              items: [
+                {
+                  level: 'FAIL',
+                  message: `Safety preconditions not READY: ${(safetyGate.failed_checks || []).join(', ') || 'see safety_results'}`,
+                },
+                {
+                  level: 'WARN',
+                  message:
+                    'Click Prepare Demo READY or adjust safety values in deploy/state before retrying.',
+                },
+              ],
+            });
+            return;
+          }
+        }
 
         const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
         const relPath = picked.relPath;

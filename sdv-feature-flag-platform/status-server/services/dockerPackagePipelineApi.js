@@ -54,7 +54,7 @@ const PIPELINE_STEPS = [
   {
     id: 'register',
     label: '7 · Register + version_map',
-    hint: 'register_build_artifact.sh (+ sync slot B, former step 8)',
+    hint: 'register_build_artifact.sh (+ sync Candidate role in version_map)',
   },
   {
     id: 'bootstrap',
@@ -268,7 +268,7 @@ function registerDockerPackagePipelineRoutes(app, deps) {
       default_registry: DEFAULT_REGISTRY,
       notes: [
         'Steps 2 (cpp) and 9–10 (campaign/policy) stay manual in IDE.',
-        'Step 7 includes former step 8 (version_map slot B sync).',
+        'Step 7 includes former step 8 (version_map Candidate role sync).',
         'After pipeline, use Deployment Campaigns for Validate / Candidate / Promote.',
       ],
     });

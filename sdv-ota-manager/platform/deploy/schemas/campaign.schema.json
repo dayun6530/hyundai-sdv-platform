@@ -24,7 +24,12 @@
     "feature": { "type": "string", "enum": ["ADAS", "Navigation", "Energy"] },
     "target_version": { "type": "string", "pattern": "^v" },
     "target_role": { "type": "string", "enum": ["primary", "candidate"] },
-    "legacy_slot": { "type": "string", "enum": ["A", "B"], "description": "Internal fleet-deploy mapping only: A=primary, B=candidate" },
+    "internal_legacy_slot": {
+      "type": "string",
+      "enum": ["A", "B"],
+      "description": "Internal fleet-deploy mapping documented for UI: A=primary, B=candidate"
+    },
+    "legacy_slot": { "type": "string", "enum": ["A", "B"], "description": "Deprecated internal fleet-deploy alias retained for backward compatibility (A=primary, B=candidate)" },
     "package_id": { "type": "string" },
     "package_path": { "type": "string" },
     "manifest_path": { "type": "string" },

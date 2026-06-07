@@ -3,6 +3,7 @@ import { fetchDockerLogs, fetchFleetHistoryLogs } from "../api/campaigns.js";
 import { formatDockerLogDisplay } from "./dockerLogFormat.js";
 import { runStatusClass } from "./campaignUiModel.js";
 import { RawJsonDetails, StatusBadge } from "./campaignShared.jsx";
+import { translateHistoryRecordForDisplay, roleToLabel } from "./roleMapping.js";
 
 const LOG_TABS = [
   { id: "primary", label: "Primary Logs", hint: "replaces: docker logs car_1_agent_adas" },
@@ -59,7 +60,9 @@ function FleetHistoryView({ data, loading, error }) {
   if (error) {
     return <div className="campaign-logs-alert campaign-logs-alert-error">{error}</div>;
   }
-  const entries = data?.entries || [];
+  const entries = (data?.entries || data?.records || []).map((e) =>
+    e.ui_summary ? e : translateHistoryRecordForDisplay(e),
+  );
   if (!entries.length) {
     return <p className="empty-state tiny">No fleet history entries for this filter.</p>;
   }
@@ -73,6 +76,7 @@ function FleetHistoryView({ data, loading, error }) {
               <th>Time</th>
               <th>Action</th>
               <th>Feature</th>
+              <th>Target role</th>
               <th>Version</th>
               <th>Docker mode</th>
               <th>Docker result</th>
@@ -86,6 +90,12 @@ function FleetHistoryView({ data, loading, error }) {
                 <td className="tiny mono">{e.timestamp || "—"}</td>
                 <td className="tiny">{e.action || "—"}</td>
                 <td>{e.feature || "—"}</td>
+                <td className="tiny">
+                  {e.ui_summary?.role_label ||
+                    e.target_role_label ||
+                    roleToLabel(e.target_role) ||
+                    "—"}
+                </td>
                 <td className="mono tiny">{e.version || e.target_version || "—"}</td>
                 <td className="tiny mono">{e.docker_runtime_mode || "—"}</td>
                 <td className="tiny">

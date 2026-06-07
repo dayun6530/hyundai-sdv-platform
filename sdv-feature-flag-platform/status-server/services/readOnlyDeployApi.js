@@ -11,6 +11,15 @@ const {
   readVehicleRuntimeFeatureRow,
   repairVehicleRuntimeFromFleetState,
 } = require('./vehicleRuntimeFleetSync');
+const {
+  addRoleViewToFeatureState,
+  buildUiSummary,
+  enrichCampaignForWrite,
+  legacySlotToRole,
+  normalizeRole,
+  roleToLabel,
+  translateHistoryRecordForDisplay,
+} = require('./roleMapping');
 
 const SAFE_ID_RE = /^[a-zA-Z0-9._-]+$/;
 const CAR_ID_RE = /^car_(10|[1-9])$/;
@@ -533,6 +542,7 @@ function registerReadOnlyDeployRoutes(app, deps) {
       const candidateVersion = st.shadow_version || dom.shadow_version || '';
       const candidateImage = st.shadow_image || dom.shadow_image || '';
 
+      const roleView = addRoleViewToFeatureState(st);
       features[feature] = {
         primary_version:
           st.primary_version || st.active_version || dom.primary_version || '',
@@ -551,8 +561,15 @@ function registerReadOnlyDeployRoutes(app, deps) {
         manifest_path: st.manifest_path || '',
         config_version: cfg.version || '',
         config_image: cfg.image || '',
-        config_slot: cfg.slot || '',
         config_mode: cfg.mode || '',
+        active_role: roleView.active_role,
+        shadow_role: roleView.shadow_role,
+        fallback_role: roleView.fallback_role,
+        role_labels: roleView.role_labels,
+        internal: {
+          ...(roleView.internal || {}),
+          config_legacy_slot: cfg.slot || null,
+        },
       };
     }
 
@@ -563,19 +580,24 @@ function registerReadOnlyDeployRoutes(app, deps) {
     const warnings = [];
     const errors = [];
     const all = readAllCampaignFiles(warnings, errors);
-    const campaigns = all.map(({ fileName, data }) => ({
-      campaign_id: data.campaign_id || '',
-      name: data.name || '',
-      status: data.status || '',
-      feature: data.feature || '',
-      target_version: data.target_version || '',
-      target_role: data.target_role || '',
-      rollout_policy_id: data.rollout_policy_id || '',
-      target_selector: summarizeTargetSelector(data.target_selector),
-      docker_image: data.docker_image || '',
-      approval_required: Boolean(data.approval_required),
-      file_name: fileName,
-    }));
+    const campaigns = all.map(({ fileName, data }) => {
+      const enriched = enrichCampaignForWrite(data);
+      return {
+        campaign_id: enriched.campaign_id || '',
+        name: enriched.name || '',
+        status: enriched.status || '',
+        feature: enriched.feature || '',
+        target_version: enriched.target_version || '',
+        target_role: enriched.target_role || '',
+        target_role_label: roleToLabel(enriched.target_role),
+        internal_legacy_slot: enriched.internal_legacy_slot || '',
+        rollout_policy_id: enriched.rollout_policy_id || '',
+        target_selector: summarizeTargetSelector(enriched.target_selector),
+        docker_image: enriched.docker_image || '',
+        approval_required: Boolean(enriched.approval_required),
+        file_name: fileName,
+      };
+    });
 
     if (typeof resolveDockerImageAvailability === 'function') {
       try {
@@ -633,12 +655,18 @@ function registerReadOnlyDeployRoutes(app, deps) {
           .map(({ fileName, data }) => campaignRunListItem(fileName, data)),
       ).slice(0, 10);
 
+      const campaign = enrichCampaignForWrite(hit.data);
       res.json({
         ok: true,
-        campaign: hit.data,
+        campaign,
         campaign_file_name: hit.fileName,
         rollout_policy,
         latest_runs,
+        ui_summary: {
+          target_role: campaign.target_role,
+          target_role_label: roleToLabel(campaign.target_role),
+          internal_legacy_slot: campaign.internal_legacy_slot,
+        },
         warnings,
         errors,
       });
@@ -1019,10 +1047,31 @@ function registerReadOnlyDeployRoutes(app, deps) {
       feature,
       action,
     });
+    const entries = filtered.map((rec) => {
+      const display = translateHistoryRecordForDisplay(rec);
+      const slot =
+        rec.target_slot ||
+        rec.internal_legacy_slot ||
+        rec.legacy_slot ||
+        null;
+      const role =
+        display.target_role ||
+        legacySlotToRole(slot) ||
+        normalizeRole(rec.target_role);
+      return {
+        ...display,
+        ui_summary: buildUiSummary({
+          feature: rec.feature,
+          role,
+          version: rec.version || rec.target_version,
+          legacySlot: slot,
+        }),
+      };
+    });
     res.json({
       ok: true,
-      entries: filtered,
-      entry_count: filtered.length,
+      entries,
+      entry_count: entries.length,
       raw_lines,
       parse_errors,
       total_lines,

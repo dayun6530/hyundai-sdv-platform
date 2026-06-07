@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { assignVersionMapSlot } from "../api/fleet.js";
-import { slotAssignmentLabel } from "./packageRegistryModel.js";
+import {
+  DEPLOYMENT_ROLES,
+  defaultDeploymentRoleForPackage,
+  roleToLabel,
+  slotAssignmentLabel,
+} from "./packageRegistryModel.js";
 
-function defaultSlotForPackage(pkg) {
-  if (pkg?.role === "stable") return "A";
-  return "B";
-}
-
-function AssignSlotControls({ pkg, onAssigned }) {
-  const [slot, setSlot] = useState(() => defaultSlotForPackage(pkg));
+function AssignRoleControls({ pkg, onAssigned }) {
+  const [role, setRole] = useState(() => defaultDeploymentRoleForPackage(pkg));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -16,23 +16,24 @@ function AssignSlotControls({ pkg, onAssigned }) {
   const runAssign = async () => {
     setErr("");
     setMsg("");
+    const roleLabel = roleToLabel(role);
     let warn = "";
-    if (pkg.role === "candidate" && slot === "A") {
-      warn = "\n\nWarning: assigning a candidate package to A slot (A is usually stable).";
-    } else if (pkg.role === "stable" && slot === "B") {
-      warn = "\n\nWarning: assigning a stable package to B slot (B is often used for candidate).";
+    if (pkg.role === "candidate" && role === "primary") {
+      warn = "\n\nWarning: assigning a candidate package as Primary (Primary is usually stable).";
+    } else if (pkg.role === "stable" && role === "candidate") {
+      warn = "\n\nWarning: assigning a stable package as Candidate (Candidate is often used for validation).";
     }
     const ok = window.confirm(
-      `Assign ${pkg.feature} ${pkg.version} (package ${pkg.package_id}) to ${slot} slot?\n` +
+      `Assign ${pkg.feature} ${pkg.version} (package ${pkg.package_id}) as ${roleLabel}?\n` +
         `This will update deploy/version_map.json.\n` +
         `It will not deploy to vehicles or change deploy/state.${warn}`,
     );
     if (!ok) return;
     setBusy(true);
     try {
-      await assignVersionMapSlot({ package_id: pkg.package_id, slot });
+      await assignVersionMapSlot({ package_id: pkg.package_id, role });
       setMsg(
-        `Assigned ${pkg.feature} ${pkg.version} to ${slot} slot. Campaign/Rollout using ${pkg.feature} + ${slot} will show ${pkg.version}.`,
+        `Assigned ${pkg.feature} ${pkg.version} as ${roleLabel}. Campaign/Rollout using ${pkg.feature} + ${roleLabel} will show ${pkg.version}.`,
       );
       await onAssigned?.();
     } catch (e) {
@@ -45,12 +46,15 @@ function AssignSlotControls({ pkg, onAssigned }) {
   return (
     <div className="pkg-assign-cell">
       <div className="pkg-assign-row">
-        <select className="select pkg-assign-select" value={slot} onChange={(e) => setSlot(e.target.value)} disabled={busy}>
-          <option value="A">A</option>
-          <option value="B">B</option>
+        <select className="select pkg-assign-select" value={role} onChange={(e) => setRole(e.target.value)} disabled={busy}>
+          {DEPLOYMENT_ROLES.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
         </select>
         <button type="button" className="btn btn-primary pkg-assign-btn" disabled={busy} onClick={runAssign}>
-          {busy ? "Assigning…" : "Assign to slot"}
+          {busy ? "Assigning…" : `Assign as ${roleToLabel(role)}`}
         </button>
       </div>
       {err ? <div className="tiny pkg-assign-err">{err}</div> : null}
@@ -68,9 +72,9 @@ export default function PackageRegistryTable({ packages, versionMapRaw, onAssign
         <div>
           <h2>Package Registry</h2>
           <p className="tiny subtle">
-            <strong>Package Registry</strong>: all registered packages. Use <strong>Assign to slot</strong> to update{" "}
-            <code className="mono">deploy/version_map.json</code> (A/B only — no auto deploy, no state change).{" "}
-            <strong>Version Map</strong> (left): current slot assignments. Campaign/Rollout reads slot versions from the version map after refresh.
+            <strong>Package Registry</strong>: all registered packages. Use <strong>Assign as Primary / Candidate</strong> to update{" "}
+            <code className="mono">deploy/version_map.json</code> (Primary/Candidate roles — no auto deploy, no state change).{" "}
+            <strong>Version Map</strong>: current Primary/Candidate assignments. Campaign/Rollout reads role versions from the version map after refresh.
           </p>
         </div>
         <span className="subtle">from `deploy/package_registry.json`</span>
@@ -91,8 +95,8 @@ export default function PackageRegistryTable({ packages, versionMapRaw, onAssign
                 <th>compatible_regions</th>
                 <th>registered_at</th>
                 <th>package_path</th>
-                <th>version_map slot</th>
-                <th>Assign to slot</th>
+                <th>Version map role</th>
+                <th>Assign role</th>
               </tr>
             </thead>
             <tbody>
@@ -111,7 +115,7 @@ export default function PackageRegistryTable({ packages, versionMapRaw, onAssign
                     <span className="pkg-slot-badge">{slotAssignmentLabel(p, versionMapRaw)}</span>
                   </td>
                   <td>
-                    <AssignSlotControls pkg={p} onAssigned={onAssigned} />
+                    <AssignRoleControls pkg={p} onAssigned={onAssigned} />
                   </td>
                 </tr>
               ))}

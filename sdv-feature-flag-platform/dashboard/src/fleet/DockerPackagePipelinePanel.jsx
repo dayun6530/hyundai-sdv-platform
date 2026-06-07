@@ -38,7 +38,7 @@ const DEMO_CORE_STEPS = [
     id: "register",
     stepNum: 7,
     label: "Register + version_map",
-    hint: "register_build_artifact.sh (includes old step 8: version_map slot B)",
+    hint: "register_build_artifact.sh (includes version_map Candidate role sync)",
   },
 ];
 

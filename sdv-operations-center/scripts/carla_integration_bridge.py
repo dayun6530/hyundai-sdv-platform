@@ -851,6 +851,31 @@ async def control_client_handler(websocket, session: CarlaSession) -> None:
                 "active_car_id": getattr(session, "active_car_id", car_id),
             }))
             continue
+        if msg_type == "promote_primary_prompt":
+            if hasattr(session, "set_promote_prompt"):
+                session.set_promote_prompt(msg, websocket)
+                await websocket.send(json.dumps({
+                    "type": "promote_primary_prompt_ack",
+                    "request_id": msg.get("request_id"),
+                }))
+            else:
+                await websocket.send(json.dumps({
+                    "type": "promote_primary_response",
+                    "request_id": msg.get("request_id"),
+                    "accepted": False,
+                    "error": "promote prompt not supported on this bridge",
+                }))
+            continue
+        if msg_type == "promote_primary_cancel":
+            if hasattr(session, "clear_promote_prompt"):
+                session.clear_promote_prompt()
+            continue
+        if msg_type == "promote_primary_answer":
+            if hasattr(session, "answer_promote_prompt"):
+                session.answer_promote_prompt(bool(msg.get("accepted")))
+            elif hasattr(session, "_answer_promote_prompt"):
+                session._answer_promote_prompt(bool(msg.get("accepted")))
+            continue
         if msg_type != "carla_control":
             continue
         data = msg.get("data") or {}

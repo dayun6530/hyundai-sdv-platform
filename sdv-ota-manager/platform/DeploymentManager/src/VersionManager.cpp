@@ -354,7 +354,8 @@ std::optional<VersionManager::VersionInfo> VersionManager::getInfo(const std::st
         return std::nullopt;
     }
     if (!isValidSlot(slot)) {
-        error = std::string("VersionManager: invalid slot: '") + slot + "' (expected 'A' or 'B')";
+        error = std::string("VersionManager: invalid deployment role / internal legacy slot: '") + slot
+            + "' (expected primary|candidate or internal A|B)";
         return std::nullopt;
     }
 

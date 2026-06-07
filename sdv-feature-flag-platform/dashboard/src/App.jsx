@@ -192,7 +192,13 @@ function FleetSummary({ summary, rawStdout, rawStderr }) {
               {summary.region ? `region=${summary.region}` : ""}
             </div>
             <div className="k">feature</div>
-            <div className="v mono">{summary.feature} slot={summary.target_slot} version={summary.target_version}</div>
+            <div className="v mono">
+              {summary.feature} role={summary.target_role || summary.target_role_label || "—"} version=
+              {summary.target_version}
+              {summary.internal_legacy_slot || summary.target_slot ? (
+                <span className="subtle"> (legacy {summary.internal_legacy_slot || summary.target_slot})</span>
+              ) : null}
+            </div>
             <div className="k">result</div>
             <div className="v">
               <span className={`status-badge ${summary.failed > 0 ? "status-red" : "status-green"}`}>

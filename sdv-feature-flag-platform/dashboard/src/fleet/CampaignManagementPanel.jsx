@@ -16,6 +16,7 @@ import {
   validateCampaign,
 } from '../api/campaigns.js';
 import { fetchFleetVehicles } from '../api/fleet.js';
+import VehicleSafetyPreconditionsCard from './VehicleSafetyPreconditionsCard.jsx';
 import { postVehicleRuntimeApplyPending } from '../api/vehicleRuntime.js';
 import {
   buildLatestRunByCampaign,
@@ -1280,10 +1281,10 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
   }, [activeValidateResult]);
 
   const applyDemoReadyBeforeAction = useCallback(
-    async ({ carIds, feature: feat, segments }) => {
+    async ({ carIds, feature: feat, segments, action = '' }) => {
       if (segments?.length) {
         for (const seg of segments) {
-          const res = await prepareAllTargetsDemoReady(seg.carIds, seg.feature);
+          const res = await prepareAllTargetsDemoReady(seg.carIds, seg.feature, action);
           if (!res.ok) {
             const detail = (res.failed || [])
               .map((f) => f.car_id)
@@ -1291,18 +1292,20 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
             return {
               ok: false,
               error: `Prepare Demo READY failed (${detail || 'unknown'})`,
+              failed: res.failed,
             };
           }
         }
         return { ok: true };
       }
       if (carIds?.length && feat) {
-        const res = await prepareAllTargetsDemoReady(carIds, feat);
+        const res = await prepareAllTargetsDemoReady(carIds, feat, action);
         if (!res.ok) {
           const detail = (res.failed || []).map((f) => f.car_id).join(', ');
           return {
             ok: false,
             error: `Prepare Demo READY failed (${detail || 'unknown'})`,
+            failed: res.failed,
           };
         }
       }
@@ -1377,6 +1380,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     const prep = await applyDemoReadyBeforeAction({
       carIds: resolvedCarIds,
       feature,
+      action: 'candidate-deploy',
     });
     if (!prep.ok) {
       setRunCandidateError(prep.error);
@@ -1399,6 +1403,10 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     }));
     if (res.error && !res.items?.length) {
       setRunCandidateError(res.error);
+    } else if (res.safety_blocked) {
+      setRunCandidateError(
+        `${res.error || 'Safety preconditions not READY'}${res.failed_checks?.length ? ` (${res.failed_checks.join(', ')})` : ''}`,
+      );
     } else {
       setRunCandidateError('');
     }
@@ -1510,6 +1518,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     const prep = await applyDemoReadyBeforeAction({
       carIds: resolvedCarIds,
       feature,
+      action: 'promote',
     });
     if (!prep.ok) {
       setPromoteError(prep.error);
@@ -1530,7 +1539,11 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
         deploymentTargetBody,
       );
       setPromoteCache((prev) => ({ ...prev, [selectedCampaignId]: res }));
-      if (res.error && !res.items?.length) {
+      if (res.safety_blocked) {
+        setPromoteError(
+          `${res.error || 'Safety preconditions not READY'}${res.failed_checks?.length ? ` (${res.failed_checks.join(', ')})` : ''}`,
+        );
+      } else if (res.error && !res.items?.length) {
         setPromoteError(res.error);
       } else if (!res.ok) {
         setPromoteError(res.error || 'Promote campaign-run failed');
@@ -1888,7 +1901,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
       }
       setVersionMapSyncNotice(
         res.message ||
-          `${res.feature} slot ${res.slot} → ${res.assigned?.version || ''}`,
+          `${res.feature} ${res.role_label || res.role || 'role'} → ${res.assigned?.version || ''}`,
       );
       setValidateCache((prev) => {
         if (!prev[selectedCampaignId]) return prev;
@@ -2248,6 +2261,19 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           runCandidateLoading={runCandidateLoading}
           canRunCandidate={activeCanRunCandidate}
           onPromote={percentMode ? runPercentPromote : runPromote}
+          promoteFeature={percentMode ? undefined : feature}
+          promoteTargetVersion={
+            percentMode
+              ? undefined
+              : campaign?.target_version || listCampaign?.target_version || ''
+          }
+          promoteFeatureSummary={
+            percentMode
+              ? percentSegments
+                  .map((s) => `${s.feature} (${s.version})`)
+                  .join('\n')
+              : undefined
+          }
           promoteLoading={promoteLoading}
           promotePhase={promotePhase}
           promoteCompleteMessage={promoteCompleteMessage}
@@ -2360,6 +2386,14 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
             )}
           </section>
 
+          <VehicleSafetyPreconditionsCard
+            carId={runtimeViewCarId || runtimeCarId}
+            feature={displayFeature}
+            prepareAction="candidate-deploy"
+            onChanged={afterDemoReadyRefresh}
+            defaultOpen
+          />
+
           <RuntimeSummaryCard
             carId={runtimeViewCarId}
             carOptions={ALL_CAR_IDS}
@@ -2455,9 +2489,9 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
                         {campaign.legacy_slot ? (
                           <span
                             className="tiny subtle"
-                            title={`Advanced: internal fleet-deploy slot ${campaign.legacy_slot} maps to candidate`}
+                            title={`Advanced: internal legacy mapping ${campaign.legacy_slot} → ${displayTargetRole(campaign.target_role)}`}
                           >
-                            slot map
+                            legacy map
                           </span>
                         ) : null}
                       </div>

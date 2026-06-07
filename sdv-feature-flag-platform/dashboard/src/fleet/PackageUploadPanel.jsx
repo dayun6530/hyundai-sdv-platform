@@ -3,6 +3,7 @@ import { registerPackage } from "../api/fleet.js";
 import DockerVehicleRuntimePanel from "./DockerVehicleRuntimePanel.jsx";
 import { FEATURE_DEFAULTS, KNOWN_MODELS, KNOWN_REGIONS } from "./packageRegistryModel.js";
 import { carIdOptions } from "./rolloutModel.js";
+import { roleToLegacySlot } from "./roleMapping.js";
 
 function buildManifestFromForm(f) {
   const now = new Date().toISOString();
@@ -11,11 +12,16 @@ function buildManifestFromForm(f) {
     `${f.feature}_${f.version}_${now.slice(0, 10).replace(/-/g, "")}_${now.slice(11, 19).replace(/:/g, "")}`;
   const package_path = `deploy/packages/${f.feature}/${f.version}`;
   const manifest_path = `${package_path}/manifest.json`;
+  const deployment_role = f.role === "stable" ? "primary" : "candidate";
+  const fallback_role = f.fallback_role || "primary";
   return {
     package_id,
     feature: f.feature,
     version: f.version.trim(),
     role: f.role,
+    deployment_role,
+    default_role: deployment_role,
+    slot_role: deployment_role,
     binary: f.binary.trim(),
     package_path,
     manifest_path,
@@ -41,7 +47,8 @@ function buildManifestFromForm(f) {
       },
     },
     rollback: {
-      fallback_slot: f.fallback_slot,
+      fallback_role,
+      fallback_slot: roleToLegacySlot(fallback_role),
       fallback_required: true,
     },
   };
@@ -61,7 +68,7 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
   const [requiresSafety, setRequiresSafety] = useState(true);
   const [allowDrivingDl, setAllowDrivingDl] = useState(true);
   const [minBattery, setMinBattery] = useState(30);
-  const [fallbackSlot, setFallbackSlot] = useState("A");
+  const [fallbackRole, setFallbackRole] = useState("primary");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -111,7 +118,7 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
         requires_safety_check: requiresSafety,
         allow_driving_download: allowDrivingDl,
         min_battery: minBattery,
-        fallback_slot: fallbackSlot,
+        fallback_role: fallbackRole,
       }),
     [
       packageId,
@@ -125,7 +132,7 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
       requiresSafety,
       allowDrivingDl,
       minBattery,
-      fallbackSlot,
+      fallbackRole,
     ],
   );
 
@@ -146,7 +153,8 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
         requires_safety_check: requiresSafety,
         allow_driving_download: allowDrivingDl,
         min_battery: minBattery,
-        fallback_slot: fallbackSlot,
+        fallback_role: fallbackRole,
+        fallback_slot: roleToLegacySlot(fallbackRole),
       };
       const r = await registerPackage(body);
       setMsg(
@@ -258,10 +266,10 @@ export default function PackageUploadPanel({ onRegistered, vehicles }) {
           />
         </label>
         <label className="pkg-field">
-          <span>Rollback fallback slot</span>
-          <select className="select" value={fallbackSlot} onChange={(e) => setFallbackSlot(e.target.value)}>
-            <option value="A">A</option>
-            <option value="B">B</option>
+          <span>Rollback fallback role</span>
+          <select className="select" value={fallbackRole} onChange={(e) => setFallbackRole(e.target.value)}>
+            <option value="primary">Primary</option>
+            <option value="candidate">Candidate</option>
           </select>
         </label>
       </div>

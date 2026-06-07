@@ -286,6 +286,39 @@ class MqttFlagCache {
     this.client.publish(topic, body, { qos: 1, retain: true });
   }
 
+  /**
+   * Publish runtime kill/inbound signal (same topic as test-ui / SignalReceiver).
+   * Also updates local mirror so status-server fleet view stays consistent.
+   */
+  publishInboundSignal(carId, line, options = {}) {
+    const topicPrefix = String(options.topicPrefix || "/sdv/vehicle").replace(/\/$/, "");
+    const topic = `${topicPrefix}/${carId}/signals/inbound`;
+    const payload = String(line || "").trim();
+    if (!CAR_ID_RE.test(carId) || !payload) {
+      return { dispatched: false, topic, payload, error: "invalid car_id or payload" };
+    }
+    if (!this.client || !this.connected) {
+      return {
+        dispatched: false,
+        topic,
+        payload,
+        error: this.lastError || "MQTT not connected",
+      };
+    }
+    try {
+      this.client.publish(topic, payload, { qos: 1 });
+      this.applyInboundLine(carId, payload);
+      return { dispatched: true, topic, payload, error: null };
+    } catch (err) {
+      return {
+        dispatched: false,
+        topic,
+        payload,
+        error: err?.message || String(err),
+      };
+    }
+  }
+
   applyInboundLine(carId, line) {
     if (!CAR_ID_RE.test(carId)) {
       return;

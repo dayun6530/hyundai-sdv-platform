@@ -1269,7 +1269,7 @@ bool StateManager::updateFeatureSlot(const std::string& car_id, const std::strin
         return false;
     }
     if (!isValidSlot(slot)) {
-        error = "StateManager: invalid slot: " + slot + " (expected A|B)";
+        error = "StateManager: invalid deployment role / internal legacy slot: " + slot + " (expected primary|candidate or internal A|B)";
         return false;
     }
     if (version.empty()) {
@@ -1525,7 +1525,7 @@ bool StateManager::updateFeaturePending(const std::string& car_id, const std::st
         return false;
     }
     if (!isValidSlot(slot)) {
-        error = "StateManager: invalid slot: " + slot + " (expected A|B)";
+        error = "StateManager: invalid deployment role / internal legacy slot: " + slot + " (expected primary|candidate or internal A|B)";
         return false;
     }
     if (version.empty()) {
