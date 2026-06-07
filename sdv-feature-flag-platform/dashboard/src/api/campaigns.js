@@ -241,23 +241,62 @@ export async function prepareVehicleDemoReady(carId, feature = 'ADAS') {
   }
 }
 
-export async function applyPendingNativeForCars(carIds) {
+export async function applyPendingNativeForCars(carIds, options = {}) {
   const ids = [
     ...new Set(
       (carIds || []).map((id) => String(id || '').trim()).filter(Boolean),
     ),
   ];
   if (!ids.length) return { ok: true, results: [] };
+  const feature = String(options?.feature || '').trim();
   try {
     const res = await fetchNoStore('/api/fleet/apply-pending-native', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ car_ids: ids }),
+      body: JSON.stringify({
+        car_ids: ids,
+        ...(feature ? { feature } : {}),
+      }),
     });
     const data = await res.json().catch(() => ({}));
     return { ...data, http_ok: res.ok, http_status: res.status };
   } catch (err) {
     return { ok: false, error: err.message || String(err), results: [] };
+  }
+}
+
+export async function fetchStalePendingWarnings(carIds, excludeFeature) {
+  const ids = [
+    ...new Set(
+      (carIds || []).map((id) => String(id || '').trim()).filter(Boolean),
+    ),
+  ];
+  if (!ids.length) return { ok: true, warnings: [], count: 0 };
+  try {
+    const res = await fetchNoStore('/api/fleet/stale-pending-warnings', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        car_ids: ids,
+        exclude_feature: String(excludeFeature || '').trim(),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return res.ok
+      ? { ok: true, ...data }
+      : {
+          ok: false,
+          error: data?.error || `Request failed: ${res.status}`,
+          warnings: [],
+          count: 0,
+        };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err.message || String(err),
+      warnings: [],
+      count: 0,
+    };
   }
 }
 

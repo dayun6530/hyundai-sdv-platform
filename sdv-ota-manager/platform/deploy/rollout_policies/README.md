@@ -28,7 +28,9 @@ Policies may require:
 
 | File | Purpose |
 |------|---------|
-| `policy_single_car_candidate_manual_promote.json` | Single-vehicle policy used by `campaign_adas_v0.5_car1_canary` |
+| `policy_single_car_candidate_manual_promote_adas.json` | ADAS base template (candidate → approval → promote) |
+| `policy_single_car_candidate_manual_promote_adas_v4.0.json` | ADAS v4.0 single-vehicle policy |
+| `policy_single_car_candidate_manual_promote_adas_v7.7.json` | ADAS v7.7 single-vehicle policy |
 | `policy_canary_then_stable.json` | **Reference only** — canary → beta → stable expansion template; not wired to automation |
 
 ## Multi-stage expansion (reference)

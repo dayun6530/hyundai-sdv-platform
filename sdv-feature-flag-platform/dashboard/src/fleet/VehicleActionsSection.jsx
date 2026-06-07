@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { parseSummaryJsonFromStdout, previewFleetCommand, runFleetAction } from "../api/fleet.js";
-import { getVersionMapSlotEntry } from "./rolloutModel.js";
+import { useEffect, useState } from "react";
+import { previewFleetCommand, runFleetAction } from "../api/fleet.js";
+import RollbackPanel from "./RollbackPanel.jsx";
 
 const FEATURES = ["ADAS", "Navigation", "Energy"];
+const FEATURE_LABELS = {
+  ADAS: "ADAS",
+  Navigation: "Navigation",
+  Energy: "EV Energy",
+};
+
 const DEFAULT_KILL_REASON = "manual kill switch from dashboard";
 
 const KILL_POLICY = {
@@ -18,8 +24,6 @@ export default function VehicleActionsSection({
   carId,
   missing,
   state,
-  rollback,
-  versionMapRaw,
   onFleetRefresh,
   onRollbackMetaInvalidate,
 }) {
@@ -39,15 +43,7 @@ export default function VehicleActionsSection({
   const featState = state?.features?.[opFeature];
   const currentFlag = (featState?.flag || "—").toString().toUpperCase();
   const killOn = Boolean(featState?.kill_switch);
-  const shadowOn = Boolean(featState?.shadow_enabled);
-  const rbAvailable = Boolean(rollback && rollback[opFeature]);
-  const canPromoteShadow = Boolean(featState?.shadow_version);
 
-  const shadowBVersion = useMemo(() => {
-    const e = getVersionMapSlotEntry(versionMapRaw, opFeature, "B");
-    return e?.version || "—";
-  }, [versionMapRaw, opFeature]);
-  const shadowPreviewVersion = shadowBVersion && shadowBVersion !== "—" ? shadowBVersion : "";
   const killPreviewReason = killReason.trim() || "manual preview from dashboard";
   const commandPreview = previewResult?.preview || null;
   const legacyCommandPreview = Array.isArray(commandPreview?.legacy_command_preview)
@@ -58,16 +54,18 @@ export default function VehicleActionsSection({
   useEffect(() => {
     setPreviewErr("");
     setPreviewResult(null);
-  }, [carId, opFeature, shadowPreviewVersion, killPreviewReason]);
+  }, [carId, opFeature, killPreviewReason]);
 
   const applyResult = async (payload) => {
-    setBusy(payload.action);
+    const { busyKey, ...apiPayload } = payload;
+    setBusy(busyKey || apiPayload.action);
     setActionErr("");
     try {
-      const data = await runFleetAction(payload);
+      const data = await runFleetAction(apiPayload);
       setLastResult({
         ...data,
-        summary_json: data.summary_json ?? parseSummaryJsonFromStdout(data.stdout),
+        target_version: apiPayload.target_version,
+        summary_json: data.summary_json,
       });
       await onFleetRefresh?.();
       onRollbackMetaInvalidate?.();
@@ -84,11 +82,6 @@ export default function VehicleActionsSection({
 
   const previewAction = async (label, payload) => {
     if (disabled || previewBusy) return;
-    if (payload.action === "run-shadow" && !payload.version) {
-      setPreviewResult(null);
-      setPreviewErr("Candidate version is required for action run-shadow");
-      return;
-    }
     setPreviewBusy(label);
     setPreviewErr("");
     try {
@@ -105,13 +98,6 @@ export default function VehicleActionsSection({
     }
   };
 
-  const previewRollback = () =>
-    previewAction("rollback", {
-      action: "rollback-primary",
-      vehicle_id: carId,
-      feature: opFeature,
-    });
-
   const previewKillSwitch = () =>
     previewAction("kill", {
       action: "activate-kill-switch",
@@ -119,28 +105,6 @@ export default function VehicleActionsSection({
       feature: opFeature,
       reason: killPreviewReason,
     });
-
-  const previewShadow = () =>
-    previewAction("shadow", {
-      action: "run-shadow",
-      vehicle_id: carId,
-      feature: opFeature,
-      version: shadowPreviewVersion,
-    });
-
-  const doRollback = () => {
-    if (disabled || !rbAvailable || busy) return;
-    const ok = window.confirm(
-      `Rollback ${carId} ${opFeature} using deploy/rollback/${carId}/${opFeature}.json?`,
-    );
-    if (!ok) return;
-    applyResult({
-      action: "rollback",
-      car_id: carId,
-      feature: opFeature,
-      sync_config: syncRollback,
-    });
-  };
 
   const doFlag = (flag) => {
     if (disabled || busy) return;
@@ -173,35 +137,11 @@ export default function VehicleActionsSection({
     });
   };
 
-  const doShadow = (shadow_action) => {
-    if (disabled || busy) return;
-    const ok = window.confirm(`Set Shadow Mode ${shadow_action} for ${carId} ${opFeature}?`);
-    if (!ok) return;
-    applyResult({
-      action: "shadow",
-      car_id: carId,
-      feature: opFeature,
-      shadow_action,
-    });
-  };
-
-  const doPromoteShadow = () => {
-    if (disabled || !canPromoteShadow || busy) return;
-    const ok = window.confirm(`Promote current Shadow/Candidate to Primary for ${carId} ${opFeature}?`);
-    if (!ok) return;
-    applyResult({
-      action: "promote-shadow",
-      car_id: carId,
-      feature: opFeature,
-      sync_config: true,
-    });
-  };
-
   return (
     <section className="vd-block va-section">
       <h3 className="vd-block-title">Operational Actions</h3>
       <p className="tiny subtle">
-        Vehicle-scoped CLI only. <strong>FLAG OFF</strong> is a normal administrative disable. <strong>Kill Switch</strong> is an emergency disable for a reported issue. Shadow does not change the active control version.
+        Vehicle-scoped CLI only. <strong>FLAG OFF</strong> is a normal administrative disable. <strong>Kill Switch</strong> is an emergency disable for a reported issue.
       </p>
 
       {disabled ? (
@@ -212,7 +152,7 @@ export default function VehicleActionsSection({
 
       <div className="va-feature-row">
         <label className="va-field">
-          <span>Feature</span>
+          <span>Feature (flag / kill)</span>
           <select
             className="select"
             value={opFeature}
@@ -221,7 +161,7 @@ export default function VehicleActionsSection({
           >
             {FEATURES.map((f) => (
               <option key={f} value={f}>
-                {f}
+                {FEATURE_LABELS[f]}
               </option>
             ))}
           </select>
@@ -229,35 +169,20 @@ export default function VehicleActionsSection({
       </div>
 
       <div className="va-grid">
-        <article className="va-card">
-          <h4>Rollback</h4>
-          <p className="tiny">
-            Rollback metadata:{" "}
-            <strong className={rbAvailable ? "vd-rb-ok" : "vd-rb-no"}>{rbAvailable ? "available" : "missing"}</strong>
-          </p>
-          <label className="va-check">
-            <input type="checkbox" checked={syncRollback} onChange={(e) => setSyncRollback(e.target.checked)} disabled={disabled} />
-            <span>
-              <code className="mono">--sync-config</code> after successful rollback
-            </span>
-          </label>
-          <button
-            type="button"
-            className="btn btn-primary va-btn"
-            disabled={disabled || !rbAvailable || busy}
-            onClick={doRollback}
-          >
-            {busy === "rollback" ? "Running fleet-rollback…" : `Rollback ${opFeature}`}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary va-btn"
-            disabled={disabled || previewBusy}
-            onClick={previewRollback}
-          >
-            {previewBusy === "rollback" ? "Previewing..." : "Preview Rollback"}
-          </button>
-        </article>
+        <RollbackPanel
+          carId={carId}
+          state={state}
+          disabled={disabled}
+          syncRollback={syncRollback}
+          onFleetRefresh={onFleetRefresh}
+          onRollbackMetaInvalidate={onRollbackMetaInvalidate}
+        />
+        <label className="va-check" style={{ marginTop: 8 }}>
+          <input type="checkbox" checked={syncRollback} onChange={(e) => setSyncRollback(e.target.checked)} disabled={disabled} />
+          <span>
+            <code className="mono">sync-config-car</code> after successful rollback
+          </span>
+        </label>
 
         <article className="va-card">
           <h4>Feature flag (fleet-flag)</h4>
@@ -316,56 +241,6 @@ export default function VehicleActionsSection({
           >
             {previewBusy === "kill" ? "Previewing..." : "Preview Kill Switch"}
           </button>
-        </article>
-
-        <article className="va-card va-card-advanced">
-          <details>
-            <summary>
-              <h4 style={{ display: "inline" }}>Legacy shadow / promote (fleet-shadow)</h4>
-            </summary>
-          <p className="tiny subtle" style={{ marginTop: 8 }}>
-            For ADAS v0.5 demo use <strong>Deployment Campaigns</strong> (Validate → Run Candidate → Promote Primary). This
-            section calls fleet-shadow / fleet-promote-shadow directly.
-          </p>
-          <p className="tiny">
-            Current shadow_enabled: <strong>{shadowOn ? "ON" : "OFF"}</strong> — compares against slot B /{" "}
-            <span className="mono">{shadowBVersion}</span>.
-          </p>
-          <div className="va-btn-row">
-            <button type="button" className="btn va-btn" disabled={disabled || busy} onClick={() => doShadow("ON")}>
-              {busy === "shadow" ? "Running…" : "Shadow ON"}
-            </button>
-            <button type="button" className="btn btn-secondary va-btn" disabled={disabled || busy} onClick={() => doShadow("OFF")}>
-              Shadow OFF
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary va-btn"
-              disabled={disabled || busy || !canPromoteShadow}
-              onClick={doPromoteShadow}
-            >
-              {busy === "promote-shadow" ? "Promoting..." : "Promote Shadow to Primary"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary va-btn"
-              disabled={disabled || previewBusy || !shadowPreviewVersion}
-              onClick={previewShadow}
-            >
-              {previewBusy === "shadow" ? "Previewing..." : "Preview Shadow"}
-            </button>
-          </div>
-          {!shadowPreviewVersion ? (
-            <p className="tiny subtle" style={{ marginTop: 8 }}>
-              Candidate version is required for Shadow preview.
-            </p>
-          ) : null}
-          {!canPromoteShadow ? (
-            <p className="tiny subtle" style={{ marginTop: 8 }}>
-              Promote is enabled after a Shadow/Candidate version is recorded for this vehicle and feature.
-            </p>
-          ) : null}
-          </details>
         </article>
       </div>
 
@@ -441,6 +316,7 @@ export default function VehicleActionsSection({
             </span>
             <span className="mono tiny subtle">
               exit {lastResult.exit_code ?? "—"} · {lastResult.action}
+              {lastResult.target_version ? ` · ${lastResult.target_version}` : ""}
             </span>
           </div>
           {lastResult.summary_json ? (

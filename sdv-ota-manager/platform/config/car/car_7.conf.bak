@@ -31,6 +31,9 @@ feature FeatureEvaluator
 
 
 
+
+
+
 # --- fleet deploy (managed by DeploymentMgr sync-config; do not edit) ---
 fleet_schema 1
 
@@ -42,10 +45,10 @@ fleet_adas_image localhost:5000/sdv/adas-feature:v4.0
 fleet_adas_binary_path active/AdasFeature
 
 fleet_navigation_slot B
-fleet_navigation_version v3.0
+fleet_navigation_version v7.7
 fleet_navigation_mode primary
 fleet_navigation_enabled ON
-fleet_navigation_image localhost:5000/sdv/navigation-feature:v3.0
+fleet_navigation_image localhost:5000/sdv/navigation-feature:v7.7
 fleet_navigation_binary_path active/NavigationFeature
 
 fleet_energy_slot A

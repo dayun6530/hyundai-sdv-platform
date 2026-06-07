@@ -1109,7 +1109,7 @@ DeploymentManager::DeployResult DeploymentManager::deployToVehicleInternal(const
         e.reason = "promoted_to_primary";
         e.status = "stable";
         std::string rberr;
-        (void)sm.pushRollbackStackEntry(car_id, feature, e, 3, rberr);
+        (void)sm.pushRollbackStackEntry(car_id, feature, e, MAX_ROLLBACK_STACK_SIZE, rberr);
     }
 
     const std::string installed = "installed";
@@ -3750,12 +3750,12 @@ bool DeploymentManager::fleetKillVehicle(const std::string& car_id,
     if (feature == "ADAS") {
         summary.policy_note =
             "ADAS kill switch disables the affected feature and falls back to stable slot A (flag OFF; "
-            "active_version uses fallback_version when set, else v0.1)";
+            "active_version uses fallback_version when set, else v1.0)";
         fs->kill_switch = true;
         fs->kill_reason = reason;
         fs->flag = "OFF";
         fs->active_slot = "A";
-        fs->active_version = pickVersion("v0.1");
+        fs->active_version = pickVersion("v1.0");
         fs->realtime_route_flag.clear();
         fs->charging_recommend_flag.clear();
         fs->advanced_range_flag.clear();
@@ -3774,12 +3774,12 @@ bool DeploymentManager::fleetKillVehicle(const std::string& car_id,
     } else {
         summary.policy_note =
             "Energy keeps essential battery flag ON while disabling advanced_range and charging_recommend (slot A; "
-            "active_version uses fallback_version when set, else v0.5)";
+            "active_version uses fallback_version when set, else v1.0)";
         fs->kill_switch = true;
         fs->kill_reason = reason;
         fs->flag = "ON";
         fs->active_slot = "A";
-        fs->active_version = pickVersion("v0.5");
+        fs->active_version = pickVersion("v1.0");
         fs->advanced_range_flag = "OFF";
         fs->charging_recommend_flag = "OFF";
         fs->realtime_route_flag.clear();
@@ -4115,8 +4115,8 @@ bool DeploymentManager::fleetPromoteShadowVehicle(const std::string& car_id, con
                 }),
             fs->rollback_stack.end());
         fs->rollback_stack.insert(fs->rollback_stack.begin(), e);
-        if (fs->rollback_stack.size() > 3) {
-            fs->rollback_stack.resize(3);
+        if (fs->rollback_stack.size() > MAX_ROLLBACK_STACK_SIZE) {
+            fs->rollback_stack.resize(MAX_ROLLBACK_STACK_SIZE);
         }
     }
 
@@ -4213,8 +4213,13 @@ void DeploymentManager::printInventory() const {
     }
 }
 
-bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std::string& outMessage) {
+bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std::string& outMessage,
+    const std::string& only_feature) {
     outMessage.clear();
+    if (!only_feature.empty() && !isValidFleetFeature(only_feature)) {
+        outMessage = "unsupported feature filter: " + only_feature;
+        return false;
+    }
     std::string err;
     StateManager sm(workDir_);
     auto stateOpt = sm.loadState(car_id, err);
@@ -4232,6 +4237,9 @@ bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std:
     std::vector<std::string> binariesOrdered;
     std::vector<std::string> featuresWithPending;
     for (const char* feat : kFeatures) {
+        if (!only_feature.empty() && only_feature != feat) {
+            continue;
+        }
         const StateManager::FeatureState* fs = StateManager::featureRef(*stateOpt, feat);
         if (!fs || fs->pending_active_version.empty()) {
             continue;
@@ -4241,20 +4249,23 @@ bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std:
             outMessage = vr;
             return false;
         }
-        const char slotCh = fs->pending_active_slot.empty() ? 'A' : fs->pending_active_slot[0];
-        const auto bin = vmOpt->getBinary(feat, slotCh, err);
-        if (!bin) {
-            outMessage = err.empty() ? "getBinary failed" : err;
-            return false;
-        }
-        if (std::find(binariesOrdered.begin(), binariesOrdered.end(), *bin) == binariesOrdered.end()) {
-            binariesOrdered.push_back(*bin);
+        if (fs->artifact_type != "docker_image") {
+            const char slotCh = fs->pending_active_slot.empty() ? 'A' : fs->pending_active_slot[0];
+            const auto bin = vmOpt->getBinary(feat, slotCh, err);
+            if (!bin) {
+                outMessage = err.empty() ? "getBinary failed" : err;
+                return false;
+            }
+            if (std::find(binariesOrdered.begin(), binariesOrdered.end(), *bin) == binariesOrdered.end()) {
+                binariesOrdered.push_back(*bin);
+            }
         }
         featuresWithPending.push_back(feat);
     }
 
     if (featuresWithPending.empty()) {
-        outMessage = "no pending native rollout";
+        outMessage = only_feature.empty() ? "no pending native rollout"
+                                          : ("no pending native rollout for " + only_feature);
         return true;
     }
 
@@ -4310,11 +4321,38 @@ bool DeploymentManager::applyPendingNativeForCar(const std::string& car_id, std:
             e.reason = "applied_pending";
             e.status = "stable";
             std::string rberr;
-            (void)sm.pushRollbackStackEntry(car_id, feat, e, 3, rberr);
+            (void)sm.pushRollbackStackEntry(car_id, feat, e, MAX_ROLLBACK_STACK_SIZE, rberr);
         }
+
+        auto stDocker = sm.loadState(car_id, err);
+        if (stDocker) {
+            const auto* fsD = StateManager::featureRef(*stDocker, feat);
+            if (fsD && fsD->docker_runtime_mode == "promote"
+                && (fsD->docker_runtime_result == "pending" || fsD->docker_runtime_action == "deferred_promote")) {
+                DeployResult dr;
+                dr.car_id = car_id;
+                dr.feature = feat;
+                dr.target_slot = fsD->primary_slot;
+                dr.target_version = fsD->primary_version;
+                dr.config_sync_requested = false;
+                FleetDockerRuntimeOptions dockerOpts;
+                dockerOpts.requested = true;
+                dockerOpts.mode = "promote";
+                applyPostDeployDockerRuntime(dr, false, dockerOpts);
+                if (dr.docker_runtime_result == "failed") {
+                    outMessage = dr.docker_runtime_reason.empty() ? "docker promote failed" : dr.docker_runtime_reason;
+                    return false;
+                }
+            }
+        }
+        err.clear();
     }
 
-    outMessage = "applied pending native for " + car_id;
+    if (only_feature.empty()) {
+        outMessage = "applied pending native for " + car_id;
+    } else {
+        outMessage = "applied pending native for " + car_id + " feature=" + only_feature;
+    }
     return true;
 }
 

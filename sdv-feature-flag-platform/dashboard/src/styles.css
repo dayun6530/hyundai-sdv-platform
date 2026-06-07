@@ -1249,8 +1249,108 @@ td {
 
 .va-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: minmax(340px, 1.75fr) minmax(240px, 1fr) minmax(240px, 1fr);
   gap: 14px;
+  align-items: start;
+}
+
+.va-card-rollback {
+  min-width: 0;
+}
+
+.va-rollback-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.va-rollback-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 140px) minmax(140px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.va-rollback-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.va-rollback-feature strong {
+  font-size: 0.92rem;
+}
+
+.va-rollback-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.va-rollback-btn {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.va-rollback-btn-sm {
+  white-space: nowrap;
+}
+
+.va-rollback-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.va-rollback-block {
+  border-top: 1px solid var(--border, #2a2f3a);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.va-rollback-block:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.va-rollback-stack {
+  margin-top: 8px;
+  padding-left: 4px;
+}
+
+.va-rollback-stack-list {
+  margin: 4px 0 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.va-rollback-success {
+  margin-top: 10px;
+}
+
+.va-rollback-preview,
+.va-rollback-verify {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+}
+
+@media (max-width: 980px) {
+  .va-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .va-rollback-row {
+    grid-template-columns: 1fr;
+  }
+
+  .va-rollback-btn {
+    width: 100%;
+  }
 }
 
 .va-card {

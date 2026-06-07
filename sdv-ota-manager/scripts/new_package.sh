@@ -34,7 +34,23 @@ PKG_DIR="$OTA_ROOT/platform/deploy/packages/$DOMAIN/$V_TAG"
 
 mkdir -p "$PKG_DIR"
 
-DOCKER_IMAGE="sdv/${DOMAIN_LOWER}-feature:${V_TAG}"
+normalize_domain_key() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | tr -d ' _-'
+}
+
+docker_repo_for_domain() {
+  local key
+  key="$(normalize_domain_key "${1:-}")"
+  case "$key" in
+    adas) echo "sdv/adas-feature" ;;
+    navigation|nav) echo "sdv/navigation-feature" ;;
+    energy|evenergy|ev) echo "sdv/evenergy-feature" ;;
+    *) echo "sdv/${key:-unknown}-feature" ;;
+  esac
+}
+
+DOCKER_REPO="$(docker_repo_for_domain "$DOMAIN")"
+DOCKER_IMAGE="${DOCKER_REPO}:${V_TAG}"
 
 cat > "$PKG_DIR/Dockerfile" <<'DOCKERHEAD'
 # Ubuntu 22.04 (jammy) 기본 저장소에는 libgrpc++.so.1.51 이 없어서,

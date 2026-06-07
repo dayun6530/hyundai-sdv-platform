@@ -19,6 +19,7 @@ import {
 import FleetDashboard from "./fleet/FleetDashboard.jsx";
 import FleetDeployPanel from "./fleet/FleetDeployPanel.jsx";
 import CampaignManagementPanel from "./fleet/CampaignManagementPanel.jsx";
+import DockerPackagePipelinePanel from "./fleet/DockerPackagePipelinePanel.jsx";
 import VehicleDetailPanel from "./fleet/VehicleDetailPanel.jsx";
 
 function formatDate(value) {
@@ -433,6 +434,11 @@ export default function App() {
           </div>
         </details>
       </section>
+
+      <DockerPackagePipelinePanel
+        vehicles={fleetVehicles}
+        onPipelineComplete={refreshAllFleetAndStatus}
+      />
     </main>
   );
 }

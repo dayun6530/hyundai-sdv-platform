@@ -8,11 +8,11 @@
         "binary": "AdasFeature"
       },
       "B": {
-        "version": "v7.7",
+        "version": "v1.0",
         "role": "candidate",
         "binary": "AdasFeature",
-        "package_id": "ADAS_v7.7",
-        "package_path": "deploy/packages/ADAS/v7.7"
+        "package_id": "ADAS_v1.0",
+        "package_path": "deploy/packages/ADAS/v1.0"
       }
     },
     "Navigation": {
@@ -22,11 +22,11 @@
         "binary": "NavigationFeature"
       },
       "B": {
-        "version": "v7.7",
+        "version": "v1.0",
         "role": "candidate",
         "binary": "NavigationFeature",
-        "package_id": "Navigation_v7.7",
-        "package_path": "deploy/packages/Navigation/v7.7"
+        "package_id": "Navigation_v1.0",
+        "package_path": "deploy/packages/Navigation/v1.0"
       }
     },
     "Energy": {
@@ -36,9 +36,11 @@
         "binary": "EvEnergyFeature"
       },
       "B": {
-        "version": "v0.6",
+        "version": "v1.0",
         "role": "candidate",
-        "binary": "EvEnergyFeature"
+        "binary": "EvEnergyFeature",
+        "package_id": "Energy_v1.0",
+        "package_path": "deploy/packages/Energy/v1.0"
       }
     }
   }

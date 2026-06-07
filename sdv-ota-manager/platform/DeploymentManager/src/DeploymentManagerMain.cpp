@@ -28,8 +28,9 @@ namespace {
             << "  sync-config           Release helper: apply deploy/active_selection.conf to config only\n"
             << "  sync-config-car <id>  Per-car: rewrite config/car/<id>.conf feature block from deploy/state/<id>.json (car_1..car_10)\n"
             << "  fleet-selftest        Fleet deploy self-test (VehicleRegistry + VersionManager + StateManager)\n"
-            << "  apply-pending-native-car <car_id>\n"
+            << "  apply-pending-native-car <car_id> [--feature ADAS|Navigation|Energy]\n"
             << "                      After a deferred fleet-deploy: copy packages → active for pending features, then promote pending→active in deploy/state.\n"
+            << "                      Optional --feature limits apply to one fleet feature (campaign promote uses this).\n"
             << "                      Invoked automatically at car platform start when SDV_PLATFORM_DEPLOY_ROOT is set.\n"
             << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n"
             << "                      SCOPE=vehicle|group|region|group_region\n"
@@ -439,11 +440,18 @@ int main(int argc, char* argv[]) {
     }
     if (cmd == "apply-pending-native-car") {
         if (positional.size() < 2) {
-            std::cerr << "Usage: DeploymentMgr apply-pending-native-car <car_id>\n";
+            std::cerr << "Usage: DeploymentMgr apply-pending-native-car <car_id> [--feature ADAS|Navigation|Energy]\n";
             return 1;
         }
+        std::string onlyFeature;
+        for (std::size_t i = 2; i < positional.size(); ++i) {
+            if (positional[i] == "--feature" && i + 1 < positional.size()) {
+                onlyFeature = positional[i + 1];
+                ++i;
+            }
+        }
         std::string msg;
-        const bool ok = dm.applyPendingNativeForCar(positional[1], msg);
+        const bool ok = dm.applyPendingNativeForCar(positional[1], msg, onlyFeature);
         if (!msg.empty()) {
             std::cout << (ok ? "[apply-pending-native-car] " : "[apply-pending-native-car] ERROR: ") << msg << "\n";
         }

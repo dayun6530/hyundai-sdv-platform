@@ -17,6 +17,14 @@ const {
   registerCampaignValidateRoutes,
 } = require('./services/campaignValidateApi');
 const { registerCampaignRunRoutes } = require('./services/campaignRunApi');
+const { registerFleetStalePendingRoutes } = require('./services/fleetStalePendingApi');
+const {
+  pushRollbackStackBeforePromoteUpdate,
+} = require('./services/rollbackStackSync');
+const {
+  registerRollbackRoutes,
+  applyRollback,
+} = require('./services/rollbackApi');
 const {
   pickCampaignDeployPath,
   loadFleetVehiclesFromFile,
@@ -35,6 +43,9 @@ const {
 const {
   registerTelemetryCollectorConfigRoutes,
 } = require('./services/telemetryCollectorConfigApi');
+const {
+  registerDockerPackagePipelineRoutes,
+} = require('./services/dockerPackagePipelineApi');
 const {
   mqttFlagCache,
   forceOfflineFeatureFlags,
@@ -3199,7 +3210,14 @@ function syncFleetStateAfterDockerRuntime(
       f.shadow_slot = 'B';
     }
   } else if (subcommand === 'promote') {
+    pushRollbackStackBeforePromoteUpdate(f, token, 'ota_vehicle_promote', {
+      feature: key,
+      source: 'promote',
+      state_file: `deploy/state/${carId}.json`,
+      config_file: `config/car/${carId}.conf`,
+    });
     f.active_version = token;
+    f.primary_version = token;
     f.shadow_enabled = false;
     f.shadow_slot = '';
     f.shadow_version = '';
@@ -3352,6 +3370,22 @@ app.post('/api/fleet/command-preview', async (req, res) => {
   }
 });
 
+async function syncConfigCarDeploymentMgr(carId) {
+  try {
+    const dm = detectDeploymentMgrPath();
+    const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
+    const cmd = `cd ${repoWsl} && ${dm.wslPath} sync-config-car ${carId}`;
+    const r = await execWslBash(cmd);
+    return {
+      ok: Number(r.code) === 0,
+      exit_code: r.code,
+      stderr: r.stderr || '',
+    };
+  } catch (err) {
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
 app.post('/api/fleet/action', async (req, res) => {
   const action = String(req.body?.action || '').trim();
   const car_id = String(req.body?.car_id || req.body?.vehicle_id || '').trim();
@@ -3371,6 +3405,64 @@ app.post('/api/fleet/action', async (req, res) => {
     return;
   }
 
+  if (action === 'rollback') {
+    const sync_config = req.body?.sync_config === true;
+    const target_version = String(req.body?.target_version || '').trim();
+    const reason = String(
+      req.body?.reason || 'manual rollback from dashboard',
+    ).trim();
+    try {
+      const result = applyRollback({
+        deployRoot: DEPLOY_ROOT,
+        vehicleRuntimeDir: OTA_VEHICLE_RUNTIME_DIR,
+        carId: car_id,
+        feature,
+        targetVersion: target_version || undefined,
+        reason,
+        source: 'dashboard',
+        syncConfig: sync_config,
+        syncConfigCar: syncConfigCarDeploymentMgr,
+      });
+      if (result.ok && result.result !== 'no_op' && RUNTIME_DOCKER_CAR_RE.test(car_id)) {
+        syncRuntimeCmdForCars([car_id]);
+        const prev = result.previous_primary_before_rollback || '—';
+        const restored = result.restored_version || '—';
+        notifyCarVersionChange(car_id, feature, {
+          messagePrimary: `Rollback success: ${feature} Primary restored from ${prev} to ${restored}`,
+          plainConsoleLine: `fleet-rollback OK ${feature} ${prev} -> ${restored}`,
+        });
+      }
+      res.status(result.ok ? 200 : 400).json({
+        ...result,
+        action: 'rollback',
+        car_id,
+        feature,
+        target_version: target_version || undefined,
+        summary_json: {
+          action: 'fleet-rollback',
+          scope: 'vehicle',
+          car_id,
+          feature,
+          restored_version: result.restored_version,
+          previous_primary_before_rollback: result.previous_primary_before_rollback,
+          result: result.result,
+          state_updated: result.state_updated,
+          config_synced: result.config_synced,
+        },
+        error: result.ok ? undefined : result.reason || result.error,
+      });
+    } catch (err) {
+      res.status(500).json({
+        ok: false,
+        action: 'rollback',
+        car_id,
+        feature,
+        error: err.message,
+      });
+    }
+    return;
+  }
+
   const repoWsl = toWslPath(PLATFORM_DEPLOY_ROOT);
   let dm;
   try {
@@ -3381,11 +3473,7 @@ app.post('/api/fleet/action', async (req, res) => {
   }
   let cmd = `cd ${repoWsl} && ${dm.wslPath} `;
 
-  if (action === 'rollback') {
-    const sync_config = req.body?.sync_config === true;
-    cmd += `fleet-rollback vehicle ${car_id} ${feature}`;
-    if (sync_config) cmd += ' --sync-config';
-  } else if (action === 'promote-shadow') {
+  if (action === 'promote-shadow') {
     cmd += `fleet-promote-shadow vehicle ${car_id} ${feature}`;
   } else if (action === 'flag') {
     const flag = String(req.body?.flag || '')
@@ -3440,9 +3528,7 @@ app.post('/api/fleet/action', async (req, res) => {
     const okExec = Number(r.code) === 0;
     if (okExec) {
       let msg = '';
-      if (action === 'rollback') {
-        msg = `Fleet rollback completed for ${feature}.`;
-      } else if (action === 'promote-shadow') {
+      if (action === 'promote-shadow') {
         msg = `Fleet shadow candidate promoted to Primary for ${feature}.`;
       } else if (action === 'flag') {
         const flag = String(req.body?.flag || '')
@@ -4065,6 +4151,16 @@ app.post('/api/fleet/apply-pending-native', async (req, res) => {
     return;
   }
 
+  const featureRaw = String(req.body?.feature || '').trim();
+  const featureKey = fleetFeatureToStateKey(featureRaw);
+  if (featureRaw && !featureKey) {
+    res.status(400).json({
+      ok: false,
+      error: 'feature must be ADAS, Navigation, or Energy when provided',
+    });
+    return;
+  }
+
   let dm;
   try {
     dm = detectDeploymentMgrPath();
@@ -4077,9 +4173,12 @@ app.post('/api/fleet/apply-pending-native', async (req, res) => {
   const results = [];
   try {
     for (const carId of carIds) {
-      const cmd =
+      let cmd =
         `cd ${bashSingleQuote(repoWsl)} && ` +
         `${bashSingleQuote(dm.wslPath)} apply-pending-native-car ${bashSingleQuote(carId)}`;
+      if (featureKey) {
+        cmd += ` --feature ${bashSingleQuote(featureKey)}`;
+      }
       const r = await execWslBash(cmd, { timeout: 120_000 });
       const ok = Number(r.code) === 0;
       results.push({
@@ -4093,6 +4192,7 @@ app.post('/api/fleet/apply-pending-native', async (req, res) => {
     syncRuntimeCmdForCars(carIds);
     res.json({
       ok: results.every((row) => row.ok),
+      feature: featureKey || null,
       results,
     });
   } catch (err) {
@@ -4363,8 +4463,31 @@ registerCampaignRunRoutes(app, {
   loadFleetVehiclesFromFile,
 });
 
+registerFleetStalePendingRoutes(app, { DEPLOY_ROOT });
+
 registerVehicleSafetyRoutes(app, { DEPLOY_ROOT, syncRuntimeCmdForCars });
 registerTelemetryCollectorConfigRoutes(app, { repoRoot: REPO_ROOT });
+
+registerRollbackRoutes(app, {
+  DEPLOY_ROOT,
+  OTA_VEHICLE_RUNTIME_DIR,
+  CAR_ID_RE,
+  syncConfigCar: syncConfigCarDeploymentMgr,
+});
+
+registerDockerPackagePipelineRoutes(app, {
+  OTA_MANAGER_ROOT,
+  OTA_VEHICLE_SCRIPT,
+  DEPLOY_ROOT,
+  execWslBash,
+  toWslPath,
+  onBootstrapSuccess: (t) => {
+    const ff = otaDomainToFleetFeature(t.domain);
+    if (ff) {
+      syncFleetStateAfterDockerRuntime(t.car_id, ff, 'bootstrap', t.version, false);
+    }
+  },
+});
 
 const SDV_MQTT_BROKER_URI = String(
   process.env.SDV_MQTT_BROKER_URI || 'mqtt://127.0.0.1:1884',

@@ -298,8 +298,6 @@ export default function VehicleDetailPanel({
         carId={carId}
         missing={missing}
         state={state}
-        rollback={rollback}
-        versionMapRaw={versionMap?.raw ?? versionMap}
         onFleetRefresh={onFleetRefresh}
         onRollbackMetaInvalidate={() => setRollbackReloadNonce((n) => n + 1)}
       />

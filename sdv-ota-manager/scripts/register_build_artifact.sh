@@ -3,12 +3,15 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 --domain <DOMAIN> --version <x.y|vX.Y> [--feature <ExecutableName>] [--source <path>]" >&2
+  echo "       [--registry <host:port>] [--sync-version-map-slot <A|B>]" >&2
   echo "  Registers an existing build_artifacts output into the official package store:" >&2
   echo "    build_artifacts/<domain>/v<version>/  ->  platform/deploy/packages/<DOMAIN>/v<version>/" >&2
   echo "" >&2
   echo "Notes:" >&2
   echo "  - This script does NOT build docker images. It copies build inputs (Dockerfile/binary/checksum)." >&2
   echo "  - It creates/updates manifest.json with required Docker fields (manifest.schema.json)." >&2
+  echo "  - --registry localhost:5000 prefixes manifest docker_image (demo local registry)." >&2
+  echo "  - --sync-version-map-slot B updates platform/deploy/version_map.json (former manual step 8)." >&2
   exit 1
 }
 
@@ -16,6 +19,8 @@ DOMAIN=""
 VERSION=""
 FEATURE=""
 SOURCE_DIR=""
+REGISTRY=""
+SYNC_VERSION_MAP_SLOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -23,6 +28,8 @@ while [[ $# -gt 0 ]]; do
     --version) VERSION="${2:-}"; shift 2 ;;
     --feature) FEATURE="${2:-}"; shift 2 ;;
     --source) SOURCE_DIR="${2:-}"; shift 2 ;;
+    --registry) REGISTRY="${2:-}"; shift 2 ;;
+    --sync-version-map-slot) SYNC_VERSION_MAP_SLOT="${2:-}"; shift 2 ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1" >&2; usage ;;
   esac
@@ -103,7 +110,12 @@ if [[ -f "$SRC/manifest.json" ]]; then
 fi
 
 DOCKER_REPO="$(docker_repo_for_domain "$DOMAIN")"
-DOCKER_IMAGE="${DOCKER_REPO}:${V_TAG}"
+if [[ -n "$REGISTRY" ]]; then
+  REGISTRY="${REGISTRY%/}"
+  DOCKER_IMAGE="${REGISTRY}/${DOCKER_REPO}:${V_TAG}"
+else
+  DOCKER_IMAGE="${DOCKER_REPO}:${V_TAG}"
+fi
 
 export DOMAIN FEATURE VERSION_NOV DOCKER_IMAGE DEST
 PYBIN="python3"
@@ -126,12 +138,12 @@ except Exception:
 
 now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-# Ensure manifest.schema.json required fields exist (defaults are chosen to preserve existing behavior).
-doc.setdefault("domain", domain)
-doc.setdefault("feature", feature or domain)  # tolerate empty feature; keep something stable
-doc.setdefault("version", version)
+# Ensure manifest.schema.json required fields exist; register always wins for docker_image/domain/version.
+doc["domain"] = domain
+doc["feature"] = feature or doc.get("feature") or domain
+doc["version"] = version
 doc.setdefault("artifact_type", "docker_image")
-doc.setdefault("docker_image", docker_image)
+doc["docker_image"] = docker_image
 doc.setdefault("checksum_file", "checksum.sha256")
 doc.setdefault("supported_targets", ["docker"])
 doc.setdefault("created_at", now)
@@ -146,8 +158,51 @@ with open(manifest_path, "w", encoding="utf-8") as f:
     f.write("\n")
 PY
 
+if [[ -n "$SYNC_VERSION_MAP_SLOT" ]]; then
+  case "$SYNC_VERSION_MAP_SLOT" in
+    A|B) ;;
+    *)
+      echo "invalid --sync-version-map-slot (use A or B): $SYNC_VERSION_MAP_SLOT" >&2
+      exit 1
+      ;;
+  esac
+  export OTA_ROOT SYNC_VERSION_MAP_SLOT PACKAGE_DOMAIN="$DOMAIN"
+  "$PYBIN" - <<'PY'
+import json
+import os
+from pathlib import Path
+
+ota_root = Path(os.environ["OTA_ROOT"])
+slot = os.environ["SYNC_VERSION_MAP_SLOT"]
+domain = os.environ["PACKAGE_DOMAIN"]
+feature = os.environ.get("FEATURE") or ""
+version_nov = os.environ["VERSION_NOV"]
+v_tag = f"v{version_nov}"
+
+vm_path = ota_root / "platform" / "deploy" / "version_map.json"
+data = json.loads(vm_path.read_text(encoding="utf-8"))
+features = data.setdefault("features", {})
+feat = features.setdefault(domain, {})
+role = "stable" if slot == "A" else "candidate"
+entry = {
+    "version": v_tag,
+    "role": role,
+    "binary": feature or domain,
+    "package_id": f"{domain}_{v_tag}",
+    "package_path": f"deploy/packages/{domain}/{v_tag}",
+}
+feat[slot] = entry
+vm_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+print(f"OK version_map.json {domain} slot {slot}={v_tag}")
+PY
+fi
+
 echo "Registered build_artifact -> package:"
 echo "  src:  $SRC"
 echo "  dest: $DEST"
+echo "  docker_image (manifest): $DOCKER_IMAGE"
+if [[ -n "$SYNC_VERSION_MAP_SLOT" ]]; then
+  echo "  version_map: ${DOMAIN} slot ${SYNC_VERSION_MAP_SLOT}=${V_TAG}"
+fi
 echo "  note: docker image is NOT built here; run docker build separately if needed."
 

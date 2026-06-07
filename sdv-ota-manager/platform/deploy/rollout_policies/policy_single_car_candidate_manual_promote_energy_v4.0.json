@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "policy_id": "policy_single_car_candidate_manual_promote_energy_v4.0",
+  "name": "Single car candidate deploy then manual promote for Energy v4.0",
+  "description": "Deploy Energy v4.0 as candidate to one vehicle, verify logs, then manually promote to primary.",
+  "stages": [
+    {
+      "stage_id": "candidate_deploy",
+      "stage_name": "candidate",
+      "deploy_action": "candidate",
+      "require_ota_ready": true,
+      "docker_runtime": { "enabled": true, "pull_policy": "missing" },
+      "success_criteria": {
+        "docker_runtime_result": "success",
+        "expected_log_patterns": [
+          "[EV v4.0]",
+          "Candidate Shadow version is running"
+        ]
+      }
+    },
+    {
+      "stage_id": "manual_approval",
+      "stage_name": "approval",
+      "action": "wait_for_manual_approval",
+      "required": true
+    },
+    {
+      "stage_id": "primary_promote",
+      "stage_name": "promote",
+      "deploy_action": "promote",
+      "require_ota_ready": true,
+      "docker_runtime": { "enabled": true, "pull_policy": "missing" },
+      "success_criteria": {
+        "docker_runtime_result": "success",
+        "expected_log_patterns": [
+          "[EV v4.0]",
+          "Primary production path running"
+        ]
+      }
+    }
+  ],
+  "approval_required": true,
+  "manual_promote_required": true
+}

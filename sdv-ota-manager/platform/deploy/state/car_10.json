@@ -7,99 +7,52 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS":     {
+    "ADAS": {
       "active_slot": "B",
       "active_version": "v4.0",
       "primary_slot": "B",
       "primary_version": "v4.0",
       "primary_image": "localhost:5000/sdv/adas-feature:v4.0",
       "artifact_type": "docker_image",
-      "image_digest": "sha256:81839c052073fbe4d9905c98c6bae1b6710df0dc62217eb3bb5b4acb7b96e917",
-      "manifest_path": "deploy/packages/ADAS/v13.0/manifest.json",
-      "package_id": "ADAS_v13.0",
+      "manifest_path": "deploy/packages/ADAS/v4.0/manifest.json",
+      "package_id": "ADAS_v4.0",
       "docker_runtime_result": "success",
       "docker_runtime_mode": "promote",
       "docker_runtime_action": "promote",
-      "docker_runtime_time": "2026-05-27T11:04:41",
+      "docker_runtime_time": "2026-06-07 15:42:27",
       "docker_runtime_container": "car_10_agent_adas",
-      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v13.0",
+      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v4.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
-      "shadow_version": "v4.0",
-      "shadow_image": "sdv/adas-feature:v4.0",
-      "shadow_status": "DISABLED",
+      "shadow_version": "",
+      "shadow_status": "RUNNING",
       "shadow_validation_result": "UNKNOWN",
       "shadow_mode": "inactive",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v0.1",
-      "rollback_stack": [
-        {
-          "slot": "B",
-          "version": "v4.0",
-          "docker_image": "",
-          "previous_role": "primary",
-          "recorded_at": "2026-05-27T11:03:57",
-          "reason": "promoted_to_primary",
-          "status": "stable"
-        },
-        {
-          "slot": "B",
-          "version": "v0.5",
-          "docker_image": "",
-          "previous_role": "primary",
-          "recorded_at": "2026-05-26T08:56:46",
-          "reason": "promoted_to_primary",
-          "status": "stable"
-        },
-        {
-          "slot": "B",
-          "version": "v0.1",
-          "docker_image": "",
-          "previous_role": "primary",
-          "recorded_at": "2026-05-19T04:58:37",
-          "reason": "promoted_to_primary",
-          "status": "stable"
-        }
-      ],
-      "blocked_versions": [
-        {
-          "slot": "B",
-          "version": "v0.4",
-          "docker_image": "",
-          "blocked_at": "2026-05-12T13:48:18",
-          "reason": "rollback invoked",
-          "source": "primary_runtime_failed"
-        },
-        {
-          "slot": "A",
-          "version": "v1.0",
-          "docker_image": "",
-          "blocked_at": "2026-05-07T18:36:11",
-          "reason": "rollback invoked",
-          "source": "primary_runtime_failed"
-        }
-      ]
+      "fallback_version": "v1.0",
+      "rollback_stack": [],
+      "blocked_versions": []
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "B",
-      "active_version": "v7.7",
+      "active_version": "v3.0",
       "primary_slot": "B",
-      "primary_version": "v7.7",
-      "primary_image": "localhost:5000/sdv/navigation-feature:v7.7",
+      "primary_version": "v3.0",
+      "primary_image": "localhost:5000/sdv/navigation-feature:v3.0",
       "artifact_type": "docker_image",
-      "manifest_path": "deploy/packages/Navigation/v7.7/manifest.json",
-      "package_id": "Navigation_v7.7",
+      "manifest_path": "deploy/packages/Navigation/v3.0/manifest.json",
+      "package_id": "Navigation_v3.0",
       "docker_runtime_result": "success",
       "docker_runtime_mode": "promote",
       "docker_runtime_action": "promote",
-      "docker_runtime_time": "2026-06-02T07:49:08",
+      "docker_runtime_time": "2026-06-07 15:42:27",
       "docker_runtime_container": "car_10_agent_navigation",
-      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v7.7",
+      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v3.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
@@ -114,37 +67,49 @@
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0"
+      "fallback_version": "v1.0",
+      "rollback_stack": []
     },
-    "Energy":     {
-      "active_slot": "A",
-      "active_version": "v2.0",
-      "primary_slot": "A",
-      "primary_version": "v2.0",
-      "primary_image": "sdv/evenergy-feature:v2.0",
+    "Energy": {
+      "active_slot": "B",
+      "active_version": "v3.0",
+      "primary_slot": "B",
+      "primary_version": "v3.0",
+      "primary_image": "localhost:5000/sdv/evenergy-feature:v3.0",
+      "artifact_type": "docker_image",
+      "manifest_path": "deploy/packages/Energy/v3.0/manifest.json",
+      "package_id": "Energy_v3.0",
+      "docker_runtime_result": "success",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "promote",
+      "docker_runtime_time": "2026-06-07 15:42:27",
+      "docker_runtime_container": "car_10_agent_evenergy",
+      "docker_runtime_image": "localhost:5000/sdv/evenergy-feature:v3.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
-      "advanced_range_flag": "ON",
       "charging_recommend_flag": "ON",
+      "advanced_range_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
       "shadow_version": "",
-      "shadow_status": "DISABLED",
+      "shadow_status": "RUNNING",
+      "shadow_validation_result": "UNKNOWN",
       "shadow_mode": "inactive",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v0.5"
+      "fallback_version": "v1.0",
+      "rollback_stack": []
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "downloaded",
-    "install_status": "not_started",
+    "install_status": "installed",
     "vehicle_mode": "PARKED",
     "ignition": "OFF",
-    "update_mode": "READY",
-    "ota_phase": "INSTALL_STARTED",
+    "update_mode": "COMPLETED",
+    "ota_phase": "INSTALL_COMPLETED",
     "gear": "P",
     "speed": 0,
     "parking_brake": "ON",
@@ -153,7 +118,7 @@
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack":   {
+  "last_ack": {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",
@@ -161,11 +126,11 @@
     "deploy_id": "deploy_adas_004",
     "message": "ADAS v0.4 shadow installed"
   },
-  "last_deploy_id": "deploy_20260602_074842_car_10_Navigation",
-  "last_deploy_result": "pending",
-  "last_deploy_time": "2026-06-02T07:48:42",
-  "last_deploy_feature": "Navigation",
+  "last_deploy_id": "deploy_20260608_002810_car_10_Navigation",
+  "last_deploy_result": "",
+  "last_deploy_time": "2026-06-08T00:28:10",
+  "last_deploy_feature": "",
   "last_deploy_slot": "B",
-  "last_deploy_version": "v7.7",
-  "last_deploy_reason": "deferred until apply-pending-native-car"
+  "last_deploy_version": "",
+  "last_deploy_reason": ""
 }

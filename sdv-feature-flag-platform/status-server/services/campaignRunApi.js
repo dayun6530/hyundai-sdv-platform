@@ -4,6 +4,7 @@ const {
   validateId,
 } = require('./campaignValidateApi');
 const { repairVehicleRuntimeFromFleetState } = require('./vehicleRuntimeFleetSync');
+const { recordRollbackStackAfterPromote } = require('./rollbackStackSync');
 
 const RUN_PHASES = new Set(['candidate', 'promote']);
 const RUN_TIMEOUT_MS = 300_000;
@@ -241,6 +242,29 @@ function registerCampaignRunRoutes(app, deps) {
                 carId,
                 feature,
               );
+            }
+          }
+          if (exitOk && feature && phase === 'promote') {
+            const targetVersion = String(hit.data?.target_version || '').trim();
+            for (const carId of carIds) {
+              try {
+                const stackRes = recordRollbackStackAfterPromote({
+                  deployRoot: DEPLOY_ROOT,
+                  carId,
+                  feature,
+                  targetVersion,
+                  reason: 'campaign_promote',
+                });
+                if (stackRes.ok && stackRes.pushed) {
+                  console.log(
+                    `[rollback_stack] ${carId} ${feature}: pushed ${stackRes.pushed} (campaign promote)`,
+                  );
+                }
+              } catch (stackErr) {
+                console.warn(
+                  `[rollback_stack] ${carId} ${feature}: ${stackErr.message || stackErr}`,
+                );
+              }
             }
           }
           if (typeof syncRuntimeCmdForCars === 'function') {

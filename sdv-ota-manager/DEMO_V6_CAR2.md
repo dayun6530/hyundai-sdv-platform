@@ -161,7 +161,7 @@ $DM campaign-run deploy/campaigns/campaign_adas_v6.0_car2_canary.json --phase pr
 
 - `demo_src/Adas_v6.0.cpp`
 - `platform/deploy/campaigns/campaign_adas_v6.0_car2_canary.json`
-- `platform/deploy/rollout_policies/policy_single_car_candidate_manual_promote_v6.0.json`
+- `platform/deploy/rollout_policies/policy_single_car_candidate_manual_promote_adas_v6.0.json`
 - `scripts/demo_setup_adas_v6_car2.sh`
 
 ---

@@ -2,37 +2,40 @@
   "car_id": "car_4",
   "domains": {
     "adas": {
-      "primary_version": "v7.7",
+      "primary_version": "v4.0",
       "shadow_version": "",
       "binary": "AdasFeature",
       "primary_container": "car_4_agent_adas",
       "shadow_container": "car_4_agent_adas_shadow",
-      "last_action": "promote",
-      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v7.7으로 승격되었습니다.",
+      "last_action": "reset",
+      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v4.0(으)로 정리되었습니다 (artifact cleanup).",
       "shadow_enabled": false,
-      "shadow_mode": "inactive"
+      "shadow_mode": "inactive",
+      "primary_image": "localhost:5000/sdv/adas-feature:v4.0"
     },
     "navigation": {
-      "primary_version": "v7.7",
+      "primary_version": "v3.0",
       "shadow_version": "",
       "binary": "NavigationFeature",
       "primary_container": "car_4_agent_navigation",
       "shadow_container": "car_4_agent_navigation_shadow",
-      "last_action": "promote",
-      "last_message_ko": "NavigationFeature: Primary(운영) 실행 버전이 v7.7으로 승격되었습니다.",
+      "last_action": "reset",
+      "last_message_ko": "NavigationFeature: Primary(운영) 실행 버전이 v3.0(으)로 정리되었습니다 (artifact cleanup).",
       "shadow_enabled": false,
-      "shadow_mode": "inactive"
+      "shadow_mode": "inactive",
+      "primary_image": "localhost:5000/sdv/navigation-feature:v3.0"
     },
     "evenergy": {
-      "primary_version": "2.0",
+      "primary_version": "v3.0",
       "shadow_version": "",
       "binary": "EvEnergyFeature",
       "primary_container": "car_4_agent_evenergy",
       "shadow_container": "car_4_agent_evenergy_shadow",
-      "last_action": "promote",
-      "last_message_ko": "EvEnergyFeature: Primary(운영) 실행 버전이 v2.0으로 승격되었습니다.",
+      "last_action": "reset",
+      "last_message_ko": "EvEnergyFeature: Primary(운영) 실행 버전이 v3.0(으)로 정리되었습니다 (artifact cleanup).",
       "shadow_enabled": false,
-      "shadow_mode": "inactive"
+      "shadow_mode": "inactive",
+      "primary_image": "localhost:5000/sdv/evenergy-feature:v3.0"
     }
   }
 }

@@ -6,6 +6,9 @@
 
 namespace sdv::platform::deployment {
 
+/// Maximum entries kept in per-feature \c rollback_stack (most-recent-first).
+inline constexpr std::size_t MAX_ROLLBACK_STACK_SIZE = 3;
+
 class StateManager {
 public:
     // Vehicle ACK (file-based, CLI-driven in this step).

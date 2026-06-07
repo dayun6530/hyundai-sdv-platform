@@ -170,7 +170,9 @@ public:
 
     /// For \p car_id: for each feature with non-empty pending version, \c deployExecutable from \c version_map,
     /// then promote pending → active in \c deploy/state. No-op when nothing pending. CWD must be platform root.
-    bool applyPendingNativeForCar(const std::string& car_id, std::string& outMessage);
+    /// When \p only_feature is non-empty (ADAS|Navigation|Energy), only that feature is applied.
+    bool applyPendingNativeForCar(const std::string& car_id, std::string& outMessage,
+        const std::string& only_feature = "");
 
     /// Metadata-only promote: treat current Shadow as validated and promote it to Primary in deploy/state.
     /// This does NOT execute/rename docker containers; it only synchronizes state fields:

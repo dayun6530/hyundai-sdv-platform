@@ -1,10 +1,10 @@
 {
-  "rollback_id": "rollback_20260602_075304_002",
-  "timestamp": "2026-06-02T07:53:04",
+  "rollback_id": "rollback_20260608_002837_004",
+  "timestamp": "2026-06-08T00:28:37",
   "car_id": "car_5",
   "feature": "Navigation",
   "previous_slot": "B",
-  "previous_version": "v3.0",
+  "previous_version": "v5.5",
   "previous_flag": "ON",
   "previous_shadow_enabled": true,
   "previous_shadow_slot": "B",

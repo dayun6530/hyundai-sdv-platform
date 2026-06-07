@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "campaign_id": "campaign_energy_v5.0",
+  "name": "Energy v5.0 candidate validation (local registry)",
+  "description": "Deploy Energy v5.0 as candidate (shadow), verify logs, then promote. Select deployment target vehicle(s) in the dashboard before Validate.",
+  "status": "draft",
+  "created_at": "2026-06-01T12:00:00Z",
+  "feature": "Energy",
+  "target_version": "v5.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "package_id": "Energy_v5.0",
+  "package_path": "deploy/packages/Energy/v5.0",
+  "manifest_path": "deploy/packages/Energy/v5.0/manifest.json",
+  "docker_image": "localhost:5000/sdv/evenergy-feature:v5.0",
+  "artifact_type": "docker_image",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_energy_v5.0",
+  "target_selector": {
+    "scope": "vehicle",
+    "vehicle_ids": []
+  },
+  "safety_requirements": {
+    "respect_kill_switch": true,
+    "require_ota_ready": true,
+    "require_driver_approval": true
+  },
+  "execution_options": {
+    "sync_config": true,
+    "no_defer_native": true
+  },
+  "docker_runtime": {
+    "enabled": true,
+    "candidate": { "mode": "candidate", "pull_policy": "missing" },
+    "promote": { "mode": "promote", "policy": "manual", "separate_run_required": true }
+  },
+  "approval_required": true
+}

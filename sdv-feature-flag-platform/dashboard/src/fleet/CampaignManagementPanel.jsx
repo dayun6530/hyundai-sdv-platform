@@ -8,6 +8,7 @@ import {
   fetchCampaignCandidateStaged,
   fetchCampaigns,
   fetchRolloutPolicies,
+  fetchStalePendingWarnings,
   fetchVehicleRuntimeSummary,
   prepareAllTargetsDemoReady,
   runCampaignPhase,
@@ -676,6 +677,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
   const [promotePhase, setPromotePhase] = useState('');
   const [promoteCompleteMessage, setPromoteCompleteMessage] = useState('');
   const [promoteError, setPromoteError] = useState('');
+  const [stalePendingWarnings, setStalePendingWarnings] = useState([]);
   const [candidateStaged, setCandidateStaged] = useState(null);
   const [candidateStagedLoading, setCandidateStagedLoading] = useState(false);
   const [dropCandidateLoading, setDropCandidateLoading] = useState(false);
@@ -841,6 +843,21 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
       deploymentGroup,
     ],
   );
+
+  const demoFlowCarId = useMemo(() => {
+    if (
+      runtimeViewCarId &&
+      resolvedCarIds.includes(runtimeViewCarId)
+    ) {
+      return runtimeViewCarId;
+    }
+    if (resolvedCarIds.length) return resolvedCarIds[0];
+    return runtimeViewCarId || '';
+  }, [runtimeViewCarId, resolvedCarIds]);
+
+  const demoFlowFeature = listCampaign?.feature || campaign?.feature || '';
+  const demoFlowVersion =
+    listCampaign?.target_version || campaign?.target_version || '';
 
   const deploymentTargetBody = useMemo(
     () =>
@@ -1140,6 +1157,28 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
   useEffect(() => {
     refreshCandidateStaged();
   }, [refreshCandidateStaged]);
+
+  useEffect(() => {
+    if (percentMode || !deploymentHasTarget || !resolvedCarIds.length || !feature) {
+      setStalePendingWarnings([]);
+      return undefined;
+    }
+    let cancelled = false;
+    fetchStalePendingWarnings(resolvedCarIds, feature).then((res) => {
+      if (!cancelled) {
+        setStalePendingWarnings(Array.isArray(res.warnings) ? res.warnings : []);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    percentMode,
+    deploymentHasTarget,
+    resolvedCarIds,
+    feature,
+    currentDeployTargetKey,
+  ]);
 
   useEffect(() => {
     if (!percentMode) return;
@@ -1507,12 +1546,21 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           /* queue may be empty */
         }
         setPromotePhase('apply-native');
-        const applyRes = await applyPendingNativeForCars(resolvedCarIds);
+        const applyRes = await applyPendingNativeForCars(resolvedCarIds, {
+          feature,
+        });
         if (applyRes.ok === false) {
+          const failedCars = (applyRes.results || [])
+            .filter((row) => row.ok === false)
+            .map((row) => row.car_id)
+            .join(', ');
           setPromoteError(
-            applyRes.error || 'apply-pending-native failed on one or more vehicles',
+            applyRes.error ||
+              `apply-pending-native failed on one or more vehicles${failedCars ? ` (${failedCars})` : ''}`,
           );
         }
+        const warnRes = await fetchStalePendingWarnings(resolvedCarIds, feature);
+        setStalePendingWarnings(warnRes.warnings || []);
       }
 
       if (res.ok && resolvedCarIds.length && campaign?.target_version) {
@@ -1731,7 +1779,22 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           /* optional */
         }
         setPromotePhase('apply-native');
-        await applyPendingNativeForCars(allCars);
+        for (const seg of percentSegments) {
+          const applyRes = await applyPendingNativeForCars(seg.carIds, {
+            feature: seg.feature,
+          });
+          if (applyRes.ok === false) {
+            allOk = false;
+            const failedCars = (applyRes.results || [])
+              .filter((row) => row.ok === false)
+              .map((row) => row.car_id)
+              .join(', ');
+            setPromoteError(
+              applyRes.error ||
+                `apply-pending-native failed for ${seg.feature}${failedCars ? ` (${failedCars})` : ''}`,
+            );
+          }
+        }
         setPromotePhase('verify');
         let synced = true;
         for (const seg of percentSegments) {
@@ -1978,7 +2041,15 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           <div className="error-banner tiny">{listError}</div>
         ) : null}
 
-        <CampaignDemoFlow />
+        <CampaignDemoFlow
+          feature={demoFlowFeature}
+          version={demoFlowVersion}
+          carId={demoFlowCarId}
+          carIds={resolvedCarIds}
+          group={deploymentGroup}
+          vehicles={fleetVehicles}
+          percentMode={percentMode}
+        />
 
         <div className="table-wrap campaign-list-wrap">
           <table className="campaign-list-table">
@@ -2208,6 +2279,20 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
         {dropCandidateError ? (
           <p className="tiny campaign-logs-alert campaign-logs-alert-fail">
             {dropCandidateError}
+          </p>
+        ) : null}
+
+        {promoteError ? (
+          <p className="tiny campaign-logs-alert campaign-logs-alert-fail">
+            {promoteError}
+          </p>
+        ) : null}
+
+        {stalePendingWarnings.length && !promoteLoading ? (
+          <p className="tiny campaign-logs-alert campaign-logs-alert-muted">
+            Other feature pending on target vehicles (promote applies{' '}
+            <strong>{feature || 'campaign feature'}</strong> only):{' '}
+            {stalePendingWarnings.map((w) => w.message).join(' · ')}
           </p>
         ) : null}
 

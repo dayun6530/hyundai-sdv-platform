@@ -33,3 +33,7 @@ deploy|NAV|A|NavigationFeature|failed|primary|2026-06-01T23:29:15|./deploy/packa
 deploy|NAV|A|NavigationFeature|failed|primary|2026-06-01T23:35:11|./deploy/packages/NavigationFeature|./deploy/active/NavigationFeature
 deploy|NAV|A|NavigationFeature|failed|primary|2026-06-01T23:35:12|./deploy/packages/NavigationFeature|./deploy/active/NavigationFeature
 deploy|NAV|A|NavigationFeature|failed|primary|2026-06-01T23:35:14|./deploy/packages/NavigationFeature|./deploy/active/NavigationFeature
+deploy|ENERGY|A|EvEnergyFeature|failed|primary|2026-06-02T15:05:09|./deploy/packages/EvEnergyFeature|./deploy/active/EvEnergyFeature
+deploy|ENERGY|A|EvEnergyFeature|failed|primary|2026-06-02T15:05:09|./deploy/packages/EvEnergyFeature|./deploy/active/EvEnergyFeature
+deploy|ENERGY|A|EvEnergyFeature|failed|primary|2026-06-02T15:05:10|./deploy/packages/EvEnergyFeature|./deploy/active/EvEnergyFeature
+deploy|ENERGY|A|EvEnergyFeature|failed|primary|2026-06-02T15:05:10|./deploy/packages/EvEnergyFeature|./deploy/active/EvEnergyFeature

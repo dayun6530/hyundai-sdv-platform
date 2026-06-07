@@ -14,7 +14,7 @@
   "manifest_path": "deploy/packages/ADAS/v7.7/manifest.json",
   "docker_image": "localhost:5000/sdv/adas-feature:v7.7",
   "artifact_type": "docker_image",
-  "rollout_policy_id": "policy_single_car_candidate_manual_promote_v7.7",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_adas_v7.7",
   "target_selector": {
     "scope": "vehicle",
     "vehicle_ids": []

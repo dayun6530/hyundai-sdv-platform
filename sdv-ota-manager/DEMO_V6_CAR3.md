@@ -141,15 +141,15 @@ PY
 ```bash
 cd $PLATFORM_ROOT
 
-test -f deploy/rollout_policies/policy_single_car_candidate_manual_promote_v6.0.json || {
-  cp deploy/rollout_policies/policy_single_car_candidate_manual_promote.json \
-     deploy/rollout_policies/policy_single_car_candidate_manual_promote_v6.0.json
+test -f deploy/rollout_policies/policy_single_car_candidate_manual_promote_adas_v6.0.json || {
+  cp deploy/rollout_policies/policy_single_car_candidate_manual_promote_adas.json \
+     deploy/rollout_policies/policy_single_car_candidate_manual_promote_adas_v6.0.json
   python3 <<'PY'
 import json
 from pathlib import Path
-p = Path("deploy/rollout_policies/policy_single_car_candidate_manual_promote_v6.0.json")
+p = Path("deploy/rollout_policies/policy_single_car_candidate_manual_promote_adas_v6.0.json")
 d = json.loads(p.read_text(encoding="utf-8"))
-d["policy_id"] = "policy_single_car_candidate_manual_promote_v6.0"
+d["policy_id"] = "policy_single_car_candidate_manual_promote_adas_v6.0"
 text = json.dumps(d, indent=2).replace("v0.5", "v6.0").replace("0.5", "6.0")
 p.write_text(text + "\n", encoding="utf-8")
 PY

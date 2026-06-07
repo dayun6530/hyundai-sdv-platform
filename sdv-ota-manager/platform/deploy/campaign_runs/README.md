@@ -37,7 +37,7 @@ DeploymentMgr campaign-run deploy/campaigns/campaign_adas_v0.5_car1_canary.json 
   "run_id": "run_20260519_054158_campaign_adas_v0.5_car1_canary_candidate",
   "campaign_id": "campaign_adas_v0.5_car1_canary",
   "campaign_file": "deploy/campaigns/campaign_adas_v0.5_car1_canary.json",
-  "rollout_policy_id": "policy_single_car_candidate_manual_promote",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_adas_v4.0",
   "phase": "candidate",
   "status": "success",
   "started_at": "2026-05-19T05:41:58",
