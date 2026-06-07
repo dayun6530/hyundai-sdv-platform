@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_id": "run_20260608_041705_campaign_adas_v1.0_candidate",
+  "campaign_id": "campaign_adas_v1.0",
+  "campaign_file": "deploy/campaign_runs/.runtime/campaign_adas_v1.0_runtime.json",
+  "rollout_policy_id": "policy_single_car_candidate_manual_promote_adas_v1.0",
+  "phase": "candidate",
+  "status": "failed",
+  "started_at": "2026-06-08T04:17:05",
+  "finished_at": "2026-06-08T04:17:12",
+  "feature": "ADAS",
+  "target_version": "v1.0",
+  "target_role": "candidate",
+  "legacy_slot": "B",
+  "docker_runtime": {
+    "requested": true,
+    "mode": "candidate",
+    "pull_requested": true,
+    "pull_policy": "missing",
+    "image": "localhost:5000/sdv/adas-feature:v1.0"
+  },
+  "resolved_targets": ["car_1"],
+  "aggregate": {
+    "total": 1,
+    "success": 0,
+    "failed": 1
+  },
+  "per_vehicle": [
+    {
+      "car_id": "car_1",
+      "result": "failed",
+      "reason": "[PULL] policy=missing image=localhost:5000/sdv/adas-feature:v4.0 (local image missing, pulling) Error response from daemon: failed to resolve reference \"localhost:5000/sdv/adas-feature:v4.0\": localhost:5000/sdv/adas-feature:v4.0: not found [DEPLOY-ABORT] Docker pull failed for localhost:5000/sdv/adas-feature:v4.0 [DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first.",
+      "deploy_id": "deploy_20260608_041705_001",
+      "state_updated": true,
+      "config_synced": true,
+      "docker_runtime_result": "failed",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v4.0",
+      "docker_runtime_container": "car_1_agent_adas_shadow",
+      "state_file": "deploy/state/car_1.json",
+      "config_file": "config/car/car_1.conf",
+      "history_path": "deploy/history/fleet_history.jsonl",
+      "fleet_deploy_command": "fleet-deploy vehicle car_1 ADAS B v1.0 --sync-config --no-defer-native --docker-runtime=candidate --docker-pull=missing"
+    }
+  ],
+  "warnings": [],
+  "failures": ["car_1: [PULL] policy=missing image=localhost:5000/sdv/adas-feature:v4.0 (local image missing, pulling) Error response from daemon: failed to resolve reference \"localhost:5000/sdv/adas-feature:v4.0\": localhost:5000/sdv/adas-feature:v4.0: not found [DEPLOY-ABORT] Docker pull failed for localhost:5000/sdv/adas-feature:v4.0 [DEPLOY-ABORT] Pull failed. If this is a private registry, run docker login first."]
+}

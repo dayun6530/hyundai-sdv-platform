@@ -9,7 +9,7 @@
   "checksum_file": "checksum.sha256",
   "executable_name": "AdasFeature",
   "binary_name": "AdasFeature",
-  "created_at": "2026-06-07T16:27:12Z",
+  "created_at": "2026-06-07T19:14:49Z",
   "supported_targets": [
     "docker"
   ]

@@ -9,7 +9,7 @@
   "checksum_file": "checksum.sha256",
   "executable_name": "EvEnergyFeature",
   "binary_name": "EvEnergyFeature",
-  "created_at": "2026-06-02T05:11:27Z",
+  "created_at": "2026-06-07T19:41:59Z",
   "supported_targets": [
     "docker"
   ]

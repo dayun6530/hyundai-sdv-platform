@@ -79,6 +79,7 @@ export default function DockerPackagePipelinePanel({ vehicles, onPipelineComplet
   const [preflight, setPreflight] = useState(null);
   const [busyStep, setBusyStep] = useState("");
   const [lastResult, setLastResult] = useState(null);
+  /** Done only after a successful Run in this session (cleared on feature/version/registry change). */
   const [completedSteps, setCompletedSteps] = useState(() => new Set());
   const [showVehiclePrep, setShowVehiclePrep] = useState(false);
   const [err, setErr] = useState("");
@@ -95,6 +96,12 @@ export default function DockerPackagePipelinePanel({ vehicles, onPipelineComplet
       setCarId(carOptions[0]);
     }
   }, [carOptions, carId]);
+
+  useEffect(() => {
+    setCompletedSteps(new Set());
+    setLastResult(null);
+    setErr("");
+  }, [feature, version, registry]);
 
   const refreshPreflight = useCallback(async () => {
     try {

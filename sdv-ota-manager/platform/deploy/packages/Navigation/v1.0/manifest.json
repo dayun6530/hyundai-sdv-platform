@@ -9,7 +9,7 @@
   "checksum_file": "checksum.sha256",
   "executable_name": "NavigationFeature",
   "binary_name": "NavigationFeature",
-  "created_at": "2026-06-07T16:29:17Z",
+  "created_at": "2026-06-07T19:44:16Z",
   "supported_targets": [
     "docker"
   ]

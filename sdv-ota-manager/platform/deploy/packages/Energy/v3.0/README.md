@@ -3,7 +3,7 @@
 - **도메인:** Energy
 - **바이너리:** `EvEnergyFeature` (`../sdv-feature-flag-platform` CMake 빌드 산출물을 `build_package_image.sh`가 복사)
 - **버전:** 3.0
-- **Docker 이미지:** `sdv/energy-feature:v3.0`
+- **Docker 이미지:** `sdv/evenergy-feature:v3.0`
 
 `scripts/build_package_image.sh`로 플랫폼 전체를 `cmake -B build_unleash -DSDV_ENABLE_UNLEASH=ON` 후 복사 → 체크섬 → Docker 빌드 → `platform/deploy/package_build_index.json` 갱신을 수행합니다.
 
