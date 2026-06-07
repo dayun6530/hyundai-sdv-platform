@@ -3,7 +3,10 @@
 #include <QJsonArray>
 #include <QWidget>
 
-class QTableWidget;
+class QLabel;
+class QScrollArea;
+class QVBoxLayout;
+class QWidget;
 
 namespace sdv::dash {
 
@@ -16,8 +19,11 @@ public:
 
 private:
     void appendRow(const QString& time, const QString& event, const QString& target, const QString& status);
+    QWidget* makeStreamRow(const QString& time, const QString& event, const QString& target, const QString& status);
 
-    QTableWidget* table_{nullptr};
+    QScrollArea* scroll_{nullptr};
+    QVBoxLayout* streamLayout_{nullptr};
+    QWidget* streamHost_{nullptr};
 };
 
 }  // namespace sdv::dash

@@ -1,0 +1,4 @@
+# Copy to .mapbox_token (same folder) and paste your public token on the next line.
+# Get token: https://account.mapbox.com/access-tokens/
+# Must start with pk.  — never put sk. secret tokens here.
+pk.your_public_token_here

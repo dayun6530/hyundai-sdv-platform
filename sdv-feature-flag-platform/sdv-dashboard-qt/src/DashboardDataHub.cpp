@@ -1,5 +1,7 @@
 #include "DashboardDataHub.h"
 
+#include <QDateTime>
+#include <QHash>
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -14,6 +16,31 @@
 #endif
 
 using sdv::dash::DashboardDataHub;
+
+namespace {
+
+bool shouldEmitHttpError(const QString& key)
+{
+    static QHash<QString, qint64> lastMs;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const qint64 prev = lastMs.value(key, 0);
+    if (now - prev < 15000) {
+        return false;
+    }
+    lastMs[key] = now;
+    return true;
+}
+
+QString formatHttpError(const QString& endpoint, const QString& errorString, const QString& apiBase)
+{
+    QString line = QStringLiteral("[%1] HTTP error: %2").arg(endpoint, errorString);
+    if (errorString.contains(QStringLiteral("refused"), Qt::CaseInsensitive)) {
+        line += QStringLiteral(" — status-server not running at %1 (see below)").arg(apiBase);
+    }
+    return line;
+}
+
+}  // namespace
 
 DashboardDataHub::DashboardDataHub(QObject* parent)
     : QObject(parent), nam_(new QNetworkAccessManager(this)) {
@@ -84,7 +111,9 @@ void DashboardDataHub::onFleetReplyFinished() {
     }
     reply->deleteLater();
     if (reply->error() != QNetworkReply::NoError) {
-        emit httpLogLine(QStringLiteral("[fleet/state] HTTP error: %1").arg(reply->errorString()));
+        if (shouldEmitHttpError(QStringLiteral("fleet/state"))) {
+            emit httpLogLine(formatHttpError(QStringLiteral("fleet/state"), reply->errorString(), apiBase_));
+        }
         return;
     }
     const QByteArray body = reply->readAll();
@@ -109,7 +138,9 @@ void DashboardDataHub::pollHistory() {
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emit httpLogLine(QStringLiteral("[fleet-history] HTTP error: %1").arg(reply->errorString()));
+            if (shouldEmitHttpError(QStringLiteral("fleet-history"))) {
+                emit httpLogLine(formatHttpError(QStringLiteral("fleet-history"), reply->errorString(), apiBase_));
+            }
             return;
         }
         const auto doc = QJsonDocument::fromJson(reply->readAll());

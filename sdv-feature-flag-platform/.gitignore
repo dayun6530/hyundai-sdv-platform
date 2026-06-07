@@ -29,3 +29,6 @@ sdv-feature-flag-platform/dashboard/node_modules/
 
 # Local backup from version-map slot assignment (status-server)
 deploy/version_map.json.bak
+
+# Mapbox public token (local only)
+sdv-dashboard-qt/.mapbox_token

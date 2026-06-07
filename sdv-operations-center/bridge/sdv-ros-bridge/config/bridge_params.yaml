@@ -1,0 +1,13 @@
+sdv_ros_bridge_node:
+  ros__parameters:
+    websocket_host: "0.0.0.0"
+    websocket_port: 9090
+
+    topic_vehicle_velocity: "/vehicle/status/velocity_status"
+    topic_localization: "/localization/kinematic_state"
+    topic_trajectory: "/planning/scenario_planning/trajectory"
+    topic_perception_objects: "/perception/object_recognition/objects"
+
+    max_trajectory_points: 200
+    trajectory_throttle_ms: 100
+    perception_throttle_ms: 100

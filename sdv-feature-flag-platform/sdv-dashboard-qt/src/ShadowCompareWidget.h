@@ -14,13 +14,12 @@ public:
     void updateFromCarState(const QJsonObject& carState);
 
 private:
-    QLabel* status_{nullptr};
+    QLabel* validationBadge_{nullptr};
+    QLabel* laneDiff_{nullptr};
+    QLabel* brakeDelay_{nullptr};
+    QLabel* routeDev_{nullptr};
     QLabel* prod_{nullptr};
     QLabel* sh_{nullptr};
-    QLabel* lat_{nullptr};
-    QLabel* dec_{nullptr};
-    QLabel* route_{nullptr};
-    QLabel* brake_{nullptr};
 };
 
 }  // namespace sdv::dash

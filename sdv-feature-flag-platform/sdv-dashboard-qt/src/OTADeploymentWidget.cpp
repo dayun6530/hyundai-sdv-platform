@@ -1,207 +1,233 @@
 #include "OTADeploymentWidget.h"
 
+#include "modules/ota/OtaDeploymentService.h"
+#include "modules/ota/OtaDeploymentViewModel.h"
+#include "modules/ota/OtaTypes.h"
+#include "ui/DashboardTheme.h"
+#include "ui/OtaFlowDiagramWidget.h"
+#include "ui/UiAnimation.h"
+
+#include <QComboBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QTextCursor>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
+#include <QTextEdit>
 #include <QMessageBox>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QProgressBar>
 #include <QPushButton>
-#include <QTextEdit>
+#include <QFont>
 #include <QVBoxLayout>
 
 using sdv::dash::OTADeploymentWidget;
+using sdv::dash::ui::DashboardTheme;
+using sdv::dash::ui::UiAnimation;
 
-namespace {
-
-const QStringList kStages = {
-    QStringLiteral("Downloading"),
-    QStringLiteral("Verifying"),
-    QStringLiteral("Installing"),
-    QStringLiteral("Switching"),
-    QStringLiteral("Validating"),
-    QStringLiteral("Completed"),
-};
-
-int phaseToIndex(const QString& phaseRaw) {
-    const QString p = phaseRaw.toUpper();
-    if (p.contains(QLatin1String("DOWNLOAD"))) {
-        return 0;
-    }
-    if (p.contains(QLatin1String("VERIFY")) || p.contains(QLatin1String("CHECKSUM"))) {
-        return 1;
-    }
-    if (p.contains(QLatin1String("INSTALL"))) {
-        return 2;
-    }
-    if (p.contains(QLatin1String("SWITCH"))) {
-        return 3;
-    }
-    if (p.contains(QLatin1String("VALID"))) {
-        return 4;
-    }
-    if (p.contains(QLatin1String("COMPLETE")) || p.contains(QLatin1String("READY"))) {
-        return 5;
-    }
-    return -1;
-}
-
-}  // namespace
-
-OTADeploymentWidget::OTADeploymentWidget(QWidget* parent)
-    : QWidget(parent), nam_(new QNetworkAccessManager(this)) {
+OTADeploymentWidget::OTADeploymentWidget(QWidget* parent) : QWidget(parent)
+{
     auto* v = new QVBoxLayout(this);
     v->setContentsMargins(0, 0, 0, 0);
     v->setSpacing(5);
+
+    setStyleSheet(DashboardTheme::otaPanelStyle());
+
+    auto* selectorRow = new QHBoxLayout();
+    auto* targetLbl = new QLabel(QStringLiteral("Target version"), this);
+    targetLbl->setObjectName(QStringLiteral("otaMeta"));
+    selectorRow->addWidget(targetLbl);
+    versionSelector_ = new QComboBox(this);
+    versionSelector_->setMinimumWidth(120);
+    selectorRow->addWidget(versionSelector_, 1);
+    deployBtn_ = new QPushButton(QStringLiteral("Deploy"), this);
+    deployBtn_->setStyleSheet(DashboardTheme::primaryButtonStyle());
+    connect(deployBtn_, &QPushButton::clicked, this, &OTADeploymentWidget::onDeploy);
+    selectorRow->addWidget(deployBtn_);
+    v->addLayout(selectorRow);
 
     auto* g = new QGridLayout();
     g->setContentsMargins(0, 0, 0, 0);
     g->setHorizontalSpacing(8);
     g->setVerticalSpacing(3);
-    g->addWidget(new QLabel(QStringLiteral("Active"), this), 0, 0);
+    auto mkMeta = [this](const QString& t) {
+        auto* l = new QLabel(t, this);
+        l->setObjectName(QStringLiteral("otaMeta"));
+        return l;
+    };
+    g->addWidget(mkMeta(QStringLiteral("Current")), 0, 0);
     activeVer_ = new QLabel(QStringLiteral("—"), this);
+    activeVer_->setObjectName(QStringLiteral("otaValue"));
     g->addWidget(activeVer_, 0, 1);
-    g->addWidget(new QLabel(QStringLiteral("Target"), this), 1, 0);
+    g->addWidget(mkMeta(QStringLiteral("Target")), 1, 0);
     targetVer_ = new QLabel(QStringLiteral("—"), this);
+    targetVer_->setObjectName(QStringLiteral("otaValue"));
     g->addWidget(targetVer_, 1, 1);
+    g->addWidget(mkMeta(QStringLiteral("State")), 2, 0);
+    stateLabel_ = new QLabel(QStringLiteral("Idle"), this);
+    stateLabel_->setObjectName(QStringLiteral("otaValue"));
+    g->addWidget(stateLabel_, 2, 1);
     v->addLayout(g);
 
     progress_ = new QProgressBar(this);
     progress_->setRange(0, 100);
     progress_->setTextVisible(true);
-    progress_->setFormat(QStringLiteral("%p% - staged"));
+    progress_->setFormat(QStringLiteral("%p% — %v"));
+    progress_->setFixedHeight(16);
+    progress_->setStyleSheet(DashboardTheme::progressBarStyle(QStringLiteral("#22d3ee")));
     v->addWidget(progress_);
 
-    stages_ = new QLabel(this);
-    stages_->setWordWrap(true);
-    v->addWidget(stages_);
+    flowDiagram_ = new sdv::dash::ui::OtaFlowDiagramWidget(this);
+    v->addWidget(flowDiagram_);
 
-    log_ = new QTextEdit(this);
-    log_->setReadOnly(true);
-    log_->setMaximumHeight(116);
-    log_->setFont(QFont(QStringLiteral("Consolas"), 8));
-    v->addWidget(log_);
+    deploymentLog_ = new QTextEdit(this);
+    deploymentLog_->setReadOnly(true);
+    deploymentLog_->setMaximumHeight(88);
+    deploymentLog_->setFont(QFont(QStringLiteral("Consolas"), 8));
+    v->addWidget(deploymentLog_);
 
     auto* row = new QHBoxLayout();
-    rollback_ = new QPushButton(QStringLiteral("Rollback ADAS"), this);
+    rollback_ = new QPushButton(QStringLiteral("Rollback"), this);
+    rollback_->setStyleSheet(DashboardTheme::ghostButtonStyle());
     connect(rollback_, &QPushButton::clicked, this, &OTADeploymentWidget::onRollback);
     row->addStretch();
     row->addWidget(rollback_);
     v->addLayout(row);
 
-    appendLog(QStringLiteral("OTA observer ready - deploy/state + MQTT HUD."));
+    appendLog(QStringLiteral("[OTA] OTA deployment module ready"));
+    UiAnimation::fadeIn(this);
 }
 
-void OTADeploymentWidget::setApiBase(const QString& url) {
-    apiBase_ = url.trimmed();
-    while (apiBase_.endsWith(QLatin1Char('/'))) {
-        apiBase_.chop(1);
-    }
-}
-
-void OTADeploymentWidget::setCarId(const QString& carId) {
-    carId_ = carId.trimmed().isEmpty() ? QStringLiteral("car_1") : carId.trimmed();
-}
-
-void OTADeploymentWidget::appendLog(const QString& line) {
-    log_->append(line);
-    QTextCursor c = log_->textCursor();
-    c.movePosition(QTextCursor::End);
-    log_->setTextCursor(c);
-}
-
-void OTADeploymentWidget::restageProgress(const QJsonObject& ota) {
-    const QString phase = ota.value(QStringLiteral("ota_phase")).toString();
-    const QString upd = ota.value(QStringLiteral("update_mode")).toString();
-    const int idx = phaseToIndex(phase.isEmpty() ? upd : phase);
-    int pct = 0;
-    if (idx >= 0) {
-        pct = qMin(100, (idx + 1) * 16);
-    }
-    if (upd.compare(QLatin1String("FAILED"), Qt::CaseInsensitive) == 0 ||
-        phase.contains(QLatin1String("FAIL"))) {
-        pct = 100;
-        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#b91c1c; }"));
-    } else if (upd.compare(QLatin1String("READY"), Qt::CaseInsensitive) == 0 ||
-               phase.contains(QLatin1String("COMPLETE"))) {
-        pct = 100;
-        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#15803d; }"));
-    } else {
-        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#2563eb; }"));
-    }
-    progress_->setValue(pct);
-
-    QStringList bullets;
-    const int cur = qMax(0, idx);
-    for (int i = 0; i < kStages.size(); ++i) {
-        const QString mark = (i < cur) ? QStringLiteral("✓ ") : (i == cur ? QStringLiteral("› ") : QStringLiteral("· "));
-        bullets.append(mark + kStages.at(i));
-    }
-    stages_->setText(QStringLiteral("<span style='font-family:Consolas;font-size:10px;color:#b8c7dc'>%1</span>")
-                         .arg(bullets.join(QStringLiteral("<br>"))));
-}
-
-void OTADeploymentWidget::updateFromCarState(const QJsonObject& carState) {
-    const QJsonObject feats = carState.value(QStringLiteral("features")).toObject();
-    const QJsonObject adas = feats.value(QStringLiteral("ADAS")).toObject();
-    const QString active = adas.value(QStringLiteral("active_version")).toString();
-    const QString pending = adas.value(QStringLiteral("pending_active_version")).toString();
-    activeVer_->setText(active.isEmpty() ? QStringLiteral("—") : active);
-    targetVer_->setText(pending.isEmpty() ? QStringLiteral("no pending") : pending);
-
-    const QJsonObject ota = carState.value(QStringLiteral("ota")).toObject();
-    restageProgress(ota);
-
-    const QString dl = ota.value(QStringLiteral("download_status")).toString();
-    const QString ins = ota.value(QStringLiteral("install_status")).toString();
-    const QString fail = ota.value(QStringLiteral("failure_reason")).toString();
-    const QString phase = ota.value(QStringLiteral("ota_phase")).toString();
-    const QString sig =
-        phase + QLatin1Char('|') + dl + QLatin1Char('|') + ins + QLatin1Char('|') + pending + QLatin1Char('|') + fail;
-    if (sig != lastOtaSig_) {
-        lastOtaSig_ = sig;
-        appendLog(QStringLiteral("[%1] phase=%2 dl=%3 install=%4 target=%5 %6")
-                      .arg(carState.value(QStringLiteral("car_id")).toString(), phase, dl, ins,
-                           pending.isEmpty() ? QStringLiteral("—") : pending,
-                           fail.isEmpty() ? QString() : QStringLiteral("| ").append(fail)));
-    }
-    if (log_->document()->blockCount() > 160) {
-        log_->clear();
-        appendLog(QStringLiteral("(log trimmed)"));
-    }
-}
-
-void OTADeploymentWidget::onRollback() {
-    const QString car = carId_;
-    if (car.isEmpty()) {
+void OTADeploymentWidget::setViewModel(sdv::dash::ota::OtaDeploymentViewModel* viewModel)
+{
+    if (viewModel_ == viewModel) {
         return;
     }
-    const auto answer =
-        QMessageBox::question(this, QStringLiteral("Rollback"),
-                              QStringLiteral("Invoke fleet rollback for ADAS on %1?").arg(car));
+    if (viewModel_) {
+        disconnect(viewModel_, nullptr, this, nullptr);
+    }
+    viewModel_ = viewModel;
+    if (!viewModel_) {
+        return;
+    }
+
+    versionSelector_->clear();
+    versionSelector_->addItems(viewModel_->availableVersions());
+
+    connect(viewModel_, &sdv::dash::ota::OtaDeploymentViewModel::changed, this, &OTADeploymentWidget::onViewModelChanged);
+    connect(viewModel_, &sdv::dash::ota::OtaDeploymentViewModel::logLine, this, &OTADeploymentWidget::onLogLine);
+    onViewModelChanged();
+}
+
+void OTADeploymentWidget::setApiBase(const QString& url)
+{
+    if (viewModel_ && viewModel_->service()) {
+        viewModel_->service()->setApiBase(url);
+    }
+}
+
+void OTADeploymentWidget::setCarId(const QString& carId)
+{
+    if (viewModel_ && viewModel_->service()) {
+        viewModel_->service()->setCarId(carId);
+    }
+}
+
+void OTADeploymentWidget::updateFromCarState(const QJsonObject& carState)
+{
+    if (viewModel_) {
+        viewModel_->ingestCarState(carState);
+    }
+}
+
+void OTADeploymentWidget::onDeploy()
+{
+    if (!viewModel_) {
+        return;
+    }
+    const QString ver = versionSelector_->currentText().trimmed();
+    if (ver.isEmpty()) {
+        return;
+    }
+    if (ver == viewModel_->activeVersion()) {
+        QMessageBox::information(this, QStringLiteral("Deploy"), QStringLiteral("Already running %1").arg(ver));
+        return;
+    }
+    viewModel_->deploySelectedVersion(ver);
+}
+
+void OTADeploymentWidget::onRollback()
+{
+    if (!viewModel_) {
+        return;
+    }
+    const auto answer = QMessageBox::question(
+        this, QStringLiteral("Rollback"),
+        QStringLiteral("Rollback ADAS to previous version on this vehicle?"));
     if (answer != QMessageBox::Yes) {
         return;
     }
+    viewModel_->requestRollback();
+}
 
-    QUrl url(apiBase_ + QStringLiteral("/api/fleet/action"));
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+void OTADeploymentWidget::onViewModelChanged()
+{
+    if (!viewModel_) {
+        return;
+    }
 
-    QJsonObject body;
-    body.insert(QStringLiteral("action"), QStringLiteral("rollback"));
-    body.insert(QStringLiteral("car_id"), car);
-    body.insert(QStringLiteral("feature"), QStringLiteral("ADAS"));
+    activeVer_->setText(viewModel_->activeVersion().isEmpty() ? QStringLiteral("—") : viewModel_->activeVersion());
+    const QString target = viewModel_->targetVersion();
+    targetVer_->setText(target.isEmpty() ? QStringLiteral("—") : target);
+    stateLabel_->setText(viewModel_->currentState());
+    UiAnimation::animateProgress(progress_, viewModel_->progress());
+    updateProgressStyle();
 
-    QNetworkReply* reply = nam_->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        reply->deleteLater();
-        const QByteArray raw = reply->readAll();
-        appendLog(QStringLiteral("[rollback] HTTP %1 %2").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()).arg(QString::fromUtf8(raw)));
-    });
+    const bool busy = viewModel_->busy();
+    deployBtn_->setEnabled(!busy);
+    rollback_->setEnabled(!busy);
+
+    if (flowDiagram_) {
+        flowDiagram_->setDeploymentState(viewModel_->currentState());
+    }
+
+    if (lastState_ != viewModel_->currentState()) {
+        lastState_ = viewModel_->currentState();
+    }
+}
+
+void OTADeploymentWidget::updateProgressStyle()
+{
+    if (!viewModel_) {
+        return;
+    }
+    const QString state = viewModel_->currentState();
+    if (state == QStringLiteral("Failed")) {
+        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#b91c1c; }"));
+    } else if (state == QStringLiteral("Completed")) {
+        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#15803d; }"));
+    } else if (state == QStringLiteral("Rollback")) {
+        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#d97706; }"));
+    } else {
+        progress_->setStyleSheet(QStringLiteral("QProgressBar::chunk { background-color:#2563eb; }"));
+    }
+    progress_->setFormat(QStringLiteral("%1 — %p%").arg(state));
+}
+
+void OTADeploymentWidget::rebuildTimeline()
+{
+    if (flowDiagram_ && viewModel_) {
+        flowDiagram_->setDeploymentState(viewModel_->currentState());
+    }
+}
+
+void OTADeploymentWidget::appendLog(const QString& line)
+{
+    deploymentLog_->append(line);
+    if (deploymentLog_->document()->blockCount() > 120) {
+        deploymentLog_->clear();
+        deploymentLog_->append(QStringLiteral("[OTA] (log trimmed)"));
+    }
+}
+
+void OTADeploymentWidget::onLogLine(const QString& line)
+{
+    appendLog(line);
 }
