@@ -959,6 +959,69 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     percentShuffleSeed,
   ]);
 
+  const PROMOTE_FEATURE_LABELS = {
+    ADAS: 'ADAS',
+    Navigation: 'Navigation',
+    Energy: 'EV Energy',
+  };
+
+  const carsForPromoteConfirm = useMemo(() => {
+    if (percentMode) {
+      const carToSeg = new Map();
+      for (const seg of percentSegments) {
+        for (const carId of seg.carIds || []) {
+          if (!carToSeg.has(carId)) carToSeg.set(carId, seg);
+        }
+      }
+      return sortCarIds([...carToSeg.keys()]);
+    }
+    if (deploymentCarIds.length > 0) {
+      return sortCarIds(deploymentCarIds);
+    }
+    return sortCarIds(resolvedCarIds);
+  }, [percentMode, percentSegments, deploymentCarIds, resolvedCarIds]);
+
+  const promoteConfirmItems = useMemo(() => {
+    if (percentMode) {
+      const carToSeg = new Map();
+      for (const seg of percentSegments) {
+        for (const carId of seg.carIds || []) {
+          if (!carToSeg.has(carId)) carToSeg.set(carId, seg);
+        }
+      }
+      return carsForPromoteConfirm.map((carId) => {
+        const seg = carToSeg.get(carId);
+        const featLabel =
+          PROMOTE_FEATURE_LABELS[seg?.feature] || seg?.feature || 'Feature';
+        const version = seg?.version || '';
+        return {
+          carId,
+          feature: seg?.feature || '',
+          version,
+          message: `${carId} — ${featLabel} feature의 새 버전을 Primary로 업데이트하시겠습니까?`,
+          detail: `차량: ${carId}\nFeature: ${featLabel}\n버전: ${version || '—'}`,
+        };
+      });
+    }
+    const featLabel = PROMOTE_FEATURE_LABELS[feature] || feature || 'Feature';
+    const version =
+      campaign?.target_version || listCampaign?.target_version || '';
+    return carsForPromoteConfirm.map((carId) => ({
+      carId,
+      feature: feature || '',
+      version,
+      message: `${carId} — ${featLabel} feature의 새 버전을 Primary로 업데이트하시겠습니까?`,
+      detail: `차량: ${carId}\nFeature: ${featLabel}\n버전: ${version || '—'}`,
+    }));
+  }, [
+    percentMode,
+    percentSegments,
+    carsForPromoteConfirm,
+    feature,
+    campaign?.target_version,
+    listCampaign?.target_version,
+  ]);
+
   const percentDeployKey = useMemo(
     () =>
       buildPercentDeployKey(effectiveDeployTargetKey, percentEnrichedRows, {
@@ -1321,6 +1384,15 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     await refreshCandidateStaged();
   }, [runtimeCarId, loadRuntime, refreshCandidateStaged]);
 
+  const [safetyRefreshToken, setSafetyRefreshToken] = useState(0);
+
+  /** Refresh fleet OTA badges + Safety Preconditions after demo READY changes. */
+  const handleSafetyPrepared = useCallback(async () => {
+    await onVersionMapChanged?.();
+    await afterDemoReadyRefresh();
+    setSafetyRefreshToken((t) => t + 1);
+  }, [onVersionMapChanged, afterDemoReadyRefresh]);
+
   const runValidate = useCallback(async () => {
     if (!selectedCampaignId || !deploymentHasTarget) return;
     setValidateLoading(true);
@@ -1504,7 +1576,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     [],
   );
 
-  const runPromote = useCallback(async () => {
+  const runPromote = useCallback(async (options = {}) => {
     if (!selectedCampaignId || !deploymentHasTarget || !imageAvailable) return;
     const vr = validateCache[selectedCampaignId];
     if (
@@ -1515,16 +1587,17 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
       return;
     if (!promoteCandidateReady) return;
 
-    const prep = await applyDemoReadyBeforeAction({
-      carIds: resolvedCarIds,
-      feature,
-      action: 'promote',
-    });
-    if (!prep.ok) {
-      setPromoteError(prep.error);
+    const requestedIds = Array.isArray(options.carIds) ? options.carIds : resolvedCarIds;
+    const targetCarIds = sortCarIds(
+      requestedIds.filter((id) => resolvedCarIds.includes(id)),
+    );
+    if (!targetCarIds.length) {
+      setPromoteError('Promote 대상 차량이 없습니다.');
       return;
     }
-    await afterDemoReadyRefresh();
+    const declinedCarIds = Array.isArray(options.declinedCarIds)
+      ? options.declinedCarIds
+      : [];
 
     setPromoteLoading(true);
     setPromotePhase('campaign');
@@ -1536,7 +1609,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
       res = await runCampaignPhase(
         selectedCampaignId,
         'promote',
-        deploymentTargetBody,
+        { vehicle_ids: targetCarIds },
       );
       setPromoteCache((prev) => ({ ...prev, [selectedCampaignId]: res }));
       if (res.safety_blocked) {
@@ -1551,7 +1624,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
         setPromoteError('');
       }
 
-      if (res.ok && resolvedCarIds.length) {
+      if (res.ok && targetCarIds.length) {
         setPromotePhase('docker');
         try {
           await postVehicleRuntimeApplyPending();
@@ -1559,7 +1632,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           /* queue may be empty */
         }
         setPromotePhase('apply-native');
-        const applyRes = await applyPendingNativeForCars(resolvedCarIds, {
+        const applyRes = await applyPendingNativeForCars(targetCarIds, {
           feature,
         });
         if (applyRes.ok === false) {
@@ -1572,22 +1645,25 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
               `apply-pending-native failed on one or more vehicles${failedCars ? ` (${failedCars})` : ''}`,
           );
         }
-        const warnRes = await fetchStalePendingWarnings(resolvedCarIds, feature);
+        const warnRes = await fetchStalePendingWarnings(targetCarIds, feature);
         setStalePendingWarnings(warnRes.warnings || []);
       }
 
-      if (res.ok && resolvedCarIds.length && campaign?.target_version) {
+      if (res.ok && targetCarIds.length && campaign?.target_version) {
         setPromotePhase('verify');
         const synced = await waitForPromoteOnTargets(
-          resolvedCarIds,
+          targetCarIds,
           feature,
           campaign.target_version,
         );
         if (synced) {
           let msg =
-            resolvedCarIds.length > 1
-              ? `Promote complete — primary ${campaign.target_version} on ${resolvedCarIds.length} vehicles.`
-              : `Promote complete — primary ${campaign.target_version} on ${resolvedCarIds[0]}.`;
+            targetCarIds.length > 1
+              ? `Promote complete — primary ${campaign.target_version} on ${targetCarIds.length} vehicles (${targetCarIds.join(', ')}).`
+              : `Promote complete — primary ${campaign.target_version} on ${targetCarIds[0]}.`;
+          if (declinedCarIds.length) {
+            msg += ` Skipped: ${declinedCarIds.join(', ')}.`;
+          }
           const nextGroup = deploymentGroup
             ? nextRolloutGroupAfter(deploymentGroup)
             : null;
@@ -1752,39 +1828,43 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
     setDropCandidateLoading(false);
   }, [percentActionsEnabled, percentSegments]);
 
-  const runPercentPromote = useCallback(async () => {
+  const runPercentPromote = useCallback(async (options = {}) => {
     if (!canPromotePercent || !percentSegments.length) return;
+    const acceptedSet = new Set(
+      Array.isArray(options.carIds) ? options.carIds : [],
+    );
+    const hasCarFilter = acceptedSet.size > 0;
+    const declinedCarIds = Array.isArray(options.declinedCarIds)
+      ? options.declinedCarIds
+      : [];
+
     setPromoteLoading(true);
     setPromotePhase('campaign');
     setPromoteError('');
     setPromoteCompleteMessage('');
 
     try {
-      const prep = await applyDemoReadyBeforeAction({
-        segments: percentSegments,
-      });
-      if (!prep.ok) {
-        setPromoteError(prep.error);
-        return;
-      }
-      await afterDemoReadyRefresh();
-
       const segmentResults = [];
       let allOk = true;
       for (const seg of percentSegments) {
+        const segCars = hasCarFilter
+          ? sortCarIds((seg.carIds || []).filter((id) => acceptedSet.has(id)))
+          : sortCarIds(seg.carIds || []);
+        if (!segCars.length) continue;
         setPromotePhase(`promote ${seg.feature} ${seg.version}`);
         const res = await runCampaignPhase(seg.campaignId, 'promote', {
-          vehicle_ids: seg.carIds,
+          vehicle_ids: segCars,
         });
-        segmentResults.push({ ...seg, res });
+        segmentResults.push({ ...seg, carIds: segCars, res });
         if (!res.ok) allOk = false;
+      }
+      if (!segmentResults.length) {
+        setPromoteError('Promote 대상 차량이 없습니다.');
+        return;
       }
       setPercentPromoteResult({ ok: allOk, segments: segmentResults });
 
       if (allOk) {
-        const allCars = sortCarIds(
-          percentSegments.flatMap((s) => s.carIds || []),
-        );
         setPromotePhase('docker');
         try {
           await postVehicleRuntimeApplyPending();
@@ -1792,7 +1872,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           /* optional */
         }
         setPromotePhase('apply-native');
-        for (const seg of percentSegments) {
+        for (const seg of segmentResults) {
           const applyRes = await applyPendingNativeForCars(seg.carIds, {
             feature: seg.feature,
           });
@@ -1810,7 +1890,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
         }
         setPromotePhase('verify');
         let synced = true;
-        for (const seg of percentSegments) {
+        for (const seg of segmentResults) {
           const ok = await waitForPromoteOnTargets(
             seg.carIds,
             seg.feature,
@@ -1818,11 +1898,13 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           );
           if (!ok) synced = false;
         }
-        setPromoteCompleteMessage(
-          synced
-            ? 'Percent deploy complete — all segments promoted on target vehicles.'
-            : 'Promote commands finished; refresh vehicle_runtime if JSON lags.',
-        );
+        let completeMsg = synced
+          ? 'Percent deploy complete — confirmed vehicles promoted.'
+          : 'Promote commands finished; refresh vehicle_runtime if JSON lags.';
+        if (declinedCarIds.length) {
+          completeMsg += ` Skipped: ${declinedCarIds.join(', ')}.`;
+        }
+        setPromoteCompleteMessage(completeMsg);
       } else {
         setPromoteError('Promote failed on one or more segments.');
       }
@@ -2274,6 +2356,8 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
                   .join('\n')
               : undefined
           }
+          promoteConfirmItems={promoteConfirmItems}
+          onSafetyPrepared={handleSafetyPrepared}
           promoteLoading={promoteLoading}
           promotePhase={promotePhase}
           promoteCompleteMessage={promoteCompleteMessage}
@@ -2389,8 +2473,9 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           <VehicleSafetyPreconditionsCard
             carId={runtimeViewCarId || runtimeCarId}
             feature={displayFeature}
-            prepareAction="candidate-deploy"
-            onChanged={afterDemoReadyRefresh}
+            prepareAction="promote"
+            refreshToken={safetyRefreshToken}
+            onChanged={handleSafetyPrepared}
             defaultOpen
           />
 

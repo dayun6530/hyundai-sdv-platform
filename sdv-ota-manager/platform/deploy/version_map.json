@@ -10,11 +10,11 @@
         "package_path": "deploy/packages/ADAS/v0.4"
       },
       "B": {
-        "version": "v4.0",
+        "version": "v1.0",
         "role": "candidate",
         "binary": "AdasFeature",
-        "package_id": "ADAS_v4.0",
-        "package_path": "deploy/packages/ADAS/v4.0"
+        "package_id": "ADAS_v1.0",
+        "package_path": "deploy/packages/ADAS/v1.0"
       }
     },
     "Navigation": {
@@ -38,11 +38,11 @@
         "binary": "EvEnergyFeature"
       },
       "B": {
-        "version": "v3.0",
+        "version": "v1.0",
         "role": "candidate",
         "binary": "EvEnergyFeature",
-        "package_id": "Energy_v3.0",
-        "package_path": "deploy/packages/Energy/v3.0"
+        "package_id": "Energy_v1.0",
+        "package_path": "deploy/packages/Energy/v1.0"
       }
     }
   }

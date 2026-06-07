@@ -311,6 +311,9 @@ class PygameMapSession:
                 "version": str(msg.get("version") or ""),
                 "message": str(msg.get("message") or "").strip(),
                 "detail": str(msg.get("detail") or "").strip(),
+                "car_id": str(msg.get("car_id") or "").strip(),
+                "index": int(msg.get("index") or 0),
+                "total": int(msg.get("total") or 0),
             }
             self._promote_prompt_ws = websocket
         print(
@@ -430,7 +433,20 @@ class PygameMapSession:
         hint_font = _korean_font(18)
         btn_font = _korean_font(20)
 
-        title = title_font.render("Primary 업데이트 확인", True, nrm.COLOR_WHITE)
+        car_id = prompt.get("car_id") or ""
+        index = int(prompt.get("index") or 0)
+        total = int(prompt.get("total") or 0)
+        title_suffix = ""
+        if car_id and total > 1:
+            title_suffix = f" ({car_id} · {index}/{total})"
+        elif car_id:
+            title_suffix = f" ({car_id})"
+        elif total > 1 and index > 0:
+            title_suffix = f" ({index}/{total})"
+
+        title = title_font.render(
+            f"Primary 업데이트 확인{title_suffix}", True, nrm.COLOR_WHITE
+        )
         display.blit(title, title.get_rect(centerx=panel.centerx, top=panel_y + 24))
 
         feature = prompt.get("feature") or ""

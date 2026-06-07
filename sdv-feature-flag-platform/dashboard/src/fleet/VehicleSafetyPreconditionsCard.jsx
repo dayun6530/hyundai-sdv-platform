@@ -26,6 +26,7 @@ export default function VehicleSafetyPreconditionsCard({
   onChanged,
   defaultOpen = false,
   prepareAction = "",
+  refreshToken = 0,
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [safety, setSafety] = useState(null);
@@ -65,7 +66,7 @@ export default function VehicleSafetyPreconditionsCard({
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshToken]);
 
   const applyResult = async (res) => {
     if (!res.ok) {

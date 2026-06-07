@@ -7,12 +7,12 @@
     "EvEnergy": "1.0"
   },
   "cars": {
-    "car_1": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
-    "car_10": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
+    "car_1": { "ADAS": "1.0", "Navigation": "3.0", "EvEnergy": "3.0" },
+    "car_10": { "ADAS": "1.0", "Navigation": "3.0", "EvEnergy": "3.0" },
     "car_2": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
     "car_3": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
     "car_4": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
-    "car_5": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
+    "car_5": { "ADAS": "1.0", "Navigation": "3.0", "EvEnergy": "3.0" },
     "car_6": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
     "car_7": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },
     "car_8": { "ADAS": "4.0", "Navigation": "3.0", "EvEnergy": "3.0" },

@@ -18,7 +18,9 @@
   "target_selector": {
     "scope": "vehicle",
     "vehicle_ids": [
-      "car_1"
+      "car_1",
+      "car_5",
+      "car_10"
     ]
   },
   "safety_requirements": {

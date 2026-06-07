@@ -80,3 +80,55 @@ export async function prepareAllFleetDemoReady(carIds, feature = 'ADAS', action 
   });
   return { ok: failed.length === 0, prepared, failed };
 }
+
+/** Cars not READY for Primary promote (Run Candidate / shadow is not gated). */
+export async function checkPromoteSafetyForCars(items) {
+  const list = Array.isArray(items) ? items : [];
+  const blocked = [];
+  const seen = new Set();
+
+  for (const item of list) {
+    const carId = String(item?.carId || '').trim();
+    const feature = String(item?.feature || 'ADAS').trim() || 'ADAS';
+    const key = `${carId}:${feature}`;
+    if (!carId || seen.has(key)) continue;
+    seen.add(key);
+
+    const res = await fetchFleetSafety(carId, feature);
+    if (!res.ok || !res.ready) {
+      blocked.push({
+        carId,
+        feature,
+        failed_checks: res.failed_checks || [],
+        checks: res.checks || [],
+        error: res.error || '',
+      });
+    }
+  }
+  return blocked;
+}
+
+/** Force demo READY on blocked cars so Promote Primary can proceed. */
+export async function forceDemoReadyForPromoteCars(blockedCars) {
+  const rows = Array.isArray(blockedCars) ? blockedCars : [];
+  const prepared = [];
+  const failed = [];
+
+  for (const row of rows) {
+    const carId = String(row?.carId || '').trim();
+    const feature = String(row?.feature || 'ADAS').trim() || 'ADAS';
+    if (!carId) continue;
+    const res = await prepareFleetDemoReady(carId, feature, 'promote');
+    if (res.ok && res.ready !== false) {
+      prepared.push(carId);
+    } else {
+      failed.push({
+        car_id: carId,
+        error: res.error || res.message || 'Prepare Demo READY failed',
+        failed_checks: res.failed_checks,
+      });
+    }
+  }
+
+  return { ok: failed.length === 0, prepared, failed };
+}

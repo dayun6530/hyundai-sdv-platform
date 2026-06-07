@@ -1,5 +1,45 @@
 const PYGAME_CONTROL_WS = "ws://127.0.0.1:9093";
 const DEFAULT_TIMEOUT_MS = 120_000;
+const VEHICLE_SWITCH_MS = 400;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function selectCockpitVehicle(carId) {
+  const id = String(carId || "").trim();
+  if (!id) return;
+  try {
+    await new Promise((resolve) => {
+      let ws;
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try {
+          ws?.close();
+        } catch {
+          /* ignore */
+        }
+        resolve();
+      };
+      const timer = setTimeout(finish, 4000);
+      ws = new WebSocket(PYGAME_CONTROL_WS);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: "select_vehicle", car_id: id }));
+      };
+      ws.onmessage = finish;
+      ws.onerror = finish;
+      ws.onclose = () => {
+        if (!settled) finish();
+      };
+    });
+    await delay(VEHICLE_SWITCH_MS);
+  } catch {
+    /* cockpit switch is best-effort */
+  }
+}
 
 function sendPromotePrimaryAnswer(ws, requestId, accepted) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -21,6 +61,9 @@ export function requestPygamePromoteConfirm({
   version = "",
   message = "",
   detail = "",
+  carId = "",
+  index = 0,
+  total = 0,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
   return new Promise((resolve, reject) => {
@@ -91,6 +134,9 @@ export function requestPygamePromoteConfirm({
           version,
           message,
           detail,
+          car_id: carId,
+          index,
+          total,
         }),
       );
       document.addEventListener("keydown", onKeyDown, true);
@@ -127,6 +173,58 @@ export function requestPygamePromoteConfirm({
       }
     };
   });
+}
+
+/**
+ * Per-vehicle pygame confirm loop. Returns accepted/declined car IDs.
+ * @param {Array<{carId?: string, feature?: string, version?: string, message?: string, detail?: string}>} items
+ */
+export async function requestPygamePromoteConfirmSequence(
+  items,
+  { timeoutMs = DEFAULT_TIMEOUT_MS, onProgress } = {},
+) {
+  const list = Array.isArray(items) ? items.filter(Boolean) : [];
+  const total = list.length;
+  const accepted = [];
+  const declined = [];
+
+  for (let i = 0; i < list.length; i++) {
+    const item = list[i];
+    const carId = String(item.carId || "").trim();
+    onProgress?.(i + 1, total, carId);
+
+    if (carId) {
+      await selectCockpitVehicle(carId);
+    }
+
+    try {
+      const ok = await requestPygamePromoteConfirm({
+        feature: item.feature || "",
+        version: item.version || "",
+        message: item.message || "",
+        detail: item.detail || "",
+        carId,
+        index: i + 1,
+        total,
+        timeoutMs,
+      });
+      if (ok) {
+        if (carId) accepted.push(carId);
+        else accepted.push(`__item_${i}`);
+      } else if (carId) {
+        declined.push(carId);
+      }
+    } catch (e) {
+      return {
+        accepted,
+        declined,
+        aborted: true,
+        error: e?.message || String(e),
+      };
+    }
+  }
+
+  return { accepted, declined, aborted: false };
 }
 
 /**

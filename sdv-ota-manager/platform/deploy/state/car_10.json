@@ -7,7 +7,7 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS": {
+    "ADAS":     {
       "active_slot": "B",
       "active_version": "v4.0",
       "primary_slot": "B",
@@ -17,17 +17,19 @@
       "manifest_path": "deploy/packages/ADAS/v4.0/manifest.json",
       "package_id": "ADAS_v4.0",
       "docker_runtime_result": "success",
-      "docker_runtime_mode": "promote",
-      "docker_runtime_action": "promote",
-      "docker_runtime_time": "2026-06-07 15:42:27",
-      "docker_runtime_container": "car_10_agent_adas",
-      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v4.0",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_time": "2026-06-08T07:48:39",
+      "docker_runtime_container": "car_10_agent_adas_shadow",
+      "docker_runtime_image": "localhost:5000/sdv/adas-feature:v1.0",
+      "docker_runtime_pull_policy": "missing",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
-      "shadow_enabled": false,
-      "shadow_slot": "",
-      "shadow_version": "",
+      "shadow_enabled": true,
+      "shadow_slot": "B",
+      "shadow_version": "v4.0",
+      "shadow_image": "localhost:5000/sdv/adas-feature:v1.0",
       "shadow_status": "RUNNING",
       "shadow_validation_result": "UNKNOWN",
       "shadow_mode": "inactive",
@@ -35,10 +37,28 @@
       "kill_reason": "",
       "fallback_slot": "A",
       "fallback_version": "v1.0",
-      "rollback_stack": [],
-      "blocked_versions": []
+      "rollback_stack": [
+        {
+          "slot": "B",
+          "version": "v1.0",
+          "docker_image": "",
+          "previous_role": "primary",
+          "recorded_at": "2026-06-08T07:50:07",
+          "reason": "promoted_to_primary",
+          "status": "stable"
+        },
+        {
+          "slot": "B",
+          "version": "v4.0",
+          "docker_image": "",
+          "previous_role": "primary",
+          "recorded_at": "2026-06-08T07:37:29",
+          "reason": "promoted_to_primary",
+          "status": "stable"
+        }
+      ]
     },
-    "Navigation": {
+    "Navigation":     {
       "active_slot": "B",
       "active_version": "v3.0",
       "primary_slot": "B",
@@ -67,10 +87,9 @@
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0",
-      "rollback_stack": []
+      "fallback_version": "v1.0"
     },
-    "Energy": {
+    "Energy":     {
       "active_slot": "B",
       "active_version": "v3.0",
       "primary_slot": "B",
@@ -88,8 +107,8 @@
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
-      "charging_recommend_flag": "ON",
       "advanced_range_flag": "ON",
+      "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
       "shadow_version": "",
@@ -99,11 +118,10 @@
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0",
-      "rollback_stack": []
+      "fallback_version": "v1.0"
     }
   },
-  "ota": {
+  "ota":   {
     "download_status": "downloaded",
     "install_status": "installed",
     "vehicle_mode": "PARKED",
@@ -113,12 +131,12 @@
     "gear": "P",
     "speed": 0,
     "parking_brake": "ON",
-    "battery": 82,
+    "battery": 75,
     "driver_approved": true,
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack": {
+  "last_ack":   {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",
@@ -126,11 +144,11 @@
     "deploy_id": "deploy_adas_004",
     "message": "ADAS v0.4 shadow installed"
   },
-  "last_deploy_id": "deploy_20260608_002810_car_10_Navigation",
-  "last_deploy_result": "",
-  "last_deploy_time": "2026-06-08T00:28:10",
-  "last_deploy_feature": "",
+  "last_deploy_id": "deploy_20260608_075007_car_10_ADAS",
+  "last_deploy_result": "success",
+  "last_deploy_time": "2026-06-08T07:50:07",
+  "last_deploy_feature": "ADAS",
   "last_deploy_slot": "B",
-  "last_deploy_version": "",
+  "last_deploy_version": "v4.0",
   "last_deploy_reason": ""
 }
