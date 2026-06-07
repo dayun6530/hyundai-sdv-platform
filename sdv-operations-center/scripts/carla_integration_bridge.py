@@ -24,7 +24,8 @@ import json
 import math
 import random
 import time
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 
 try:
     import carla
@@ -200,6 +201,68 @@ def scan_dynamic_actors(world: carla.World, ego: carla.Vehicle, ego_tf: carla.Tr
             continue
         actors.append(actor_to_object(actor, ego_tf))
     return actors
+
+
+def _sdv_logs_dir(car_id: str = "car_1") -> Path:
+    root = Path(__file__).resolve().parent.parent.parent / "sdv-feature-flag-platform"
+    return root / "logs" / car_id
+
+
+def find_vehicle_by_car_id(world: carla.World, car_id: str) -> Optional[carla.Vehicle]:
+    target = str(car_id or "").strip()
+    if not target:
+        return None
+    for actor in world.get_actors():
+        if "vehicle" not in actor.type_id:
+            continue
+        role = actor.attributes.get("role_name", "")
+        mapped = _car_id_from_vehicle_role(role)
+        if mapped == target:
+            return actor
+    return None
+
+
+def publish_carla_live_speed(speed_mps: float, car_id: str = "car_1") -> None:
+    """Write pygame/CARLA speed for status-server + fleet log overlay."""
+    try:
+        log_dir = _sdv_logs_dir(car_id)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "speed_mps": round(max(0.0, float(speed_mps)), 3),
+            "speed_kmh": round(max(0.0, float(speed_mps)) * 3.6),
+            "updated_at": time.time(),
+            "source": "pygame_map_bridge",
+            "car_id": car_id,
+        }
+        target = log_dir / "carla_live_speed.json"
+        target.write_text(json.dumps(payload), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _car_id_from_vehicle_role(role: str) -> Optional[str]:
+    if role == "hero":
+        return "car_1"
+    if role.startswith("sdv_car_"):
+        return role.replace("sdv_", "", 1)
+    return None
+
+
+def publish_sdv_fleet_telemetry(world: carla.World) -> None:
+    """Publish pygame/CARLA speed for every SDV fleet vehicle (hero + sdv_car_*)."""
+    try:
+        for actor in world.get_actors():
+            if "vehicle" not in actor.type_id:
+                continue
+            role = actor.attributes.get("role_name", "")
+            car_id = _car_id_from_vehicle_role(role)
+            if not car_id:
+                continue
+            vel = actor.get_velocity()
+            speed = math.hypot(vel.x, vel.y)
+            publish_carla_live_speed(speed, car_id=car_id)
+    except RuntimeError:
+        pass
 
 
 class CarlaAutonomyManager:
@@ -405,9 +468,11 @@ class CarlaVehicleController:
                 ctrl = carla.VehicleControl(throttle=0.0, brake=1.0, steer=0.0, hand_brake=True)
                 self.vehicle.apply_control(ctrl)
             return
+        throttle = max(0.0, min(1.0, self.throttle))
+        brake = max(0.0, min(1.0, self.brake))
         ctrl = carla.VehicleControl(
-            throttle=max(0.0, min(1.0, self.throttle)),
-            brake=max(0.0, min(1.0, self.brake)),
+            throttle=throttle,
+            brake=brake,
             steer=max(-1.0, min(1.0, self.steer)),
             hand_brake=self.hand_brake,
             reverse=self.reverse,
@@ -415,7 +480,15 @@ class CarlaVehicleController:
         if self.reverse:
             ctrl.manual_gear_shift = True
             ctrl.gear = -1
+            vel = self.vehicle.get_velocity()
+            fwd = self.vehicle.get_transform().get_forward_vector()
+            forward_speed = vel.x * fwd.x + vel.y * fwd.y
+            # CARLA ignores reverse throttle while still moving forward — hold brake first.
+            if forward_speed > 0.25:
+                ctrl.throttle = 0.0
+                ctrl.brake = max(brake, 0.65)
         else:
+            ctrl.manual_gear_shift = False
             ctrl.gear = 1
         self.vehicle.apply_control(ctrl)
         if self.dest:
@@ -765,7 +838,20 @@ async def control_client_handler(websocket, session: CarlaSession) -> None:
             msg = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if msg.get("type") != "carla_control":
+        msg_type = msg.get("type")
+        if msg_type == "select_vehicle":
+            car_id = str(msg.get("car_id") or "").strip()
+            if car_id and hasattr(session, "request_fleet_vehicle"):
+                session.request_fleet_vehicle(car_id)
+            elif car_id and hasattr(session, "select_fleet_vehicle"):
+                session.select_fleet_vehicle(car_id)
+            await websocket.send(json.dumps({
+                "type": "carla_status",
+                "selected_car_id": car_id,
+                "active_car_id": getattr(session, "active_car_id", car_id),
+            }))
+            continue
+        if msg_type != "carla_control":
             continue
         data = msg.get("data") or {}
         session.controller.apply_command(data)

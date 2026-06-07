@@ -10,9 +10,13 @@
 #include "ops/OpsTelemetryPipeline.h"
 #include "ops/viewmodels/EgoViewModel.h"
 
+#include <QApplication>
 #include <QEvent>
 #include <QGridLayout>
 #include <QKeyEvent>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QTextEdit>
 #include <QTimer>
 #include <QtMath>
 
@@ -95,6 +99,10 @@ void CarlaControlManager::configure(const QString& carlaModeCli,
     if (panel_) {
         panel_->bindManager(this);
     }
+    if (consoleMode_ != ConsoleMode::Off && qApp && !appDriveFilterInstalled_) {
+        qApp->installEventFilter(this);
+        appDriveFilterInstalled_ = true;
+    }
     connect(this, &CarlaControlManager::navGuidanceChanged, this, [this](const QString& arrows, const QString& dist) {
         if (hud_) {
             hud_->updateNavGuidance(arrows, dist);
@@ -146,31 +154,71 @@ void CarlaControlManager::attachCockpit(sdv::dash::carla::CarlaCockpitView* cock
     }
 }
 
-bool CarlaControlManager::eventFilter(QObject* watched, QEvent* event)
+bool CarlaControlManager::isDriveKey(const int key)
 {
-    if (watched != cockpit_ || consoleMode_ == ConsoleMode::Off) {
-        return QObject::eventFilter(watched, event);
+    switch (key) {
+    case Qt::Key_W:
+    case Qt::Key_A:
+    case Qt::Key_S:
+    case Qt::Key_D:
+    case Qt::Key_R:
+    case Qt::Key_Space:
+    case Qt::Key_P:
+    case Qt::Key_Escape:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool CarlaControlManager::focusBlocksDriveKeys()
+{
+    QWidget* focus = QApplication::focusWidget();
+    if (!focus) {
+        return false;
+    }
+    return qobject_cast<const QLineEdit*>(focus) || qobject_cast<const QTextEdit*>(focus) ||
+           qobject_cast<const QPlainTextEdit*>(focus);
+}
+
+bool CarlaControlManager::handleDriveKeyEvent(QEvent* event)
+{
+    if (consoleMode_ == ConsoleMode::Off || !controller_) {
+        return false;
+    }
+    if (event->type() != QEvent::KeyPress && event->type() != QEvent::KeyRelease) {
+        return false;
+    }
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->isAutoRepeat() || !isDriveKey(ke->key()) || focusBlocksDriveKeys()) {
+        return false;
     }
     if (event->type() == QEvent::KeyPress) {
-        auto* ke = static_cast<QKeyEvent*>(event);
-        if (!ke->isAutoRepeat()) {
-            controller_->applyKeyDown(ke->key());
-            if (controller_->autopilot()) {
-                consoleMode_ = ConsoleMode::Autonomous;
-            } else if (bridgeEnabled_ || simControl_) {
-                consoleMode_ = simControl_ ? ConsoleMode::Simulation : ConsoleMode::Manual;
-            }
-            updateDriveModeBadge();
+        controller_->applyKeyDown(ke->key());
+        if (ke->key() == Qt::Key_R) {
+            emit statusMessage(controller_->reverse() ? QStringLiteral("Gear: R (use W to back up, S to brake)")
+                                                      : QStringLiteral("Gear: D"));
         }
+        if (controller_->autopilot()) {
+            consoleMode_ = ConsoleMode::Autonomous;
+        } else if (bridgeEnabled_ || simControl_) {
+            consoleMode_ = simControl_ ? ConsoleMode::Simulation : ConsoleMode::Manual;
+        }
+        updateDriveModeBadge();
+    } else {
+        controller_->applyKeyUp(ke->key());
+        updateDriveModeBadge();
+    }
+    return true;
+}
+
+bool CarlaControlManager::eventFilter(QObject* watched, QEvent* event)
+{
+    if (handleDriveKeyEvent(event)) {
         return true;
     }
-    if (event->type() == QEvent::KeyRelease) {
-        auto* ke = static_cast<QKeyEvent*>(event);
-        if (!ke->isAutoRepeat()) {
-            controller_->applyKeyUp(ke->key());
-            updateDriveModeBadge();
-        }
-        return true;
+    if (watched != cockpit_ || consoleMode_ == ConsoleMode::Off) {
+        return QObject::eventFilter(watched, event);
     }
     return QObject::eventFilter(watched, event);
 }
@@ -246,6 +294,13 @@ void CarlaControlManager::resumeAutonomousDriving()
     updateDriveModeBadge();
 }
 
+void CarlaControlManager::selectFleetVehicle(const QString& carId)
+{
+    if (bridgeEnabled_ && bridge_) {
+        bridge_->selectFleetVehicle(carId);
+    }
+}
+
 void CarlaControlManager::setDestination(const double x, const double y)
 {
     controller_->setDestination(x, y);
@@ -309,7 +364,7 @@ void CarlaControlManager::onControllerChanged()
     if (hud_) {
         hud_->updateControlTelemetry(
             controller_->throttle(), controller_->brake(), controller_->steer(),
-            controller_->autopilot(), controller_->emergencyStop());
+            controller_->autopilot(), controller_->emergencyStop(), controller_->reverse());
     }
     if (controller_->autopilot()) {
         consoleMode_ = ConsoleMode::Autonomous;

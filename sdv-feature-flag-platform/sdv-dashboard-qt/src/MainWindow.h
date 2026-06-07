@@ -2,6 +2,7 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QHash>
 #include <QMainWindow>
 #include <QString>
 #include <QTimer>
@@ -69,6 +70,8 @@ public:
 
 private slots:
     void onFleetStates(const QJsonArray& states);
+    void onFleetCockpits(const QJsonArray& cockpits, int fleetOnline, int fleetTotal);
+    void onCockpitTelemetry(const QJsonObject& telemetry);
     void onMqttFeatures(const QJsonObject& env);
     void onTimeline(const QJsonArray& records);
     void onHttpLine(const QString& line);
@@ -78,6 +81,7 @@ private slots:
 
 private:
     QJsonObject pickCar(const QJsonArray& states, const QString& carId) const;
+    QJsonObject enrichedCarState(const QJsonObject& car) const;
     void syncCockpitState(const QJsonObject& carState);
     void scrollRightPanelTo(QWidget* widget);
     void applyImmersivePygameChrome(bool enabled);
@@ -115,6 +119,10 @@ private:
 
     QJsonArray lastFleet_;
     QJsonObject lastMqtt_;
+    QJsonObject lastCockpit_;
+    QHash<QString, QJsonObject> lastFleetCockpits_;
+    int fleetOnline_{0};
+    int fleetTotal_{10};
     QString carId_;
     bool mqttUp_{false};
     QTimer trafficAnim_;

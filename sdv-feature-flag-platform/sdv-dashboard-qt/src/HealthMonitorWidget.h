@@ -13,6 +13,7 @@ class HealthMonitorWidget : public QWidget {
 public:
     explicit HealthMonitorWidget(QWidget* parent = nullptr);
     void updateFromCarState(const QJsonObject& carState);
+    void updateFromFleetStates(const QJsonArray& fleetStates, int fleetOnline, int fleetTotal);
     void setRosTelemetryLine(const QString& line);
 
 public slots:

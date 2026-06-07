@@ -135,7 +135,10 @@ CockpitPanel::CockpitPanel(QWidget* parent) : QWidget(parent)
     connect(hud_, &CockpitHudOverlay::vehicleSelected, this, &CockpitPanel::vehicleSelected);
 
     if (carlaView_) {
-        connect(carlaView_, &sdv::dash::carla::CarlaCockpitView::cameraFramePresented, this, &CockpitPanel::cameraFramePresented);
+        connect(carlaView_, &sdv::dash::carla::CarlaCockpitView::vehicleSelected, this,
+                &CockpitPanel::vehicleSelected);
+        connect(carlaView_, &sdv::dash::carla::CarlaCockpitView::cameraFramePresented, this,
+                &CockpitPanel::cameraFramePresented);
     }
 
 }

@@ -1,60 +1,57 @@
 #Requires -Version 5.1
 param(
     [string]$CarlaRoot = "C:\Users\82107\desktop\CARLA_0.9.15\WindowsNoEditor",
-    [int]$WaitSec = 120
+    [int]$WaitSec = 120,
+    [int]$ApiVerifySec = 90
 )
 
 $ErrorActionPreference = "Stop"
 $exe = Join-Path $CarlaRoot "CarlaUE4.exe"
 if (-not (Test-Path $exe)) { throw "Not found: $exe" }
 
-$running = Get-Process -Name "CarlaUE4" -ErrorAction SilentlyContinue
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$running = @(Get-Process -Name "CarlaUE4" -ErrorAction SilentlyContinue)
 if ($running.Count -gt 1) {
     Write-Host "WARNING: Multiple CarlaUE4 already running. Run .\stop_carla.ps1 first." -ForegroundColor Yellow
 }
 
-if (-not $running) {
+if ($running.Count -eq 0) {
     Write-Host "Starting CARLA (single instance)..."
     Start-Process -FilePath $exe `
         -ArgumentList "-dx11","-nosound","-windowed","-ResX=800","-ResY=600","-quality-level=Low" `
         -WorkingDirectory $CarlaRoot
+} else {
+    Write-Host "CARLA already running ($($running.Count) CarlaUE4) — waiting for API (map may still be loading)..."
 }
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $waitPy = Join-Path $scriptDir "wait_for_carla.py"
+$verifyPy = Join-Path $scriptDir "verify_carla_ready.py"
 if (Get-Command py -ErrorAction SilentlyContinue) {
     $pyExe = "py"
-    $pyArgs = @("-3", $waitPy, "--timeout", "$WaitSec")
+    $waitArgs = @("-3", $waitPy, "--timeout", "$WaitSec")
+    $verifyArgs = @("-3", $verifyPy, "--timeout", "$ApiVerifySec", "--carla-root", $CarlaRoot)
 } elseif (Get-Command python -ErrorAction SilentlyContinue) {
     $pyExe = "python"
-    $pyArgs = @($waitPy, "--timeout", "$WaitSec")
+    $waitArgs = @($waitPy, "--timeout", "$WaitSec")
+    $verifyArgs = @($verifyPy, "--timeout", "$ApiVerifySec", "--carla-root", $CarlaRoot)
 } else {
     throw "Python not found"
 }
 
 Write-Host "Waiting for RPC 127.0.0.1:2000 (map load may take 30-90s)..."
-& $pyExe @pyArgs
+& $pyExe @waitArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# Verify Python API (CARLA egg from install path)
-$examples = Join-Path $CarlaRoot "PythonAPI\examples"
-$verify = @"
-import glob, os, sys
-sys.path.append(glob.glob(os.path.join('..','carla','dist','carla-*%d.%d-%s.egg' % (sys.version_info.major, sys.version_info.minor, 'win-amd64')))[0])
-import carla
-c = carla.Client('127.0.0.1', 2000)
-c.set_timeout(20.0)
-print('OK', c.get_server_version(), c.get_world().get_map().name)
-"@
-Push-Location $examples
-try {
-    if ($pyExe -eq "py") {
-        & py -3 -c $verify
-    } else {
-        & python -c $verify
-    }
-    if ($LASTEXITCODE -ne 0) { exit 1 }
-} finally {
-    Pop-Location
+# Port open != world ready — retry Python API (fixes flaky 20s one-shot verify).
+Write-Host "Verifying CARLA Python API (up to ${ApiVerifySec}s)..."
+& $pyExe @verifyArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "If CARLA was left running from an earlier session, reset it:" -ForegroundColor Yellow
+    Write-Host "  .\stop_carla.ps1" -ForegroundColor Yellow
+    Write-Host "  .\start_carla.ps1" -ForegroundColor Yellow
+    exit 1
 }
-Write-Host "CARLA ready — run generate_traffic.py now." -ForegroundColor Green
+
+Write-Host "CARLA ready — run_carla_dashboard.ps1 will spawn generate_traffic.py, or:" -ForegroundColor Green
+Write-Host "  .\spawn_carla_traffic.ps1 -VehicleCount 10" -ForegroundColor Yellow

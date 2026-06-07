@@ -14,6 +14,7 @@
 
 class QLabel;
 class QFrame;
+class QComboBox;
 class QMouseEvent;
 class QTimer;
 
@@ -104,6 +105,7 @@ public:
 signals:
 
     void cameraFramePresented();
+    void vehicleSelected(const QString& carId);
 
 
 
@@ -144,6 +146,9 @@ private:
     CinematicOverlay* cinematicOverlay_{nullptr};
 
     HudOverlayWidget* hudOverlay_{nullptr};
+
+    QFrame* fleetPickerChrome_{nullptr};
+    QComboBox* fleetCombo_{nullptr};
 
     CarlaCameraReceiver* camera_{nullptr};
 

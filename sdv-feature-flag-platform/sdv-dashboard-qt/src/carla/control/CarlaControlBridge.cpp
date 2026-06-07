@@ -170,4 +170,22 @@ void CarlaControlBridge::onTick()
 #endif
 }
 
+void CarlaControlBridge::selectFleetVehicle(const QString& carId)
+{
+#if !defined(SDV_HAVE_QT_WEBSOCKETS)
+    Q_UNUSED(carId);
+    return;
+#else
+    const QString id = carId.trimmed();
+    if (id.isEmpty() || d_->socket.state() != QAbstractSocket::ConnectedState) {
+        return;
+    }
+    QJsonObject msg;
+    msg.insert(QStringLiteral("type"), QStringLiteral("select_vehicle"));
+    msg.insert(QStringLiteral("car_id"), id);
+    d_->socket.sendTextMessage(QString::fromUtf8(QJsonDocument(msg).toJson(QJsonDocument::Compact)));
+    emit statusMessage(QStringLiteral("Switching CARLA vehicle to %1").arg(id));
+#endif
+}
+
 }  // namespace sdv::dash::carla::control

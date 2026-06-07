@@ -113,30 +113,54 @@ function Start-SdvQtDashboard {
     param(
         [Parameter(Mandatory)][string]$ProjectRoot,
         [string]$CarId = "car_1",
-        [string]$LogPrefix = "run_sdv"
+        [string]$LogPrefix = "run_sdv",
+        [string]$ApiBase = "http://127.0.0.1:8080",
+        [string]$MqttHost = "127.0.0.1",
+        [int]$MqttPort = 1884,
+        [string]$RosWsUrl = "",
+        [string]$CarlaMode = "",
+        [string]$MapboxToken = "",
+        [switch]$ForceRestart
     )
     $dashExe = Get-SdvDashboardExe -ProjectRoot $ProjectRoot
     if (-not $dashExe) {
         Write-Warning "[$LogPrefix] SDV_Dashboard.exe not found (optional Qt desktop UI)."
         Write-Warning "[$LogPrefix] Build once: .\scripts\build_qt_dashboard.ps1"
         Write-Warning "[$LogPrefix] Or skip: `$env:SDV_SKIP_QT_DASHBOARD='1'  (web Admin Portal at http://127.0.0.1:5170 is enough for most demos)"
-        return
+        return $false
+    }
+
+    if ($ForceRestart) {
+        Get-Process -Name "SDV_Dashboard" -ErrorAction SilentlyContinue | Stop-Process -Force
+        Start-Sleep -Milliseconds 600
     }
 
     $dashProc = Get-Process -Name "SDV_Dashboard" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($dashProc) {
+    if ($dashProc -and -not $ForceRestart) {
         Write-Host "[$LogPrefix] SDV_Dashboard already running (PID $($dashProc.Id)) — switching to $CarId"
     } else {
         Write-Host "[$LogPrefix] Launching Qt SDV dashboard: $dashExe (car-id=$CarId)"
     }
 
     # Second instance forwards --car-id to the first via QLocalSocket and exits immediately.
-    Start-Process -FilePath $dashExe -ArgumentList @(
-        "--api-base", "http://127.0.0.1:8080",
-        "--mqtt-host", "127.0.0.1",
-        "--mqtt-port", "1884",
+    $dashArgs = @(
+        "--api-base", $ApiBase,
+        "--mqtt-host", $MqttHost,
+        "--mqtt-port", "$MqttPort",
         "--car-id", $CarId
-    ) -WorkingDirectory (Split-Path -Parent $dashExe) | Out-Null
+    )
+    if ($RosWsUrl) {
+        $dashArgs += @("--ros-ws-url", $RosWsUrl)
+    }
+    if ($CarlaMode -and $CarlaMode -ne "off") {
+        $dashArgs += @("--carla-mode", $CarlaMode)
+    }
+    if ($MapboxToken) {
+        $dashArgs += @("--mapbox-token", $MapboxToken)
+    }
+
+    Start-Process -FilePath $dashExe -ArgumentList $dashArgs -WorkingDirectory (Split-Path -Parent $dashExe) | Out-Null
+    return $true
 }
 
 function Invoke-SdvStatusServerApplyPending {

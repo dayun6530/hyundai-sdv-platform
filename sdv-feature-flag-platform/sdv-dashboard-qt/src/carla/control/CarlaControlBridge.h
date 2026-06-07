@@ -24,6 +24,7 @@ public slots:
     void connectBridge();
     void disconnectBridge();
     void flushCommand();
+    void selectFleetVehicle(const QString& carId);
 
 signals:
     void connectionChanged(bool connected);

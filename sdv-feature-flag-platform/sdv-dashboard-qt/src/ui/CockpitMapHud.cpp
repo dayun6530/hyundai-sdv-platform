@@ -149,20 +149,13 @@ void CockpitMapHud::updateNavGuidance(const QString& maneuverArrows, const QStri
     }
 }
 
-void CockpitMapHud::updateFromCarState(const QJsonObject& carState, const bool /*mqttConnected*/)
+void CockpitMapHud::updateFromCarState(const QJsonObject& /*carState*/, const bool /*mqttConnected*/)
 {
-    const QJsonObject ota = carState.value(QStringLiteral("ota")).toObject();
-    const double speed = ota.value(QStringLiteral("speed")).toDouble();
-    if (speed < 1.0 && pipeline_) {
-        speedKmh_ = qMax(0.0, pipeline_->egoViewModel()->pose().speedMps * 3.6);
-    } else if (speed >= 1.0) {
-        speedKmh_ = speed;
+    if (pipeline_) {
+        onEgoChanged();
+    } else {
+        update();
     }
-    if (speedKmh_ >= 0.0) {
-        speedValue_->setText(QString::number(qRound(speedKmh_)));
-    }
-
-    update();
 }
 
 }  // namespace sdv::dash::ui

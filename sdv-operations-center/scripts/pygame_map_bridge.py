@@ -35,7 +35,7 @@ import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Set
+from typing import Any, Optional, Set
 
 try:
     import pygame
@@ -58,12 +58,16 @@ from carla_integration_bridge import (  # noqa: E402
     CarlaVehicleController,
     control_client_handler,
     envelope,
+    find_vehicle_by_car_id,
+    publish_carla_live_speed,
+    publish_sdv_fleet_telemetry,
     read_speed_limit_kmh,
     scan_dynamic_actors,
     scan_traffic_lights,
     snapshot_client_handler,
     telemetry_client_handler,
 )
+from pygame_vehicle_sprites import patch_no_rendering_vehicles  # noqa: E402
 
 
 def _port_in_use(host: str, port: int) -> bool:
@@ -196,6 +200,10 @@ class PygameMapSession:
         self.world: carla.World | None = None
         self.controller: CarlaVehicleController | None = None
         self.autonomy: CarlaAutonomyManager | None = None
+        self._pg_world: Any = None
+        self._pending_car_id: Optional[str] = None
+        self._car_switch_lock = threading.Lock()
+        self.active_car_id = "car_1"
         # Interface expected by carla_integration_bridge handlers
         self.active_camera = "pygame_map"
         self.latest_gnss: dict[str, float] = {}
@@ -270,6 +278,7 @@ class PygameMapSession:
         display = pygame.display.set_mode(
             (self.width, self.height), pygame.HIDDEN if hasattr(pygame, "HIDDEN") else 0
         )
+        patch_no_rendering_vehicles(nrm)
 
         args = SimpleNamespace(
             host=host,
@@ -292,6 +301,7 @@ class PygameMapSession:
 
         hud = nrm.HUD(nrm.TITLE_HUD, self.width, self.height)
         pg_world = nrm.World(nrm.TITLE_WORLD, args, timeout=30.0)
+        self._pg_world = pg_world
         input_control = nrm.InputControl(nrm.TITLE_INPUT)
 
         session = self
@@ -321,9 +331,11 @@ class PygameMapSession:
         input_control._parse_events = _parse_events_minimal
 
         def _parse_input_dashboard_only(clock: Any) -> None:
-            """Map pan/zoom only — vehicle control comes from Dashboard WS (controller.tick)."""
+            """Map pan/zoom + sync dashboard gear/throttle into pygame HUD (no local keyboard drive)."""
             input_control._parse_events()
             input_control._parse_mouse()
+            if session.controller is not None and isinstance(input_control.control, carla.VehicleControl):
+                _parse_keys_from_dashboard(clock.get_time())
 
         input_control.parse_input = _parse_input_dashboard_only
 
@@ -365,14 +377,16 @@ class PygameMapSession:
         clock = pygame.time.Clock()
         try:
             while session._running:
+                session._apply_fleet_vehicle_switch()
                 clock.tick_busy_loop(60)
                 if session.autonomy:
                     session.autonomy.tick()
-                if session.controller:
-                    session.controller.tick()
                 pg_world.tick(clock)
                 hud.tick(clock)
                 input_control.tick(clock)
+                # Apply dashboard WS control last (same slot as no_rendering_mode InputControl).
+                if session.controller:
+                    session.controller.tick()
 
                 display.fill(nrm.COLOR_ALUMINIUM_4)
                 pg_world.render(display)
@@ -389,6 +403,50 @@ class PygameMapSession:
                 pass
             pygame.quit()
 
+    def request_fleet_vehicle(self, car_id: str) -> None:
+        target = str(car_id or "").strip()
+        if not target:
+            return
+        with self._car_switch_lock:
+            self._pending_car_id = target
+
+    def _apply_fleet_vehicle_switch(self) -> None:
+        with self._car_switch_lock:
+            car_id = self._pending_car_id
+            self._pending_car_id = None
+        if not car_id or car_id == self.active_car_id or not self.world:
+            return
+        vehicle = find_vehicle_by_car_id(self.world, car_id)
+        if vehicle is None:
+            print(f"select_vehicle: {car_id} not in CARLA — run spawn_sdv_fleet.py first")
+            return
+        old = self.vehicle
+        if old is not None and old.id != vehicle.id:
+            try:
+                old.set_autopilot(True)
+            except RuntimeError:
+                pass
+        try:
+            vehicle.set_autopilot(False)
+        except RuntimeError:
+            pass
+        self.vehicle = vehicle
+        self.active_car_id = car_id
+        if self.controller is not None:
+            self.controller.vehicle = vehicle
+            self.controller.emergency = False
+            self.controller.autopilot = False
+            self.controller.throttle = 0.0
+            self.controller.brake = 0.0
+            self.controller.steer = 0.0
+        if self.autonomy is not None:
+            self.autonomy.vehicle = vehicle
+            self.autonomy.stop()
+        if self._pg_world is not None:
+            self._pg_world.hero_actor = vehicle
+            self._pg_world.hero_transform = vehicle.get_transform()
+        print(f"CARLA cockpit switched to {car_id} (actor id={vehicle.id})")
+
     def set_active_camera(self, name: str) -> None:
         if name in ("pygame_map", "front", "hero", "map"):
             self.active_camera = "pygame_map"
@@ -404,6 +462,8 @@ class PygameMapSession:
         tf = self.vehicle.get_transform()
         vel = self.vehicle.get_velocity()
         speed = math.hypot(vel.x, vel.y)
+        publish_carla_live_speed(speed, car_id=getattr(self, "active_car_id", "car_1"))
+        publish_sdv_fleet_telemetry(self.world)
         control = self.vehicle.get_control()
         yaw = math.radians(tf.rotation.yaw)
 

@@ -28,11 +28,18 @@ public:
 
     Section currentSection() const;
 
+    void updateFeatureVersions(const QJsonObject& carState);
+
 signals:
     void sectionSelected(Section section);
 
 private:
+    void setNavButtonVersion(QPushButton* btn, const QString& label, const QString& version);
+
     QButtonGroup* group_{nullptr};
+    QPushButton* adasBtn_{nullptr};
+    QPushButton* navBtn_{nullptr};
+    QPushButton* evBtn_{nullptr};
     Section current_{Section::Home};
 };
 

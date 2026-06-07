@@ -20,6 +20,7 @@
 #include "carla/integration/CarlaDataBridge.h"
 #include "twin/DigitalTwinController.h"
 #include "ops/OpsTelemetryPipeline.h"
+#include "ops/viewmodels/EgoViewModel.h"
 #include "ui/CockpitHudOverlay.h"
 #include "ui/CockpitPanel.h"
 #include "ui/DashboardTheme.h"
@@ -191,8 +192,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), carId_(QStringLit
             health_->setRosTelemetryLine(line);
         }
     });
+    connect(opsPipeline_->egoViewModel(), &sdv::dash::ops::EgoViewModel::changed, this, [this]() {
+        if (!carlaBridgePygameCockpit_ || !hub_ || !opsPipeline_) {
+            return;
+        }
+        const auto& pose = opsPipeline_->egoViewModel()->pose();
+        if (!pose.isValid()) {
+            return;
+        }
+        hub_->postCockpitSpeed(qMax(0.0, pose.speedMps * 3.6));
+    });
 
     connect(hub_, &DashboardDataHub::fleetStatesUpdated, this, &MainWindow::onFleetStates);
+    connect(hub_, &DashboardDataHub::fleetCockpitsUpdated, this, &MainWindow::onFleetCockpits);
+    connect(hub_, &DashboardDataHub::cockpitTelemetryUpdated, this, &MainWindow::onCockpitTelemetry);
     connect(hub_, &DashboardDataHub::mqttFeaturesPayload, this, &MainWindow::onMqttFeatures);
     connect(hub_, &DashboardDataHub::timelineRecordsUpdated, this, &MainWindow::onTimeline);
     connect(hub_, &DashboardDataHub::httpLogLine, this, &MainWindow::onHttpLine);
@@ -364,12 +377,66 @@ QJsonObject MainWindow::pickCar(const QJsonArray& states, const QString& carId) 
     return {};
 }
 
+QJsonObject MainWindow::enrichedCarState(const QJsonObject& car) const
+{
+    QJsonObject out = car;
+    const QString carKey = car.value(QStringLiteral("car_id")).toString(carId_);
+    QJsonObject cockpit = lastFleetCockpits_.value(carKey);
+    if (cockpit.isEmpty() && carKey == carId_) {
+        cockpit = lastCockpit_;
+    }
+    if (cockpit.isEmpty()) {
+        return out;
+    }
+
+    QJsonObject ota = out.value(QStringLiteral("ota")).toObject();
+    if (cockpit.contains(QStringLiteral("battery"))) {
+        ota.insert(QStringLiteral("battery"), cockpit.value(QStringLiteral("battery")));
+    }
+    if (cockpit.contains(QStringLiteral("battery_source"))) {
+        ota.insert(QStringLiteral("battery_source"), cockpit.value(QStringLiteral("battery_source")));
+    }
+    if (cockpit.contains(QStringLiteral("range_km"))) {
+        ota.insert(QStringLiteral("range_km"), cockpit.value(QStringLiteral("range_km")));
+    }
+    if (cockpit.contains(QStringLiteral("speed_source"))) {
+        ota.insert(QStringLiteral("speed_source"), cockpit.value(QStringLiteral("speed_source")));
+    }
+    if (cockpit.contains(QStringLiteral("speed"))) {
+        ota.insert(QStringLiteral("speed"), cockpit.value(QStringLiteral("speed")));
+    }
+    if (cockpit.contains(QStringLiteral("gear"))) {
+        ota.insert(QStringLiteral("gear"), cockpit.value(QStringLiteral("gear")));
+    }
+    out.insert(QStringLiteral("ota"), ota);
+
+    if (cockpit.contains(QStringLiteral("route_distance"))) {
+        out.insert(QStringLiteral("route_distance"), cockpit.value(QStringLiteral("route_distance")));
+    }
+    if (cockpit.contains(QStringLiteral("route_direction"))) {
+        out.insert(QStringLiteral("route_direction"), cockpit.value(QStringLiteral("route_direction")));
+    }
+    if (cockpit.contains(QStringLiteral("road"))) {
+        out.insert(QStringLiteral("road"), cockpit.value(QStringLiteral("road")));
+    }
+    if (cockpit.contains(QStringLiteral("location"))) {
+        out.insert(QStringLiteral("location"), cockpit.value(QStringLiteral("location")));
+    }
+    return out;
+}
+
 void MainWindow::syncCockpitState(const QJsonObject& carState)
 {
     if (!cockpitPanel_) {
         return;
     }
-    cockpitPanel_->updateFromCarState(carState, mqttUp_);
+    cockpitPanel_->updateFromCarState(enrichedCarState(carState), mqttUp_);
+}
+
+void MainWindow::onCockpitTelemetry(const QJsonObject& telemetry)
+{
+    lastCockpit_ = telemetry;
+    syncCockpitState(pickCar(lastFleet_, carId_));
 }
 
 void MainWindow::scrollRightPanelTo(QWidget* widget)
@@ -420,8 +487,14 @@ void MainWindow::onFleetStates(const QJsonArray& states)
 {
     lastFleet_ = states;
     ab_->updateRollup(states);
+    if (health_) {
+        health_->updateFromFleetStates(states, fleetOnline_, fleetTotal_);
+    }
 
     const QJsonObject car = pickCar(states, carId_);
+    if (navSidebar_ && !car.isEmpty()) {
+        navSidebar_->updateFeatureVersions(car);
+    }
     if (!car.isEmpty()) {
         const QJsonObject mqtt = mqttFlagsForCar(car, lastMqtt_);
         syncCockpitState(car);
@@ -434,12 +507,34 @@ void MainWindow::onFleetStates(const QJsonArray& states)
 
 void MainWindow::onMqttFeatures(const QJsonObject& env)
 {
+    const QString mqttCar = env.value(QStringLiteral("car_id")).toString();
+    if (!mqttCar.isEmpty() && mqttCar != carId_) {
+        return;
+    }
     lastMqtt_ = env;
     const QJsonObject car = pickCar(lastFleet_, carId_);
     if (!car.isEmpty()) {
         syncCockpitState(car);
         features_->updateCards(car, mqttFlagsForCar(car, lastMqtt_));
     }
+}
+
+void MainWindow::onFleetCockpits(const QJsonArray& cockpits, const int fleetOnline, const int fleetTotal)
+{
+    fleetOnline_ = fleetOnline;
+    fleetTotal_ = fleetTotal;
+    lastFleetCockpits_.clear();
+    for (const auto& item : cockpits) {
+        const QJsonObject o = item.toObject();
+        const QString id = o.value(QStringLiteral("car_id")).toString();
+        if (!id.isEmpty()) {
+            lastFleetCockpits_.insert(id, o);
+        }
+    }
+    if (health_ && !lastFleet_.isEmpty()) {
+        health_->updateFromFleetStates(lastFleet_, fleetOnline_, fleetTotal_);
+    }
+    syncCockpitState(pickCar(lastFleet_, carId_));
 }
 
 void MainWindow::onTimeline(const QJsonArray& records)
@@ -463,6 +558,9 @@ void MainWindow::selectVehicle(const QString& carId)
         carId_ = next;
         hub_->setCarId(carId_);
         ota_->setCarId(carId_);
+        if (carlaBridgePygameCockpit_ && carlaControl_) {
+            carlaControl_->selectFleetVehicle(carId_);
+        }
         const QJsonObject car = pickCar(lastFleet_, carId_);
         syncCockpitState(car);
         if (!car.isEmpty()) {
@@ -481,8 +579,14 @@ void MainWindow::onCockpitCarSelected(const QString& carId)
     carId_ = carId;
     hub_->setCarId(carId_);
     ota_->setCarId(carId_);
+    if (carlaBridgePygameCockpit_ && carlaControl_) {
+        carlaControl_->selectFleetVehicle(carId_);
+    }
     const QJsonObject car = pickCar(lastFleet_, carId_);
     syncCockpitState(car);
+    if (navSidebar_ && !car.isEmpty()) {
+        navSidebar_->updateFeatureVersions(car);
+    }
     if (!car.isEmpty()) {
         features_->updateCards(car, mqttFlagsForCar(car, lastMqtt_));
         ota_->updateFromCarState(car);

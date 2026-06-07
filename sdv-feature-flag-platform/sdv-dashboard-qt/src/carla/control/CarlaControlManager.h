@@ -60,6 +60,7 @@ public:
     bool startAutonomousDriving(const QString& mode);
     void pauseAutonomousDriving();
     void resumeAutonomousDriving();
+    void selectFleetVehicle(const QString& carId);
 
     bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -96,6 +97,11 @@ private:
 
     QTimer* inputTimer_{nullptr};
     QTimer* simTimer_{nullptr};
+    bool appDriveFilterInstalled_{false};
+
+    static bool isDriveKey(int key);
+    static bool focusBlocksDriveKeys();
+    bool handleDriveKeyEvent(QEvent* event);
 };
 
 }  // namespace sdv::dash::carla::control

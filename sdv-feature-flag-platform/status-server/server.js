@@ -2560,6 +2560,55 @@ function latestEnergyBatteryFromLog(carId) {
   };
 }
 
+/** In-memory pygame/CARLA speed from Dashboard POST (fallback: carla_live_speed.json). */
+const carlaLiveSpeedCache = {};
+
+function readCarlaLiveSpeed(carId) {
+  const cached = carlaLiveSpeedCache[carId];
+  if (cached && Date.now() - cached.at <= 5000) {
+    return cached;
+  }
+  const filePath = path.join(REPO_ROOT, 'logs', carId, 'carla_live_speed.json');
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    const raw = JSON.parse(readText(filePath));
+    const updatedAtSec = Number(raw.updated_at || 0);
+    if (!updatedAtSec || Date.now() - updatedAtSec * 1000 > 5000) {
+      return null;
+    }
+    const speedKmh = Number(raw.speed_kmh);
+    if (!Number.isFinite(speedKmh)) {
+      return null;
+    }
+    return {
+      speed_kmh: Math.round(Math.max(0, speedKmh)),
+      speed_mps: Number(raw.speed_mps) || speedKmh / 3.6,
+      source: raw.source || 'carla_live_speed.json',
+      at: Date.now(),
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+function resolveLiveSpeedKmh(carId, ota, vehicleLive, logs) {
+  const carlaLive = vehicleLive ? readCarlaLiveSpeed(carId) : null;
+  if (carlaLive) {
+    return { speed: carlaLive.speed_kmh, source: carlaLive.source || 'carla_pygame' };
+  }
+  let speed = Number(ota.speed);
+  if (vehicleLive && (!Number.isFinite(speed) || speed < 1)) {
+    speed = Math.max(52, Math.min(92, (logs.road?.speed_limit || 100) - 28));
+    return { speed: Math.round(speed), source: 'log_estimate' };
+  }
+  if (!Number.isFinite(speed) || speed < 1) {
+    return { speed: 0, source: 'offline' };
+  }
+  return { speed: Math.round(speed), source: 'deploy/state' };
+}
+
 /**
  * Overlay deploy/state OTA battery with live EvEnergy RANGE lines when the WSL car_N process
  * is actually running. Stale log files must not keep the UI in "live" mode after shutdown.
@@ -2611,6 +2660,37 @@ function mergeLiveEnergyTelemetryIntoStates(states, probeMap, warnings) {
   if (merged > 0) {
     warnings.push(
       `fleet energy telemetry: merged live battery for ${merged} vehicle(s) from EvEnergyFeature.log`,
+    );
+  }
+}
+
+function mergeCarlaLiveSpeedIntoStates(states, probeMap, warnings) {
+  const iso = new Date().toISOString();
+  for (const st of states) {
+    const id = st && st.car_id;
+    if (!id || !/^car_(10|[1-9])$/.test(id)) {
+      continue;
+    }
+    const procUp =
+      probeMap && typeof probeMap[id] === 'boolean' ? probeMap[id] : false;
+    if (!procUp) {
+      continue;
+    }
+    const live = readCarlaLiveSpeed(id);
+    if (!live) {
+      continue;
+    }
+    if (!st.ota || typeof st.ota !== 'object') {
+      st.ota = {};
+    }
+    st.ota.speed = live.speed_kmh;
+    st.ota.speed_source = live.source || 'carla_pygame';
+    st.ota.speed_observed_at = iso;
+  }
+  const merged = states.filter((s) => s?.ota?.speed_source).length;
+  if (merged > 0) {
+    warnings.push(
+      `fleet speed telemetry: merged pygame/CARLA speed for ${merged} vehicle(s)`,
     );
   }
 }
@@ -2684,14 +2764,37 @@ app.get('/api/fleet/cockpit', async (_req, res) => {
   }
 
   const warnings = [];
+  const probeMap = await probeFleetCarProcessesWsl(warnings);
+  const payload = await buildFleetCockpitPayload(carId, probeMap, warnings);
+  res.json(payload);
+});
+
+app.get('/api/fleet/cockpit/all', async (_req, res) => {
+  const warnings = [];
+  const probeMap = await probeFleetCarProcessesWsl(warnings);
+  const cockpits = [];
+  for (let i = 1; i <= 10; i += 1) {
+    const carId = `car_${i}`;
+    cockpits.push(await buildFleetCockpitPayload(carId, probeMap, warnings));
+  }
+  const online = cockpits.filter((c) => c.vehicle_process_running).length;
+  res.json({
+    ok: true,
+    cockpits,
+    fleet_online: online,
+    fleet_total: 10,
+    warnings,
+  });
+});
+
+async function buildFleetCockpitPayload(carId, probeMap, warnings) {
   let state = null;
   try {
     state = readJson(path.join(DEPLOY_ROOT, 'state', `${carId}.json`));
   } catch (err) {
-    warnings.push(`fleet state unavailable: ${err.message}`);
+    warnings.push(`fleet state unavailable for ${carId}: ${err.message}`);
   }
 
-  const probeMap = await probeFleetCarProcessesWsl(warnings);
   const procUp =
     probeMap && typeof probeMap[carId] === 'boolean' ? probeMap[carId] : false;
   const vehicleLive = procUp === true;
@@ -2722,18 +2825,16 @@ app.get('/api/fleet/cockpit', async (_req, res) => {
     }
   }
   let speed = Number(ota.speed);
-  if (vehicleLive && (!Number.isFinite(speed) || speed < 1)) {
-    speed = Math.max(52, Math.min(92, (logs.road?.speed_limit || 100) - 28));
-  } else if (!Number.isFinite(speed) || speed < 1) {
-    speed = 0;
-  }
+  const speedResolved = resolveLiveSpeedKmh(carId, ota, vehicleLive, logs);
+  speed = speedResolved.speed;
 
-  res.json({
+  return {
     ok: true,
     car_id: carId,
     vehicle_process_running: procUp,
     data_mode: vehicleLive ? 'live' : 'offline',
-    speed: Math.round(speed),
+    speed,
+    speed_source: speedResolved.source,
     battery,
     battery_source: batterySource,
     range_km: vehicleLive
@@ -2773,7 +2874,44 @@ app.get('/api/fleet/cockpit', async (_req, res) => {
       source: 'wsl_pgrep',
     },
     warnings,
-  });
+  };
+}
+
+app.post('/api/fleet/cockpit/speed', (req, res) => {
+  const carId = String(req.body?.car_id || 'car_1').trim();
+  if (!/^car_(10|[1-9])$/.test(carId)) {
+    res.status(400).json({ ok: false, error: 'car_id must be car_1 .. car_10' });
+    return;
+  }
+  const speedKmh = Number(req.body?.speed_kmh);
+  if (!Number.isFinite(speedKmh) || speedKmh < 0) {
+    res.status(400).json({ ok: false, error: 'speed_kmh must be a non-negative number' });
+    return;
+  }
+  const rounded = Math.round(speedKmh);
+  carlaLiveSpeedCache[carId] = {
+    speed_kmh: rounded,
+    speed_mps: rounded / 3.6,
+    source: req.body?.source || 'SDV_Dashboard_pygame',
+    at: Date.now(),
+  };
+  try {
+    const logDir = path.join(REPO_ROOT, 'logs', carId);
+    fs.mkdirSync(logDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(logDir, 'carla_live_speed.json'),
+      JSON.stringify({
+        speed_kmh: rounded,
+        speed_mps: rounded / 3.6,
+        updated_at: Date.now() / 1000,
+        source: carlaLiveSpeedCache[carId].source,
+        car_id: carId,
+      }),
+    );
+  } catch (_) {
+    /* best-effort file mirror for log readers */
+  }
+  res.json({ ok: true, car_id: carId, speed_kmh: rounded });
 });
 
 function readFleetStatesCar1To10(warnings) {
@@ -2823,6 +2961,7 @@ app.get('/api/fleet/state', async (_req, res) => {
     forceOfflineFeatureFlags(states, probeMap, warnings);
     mergeMqttFlagsIntoStates(states, mqttFlagCache, probeMap, warnings);
     mergeLiveEnergyTelemetryIntoStates(states, probeMap, warnings);
+    mergeCarlaLiveSpeedIntoStates(states, probeMap, warnings);
     res.json({
       ok: true,
       states,

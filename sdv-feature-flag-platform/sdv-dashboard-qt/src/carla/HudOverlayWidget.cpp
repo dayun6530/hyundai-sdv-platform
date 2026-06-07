@@ -155,13 +155,6 @@ void HudOverlayWidget::updateFromCarState(const QJsonObject& carState, const boo
     autoActive_ = adasActive_;
     adasState_->setText(adasActive_ ? QStringLiteral("ADAS · ACTIVE") : QStringLiteral("ADAS · STANDBY"));
     autoDrive_->setText(autoActive_ ? QStringLiteral("AUTO DRIVE ACTIVE") : QStringLiteral("MANUAL MODE"));
-
-    const QJsonObject ota = carState.value(QStringLiteral("ota")).toObject();
-    const double speed = ota.value(QStringLiteral("speed")).toDouble();
-    if (speed >= 1.0) {
-        speedKmh_ = speed;
-        speedValue_->setText(QString::number(qRound(speedKmh_)));
-    }
     update();
 }
 
@@ -192,20 +185,24 @@ void HudOverlayWidget::onEgoChanged()
     }
     headingLine_->setText(QStringLiteral("HDG %1°").arg(qRound(headingDeg_)));
     refreshGpsLine();
-    updateGearFromPipeline(pose.speedMps);
+    updateGearFromPipeline(pose.speedMps, activeGear_ == 2);
     update();
 }
 
 void HudOverlayWidget::updateControlTelemetry(const double throttle, const double brake, const double steer,
-                                              const bool autopilot, const bool /*emergencyStop*/)
+                                              const bool autopilot, const bool /*emergencyStop*/,
+                                              const bool reverse)
 {
+    activeGear_ = reverse ? 2 : (speedKmh_ > 1.0 ? 3 : 1);
     controlLine_->setText(
-        QStringLiteral("THR %1% · BRK %2% · STR %3%")
+        QStringLiteral("THR %1% · BRK %2% · STR %3% · %4")
             .arg(qRound(throttle * 100))
             .arg(qRound(brake * 100))
-            .arg(qRound(qAbs(steer) * 100)));
+            .arg(qRound(qAbs(steer) * 100))
+            .arg(reverse ? QStringLiteral("R") : QStringLiteral("D")));
     autoDrive_->setText(autopilot ? QStringLiteral("AUTONOMOUS") : QStringLiteral("MANUAL"));
     autoActive_ = autopilot;
+    updateGearFromPipeline(speedKmh_ / 3.6, reverse);
     update();
 }
 
@@ -239,7 +236,7 @@ void HudOverlayWidget::updateTwinNavigation(const QString& arrow,
     update();
 }
 
-void HudOverlayWidget::updateGearFromPipeline(const double speedMps)
+void HudOverlayWidget::updateGearFromPipeline(const double speedMps, const bool reverse)
 {
     const QString gearIdle = QStringLiteral(
         "color: #64748b; font-size: 15px; font-weight: 700; padding: 4px 8px; border-radius: 6px;");
@@ -250,11 +247,12 @@ void HudOverlayWidget::updateGearFromPipeline(const double speedMps)
         g->setStyleSheet(gearIdle);
     }
     QLabel* active = gearD_;
-    if (speedMps < 0.2) {
-        active = gearP_;
-    } else if (speedMps < 0.0) {
+    if (reverse) {
         active = gearR_;
+    } else if (speedMps < 0.2) {
+        active = gearP_;
     }
+    activeGear_ = (active == gearR_) ? 2 : (active == gearP_ ? 1 : 3);
     active->setStyleSheet(gearActive);
 }
 

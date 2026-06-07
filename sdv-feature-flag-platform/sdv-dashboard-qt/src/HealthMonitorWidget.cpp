@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QTimer>
+#include <QJsonArray>
 
 using sdv::dash::HealthMonitorWidget;
 using sdv::dash::ui::DashboardTheme;
@@ -142,6 +143,38 @@ void HealthMonitorWidget::setRosTelemetryLine(const QString& line)
         rosTelemetry_->setStyleSheet(ok ? QStringLiteral("color:#4ade80;font-size:10px;")
                                         : QStringLiteral("color:#f97316;font-size:10px;"));
     }
+}
+
+void HealthMonitorWidget::updateFromFleetStates(const QJsonArray& fleetStates,
+                                                const int fleetOnline,
+                                                const int fleetTotal)
+{
+    noteFleetTick();
+
+    int online = fleetOnline;
+    int total = fleetTotal > 0 ? fleetTotal : 10;
+    if (online <= 0 && !fleetStates.isEmpty()) {
+        online = 0;
+        for (const auto& v : fleetStates) {
+            const QJsonObject o = v.toObject();
+            const QJsonObject runtime = o.value(QStringLiteral("runtime")).toObject();
+            if (runtime.value(QStringLiteral("car_process_running")).toBool()) {
+                ++online;
+            } else if (o.value(QStringLiteral("status")).toString().compare(QLatin1String("online"),
+                                                                              Qt::CaseInsensitive) == 0) {
+                ++online;
+            }
+        }
+        total = fleetStates.size();
+    }
+
+    UiAnimation::animateProgress(processBar_, qBound(10, (online * 100) / qMax(1, total), 100));
+    processCount_->setText(QStringLiteral("%1/%2 fleet").arg(online).arg(total));
+
+    heartbeat_->setText(online >= total ? QStringLiteral("FLEET OK") : QStringLiteral("PARTIAL"));
+    heartbeat_->setStyleSheet(online >= total
+                                  ? QStringLiteral("color:#4ade80;font-size:12px;font-weight:800;")
+                                  : QStringLiteral("color:#facc15;font-size:12px;font-weight:800;"));
 }
 
 void HealthMonitorWidget::updateFromCarState(const QJsonObject& carState)

@@ -35,7 +35,8 @@
 
 
 #include <QGridLayout>
-
+#include <QComboBox>
+#include <QHBoxLayout>
 #include <QJsonArray>
 
 #include <QJsonDocument>
@@ -47,6 +48,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QSignalBlocker>
 
 #include <QTimer>
 
@@ -120,7 +122,34 @@ CarlaCockpitView::CarlaCockpitView(QWidget* parent) : QWidget(parent)
 
     miniMapChrome_->setFixedSize(miniMap_->width() + 8, miniMap_->height() + 8);
 
-
+    fleetPickerChrome_ = new QFrame(this);
+    fleetPickerChrome_->setObjectName(QStringLiteral("fleetPickerChrome"));
+    fleetPickerChrome_->setStyleSheet(sdv::dash::ui::DashboardTheme::hudChipStyle());
+    auto* fleetLay = new QHBoxLayout(fleetPickerChrome_);
+    fleetLay->setContentsMargins(10, 8, 10, 8);
+    fleetLay->setSpacing(8);
+    auto* fleetLabel = new QLabel(QStringLiteral("Vehicle"), fleetPickerChrome_);
+    fleetLabel->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 10px; font-weight: 700; background: transparent;"));
+    fleetCombo_ = new QComboBox(fleetPickerChrome_);
+    fleetCombo_->setMinimumWidth(92);
+    fleetCombo_->setStyleSheet(QStringLiteral(
+        "QComboBox { color: #e2e8f0; background: rgba(15,23,42,0.92); border: 1px solid rgba(56,189,248,0.45);"
+        " border-radius: 8px; padding: 4px 8px; font-size: 11px; font-weight: 700; }"
+        "QComboBox::drop-down { border: 0; width: 18px; }"
+        "QComboBox QAbstractItemView { color: #e2e8f0; background: #0f172a; selection-background-color: #0c4f95; }"));
+    for (int i = 1; i <= 10; ++i) {
+        fleetCombo_->addItem(QStringLiteral("car_%1").arg(i));
+    }
+    fleetLay->addWidget(fleetLabel);
+    fleetLay->addWidget(fleetCombo_);
+    fleetPickerChrome_->adjustSize();
+    fleetPickerChrome_->hide();
+    connect(fleetCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](const int index) {
+        if (index < 0 || !fleetCombo_) {
+            return;
+        }
+        emit vehicleSelected(fleetCombo_->itemText(index));
+    });
 
     stack->addWidget(videoLabel_, 0, 0);
 
@@ -222,10 +251,18 @@ void CarlaCockpitView::setTelemetryWebSocketUrl(const QUrl& url)
 void CarlaCockpitView::setVehicleId(const QString& vehicleId)
 
 {
+    const QString id = vehicleId.trimmed().isEmpty() ? QStringLiteral("car_1") : vehicleId.trimmed();
+    if (fleetCombo_) {
+        const QSignalBlocker blocker(fleetCombo_);
+        const int idx = fleetCombo_->findText(id);
+        if (idx >= 0) {
+            fleetCombo_->setCurrentIndex(idx);
+        }
+    }
 
     if (hudOverlay_) {
 
-        hudOverlay_->setVehicleId(vehicleId);
+        hudOverlay_->setVehicleId(id);
 
     }
 
@@ -333,6 +370,9 @@ void CarlaCockpitView::setPygameMapCockpitMode(const bool enabled)
             layer->setVisible(showOverlays);
         }
     }
+    if (fleetPickerChrome_) {
+        fleetPickerChrome_->setVisible(enabled);
+    }
     if (videoLabel_) {
         videoLabel_->setStyleSheet(
             enabled ? QStringLiteral("background: #02060f;")
@@ -402,6 +442,11 @@ void CarlaCockpitView::layoutOverlays()
             miniMapChrome_->raise();
         }
 
+    }
+
+    if (fleetPickerChrome_ && fleetPickerChrome_->isVisible()) {
+        fleetPickerChrome_->move(12, 12);
+        fleetPickerChrome_->raise();
     }
 
 }

@@ -58,11 +58,20 @@ void FeatureStatusWidget::fillCard(CardUi& c, const QString& displayName, const 
         verRaw.startsWith(QLatin1String("v"), Qt::CaseInsensitive) ? verRaw : QStringLiteral("v%1").arg(verRaw);
     const bool on = isFeatureFlagOn(fleetFeat);
 
-    c.title->setText(displayName);
-    c.ver->setText(ver);
+    c.title->setText(QStringLiteral("%1 · %2").arg(displayName, ver));
+    c.ver->setText(fleetFeat.value(QStringLiteral("active_slot")).toString().isEmpty()
+                       ? QString()
+                       : QStringLiteral("slot %1").arg(fleetFeat.value(QStringLiteral("active_slot")).toString()));
     c.badge->setText(on ? QStringLiteral("RUNNING") : QStringLiteral("STANDBY"));
-    c.badge->setStyleSheet(on ? DashboardTheme::statusBadgeStyle(QStringLiteral("running"))
-                              : DashboardTheme::statusBadgeStyle(QStringLiteral("idle")));
+    c.badge->setStyleSheet(on
+        ? QStringLiteral(
+              "QLabel { color: #4ade80; background: rgba(4,30,18,0.85);"
+              " border: 1px solid rgba(74,222,128,0.55); border-radius: 8px;"
+              " padding: 4px 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; }")
+        : QStringLiteral(
+              "QLabel { color: #94a3b8; background: rgba(15,23,42,0.85);"
+              " border: 1px solid rgba(100,116,139,0.45); border-radius: 8px;"
+              " padding: 4px 10px; font-size: 12px; font-weight: 700; }"));
 
     const int cpu = estCpu(on, displayName == QLatin1String("ADAS"));
     const int mem = estMem(on);
@@ -72,8 +81,8 @@ void FeatureStatusWidget::fillCard(CardUi& c, const QString& displayName, const 
     c.memLbl->setText(QStringLiteral("MEM %1 MB").arg(mem));
 
     c.health->setText(hbOn_ && on ? QStringLiteral("● Health OK") : QStringLiteral("○ Health"));
-    c.health->setStyleSheet(on && hbOn_ ? QStringLiteral("color: #4ade80; font-size: 9px; font-weight: 600;")
-                                        : QStringLiteral("color: #64748b; font-size: 9px;"));
+    c.health->setStyleSheet(on && hbOn_ ? QStringLiteral("color: #4ade80; font-size: 12px; font-weight: 600;")
+                                        : QStringLiteral("color: #64748b; font-size: 12px;"));
 }
 
 FeatureStatusWidget::FeatureStatusWidget(QWidget* parent) : QWidget(parent)
@@ -86,38 +95,39 @@ FeatureStatusWidget::FeatureStatusWidget(QWidget* parent) : QWidget(parent)
         c.frame = new QFrame(this);
         styleCard(c.frame, accent);
         auto* v = new QVBoxLayout(c.frame);
-        v->setContentsMargins(10, 10, 10, 10);
-        v->setSpacing(6);
+        v->setContentsMargins(14, 12, 14, 12);
+        v->setSpacing(10);
 
         auto* head = new QHBoxLayout();
         c.title = new QLabel(c.frame);
-        c.title->setStyleSheet(QStringLiteral("color: #f1f5f9; font-size: 11px; font-weight: 800;"));
+        c.title->setStyleSheet(QStringLiteral("color: #f1f5f9; font-size: 24px; font-weight: 800;"));
+        c.title->setMinimumHeight(30);
         c.badge = new QLabel(QStringLiteral("—"), c.frame);
         head->addWidget(c.title, 1);
-        head->addWidget(c.badge, 0, Qt::AlignRight);
+        head->addWidget(c.badge, 0, Qt::AlignRight | Qt::AlignVCenter);
         v->addLayout(head);
 
         c.ver = new QLabel(c.frame);
-        c.ver->setStyleSheet(QStringLiteral("color: #7dd3fc; font-size: 10px; font-weight: 600;"));
+        c.ver->setStyleSheet(QStringLiteral("color: #7dd3fc; font-size: 13px; font-weight: 600;"));
         v->addWidget(c.ver);
 
         c.cpuBar = new QProgressBar(c.frame);
         c.cpuBar->setRange(0, 100);
         c.cpuBar->setTextVisible(false);
-        c.cpuBar->setFixedHeight(8);
+        c.cpuBar->setFixedHeight(10);
         c.cpuBar->setStyleSheet(DashboardTheme::progressBarStyle(QStringLiteral("#22d3ee")));
         c.cpuLbl = new QLabel(c.frame);
-        c.cpuLbl->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 9px;"));
+        c.cpuLbl->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 13px; font-weight: 600;"));
         v->addWidget(c.cpuLbl);
         v->addWidget(c.cpuBar);
 
         c.memBar = new QProgressBar(c.frame);
         c.memBar->setRange(0, 100);
         c.memBar->setTextVisible(false);
-        c.memBar->setFixedHeight(8);
+        c.memBar->setFixedHeight(10);
         c.memBar->setStyleSheet(DashboardTheme::progressBarStyle(QStringLiteral("#38bdf8")));
         c.memLbl = new QLabel(c.frame);
-        c.memLbl->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 9px;"));
+        c.memLbl->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 13px; font-weight: 600;"));
         v->addWidget(c.memLbl);
         v->addWidget(c.memBar);
 

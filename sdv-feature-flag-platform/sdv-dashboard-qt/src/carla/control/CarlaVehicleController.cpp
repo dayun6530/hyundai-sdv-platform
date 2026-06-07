@@ -137,9 +137,17 @@ void CarlaVehicleController::applyKeyDown(const int key)
         handBrake_ = true;
         break;
     case Qt::Key_R:
-    case Qt::Key_Q:
         reverse_ = !reverse_;
-        break;
+        if (reverse_) {
+            keyW_ = false;
+            throttle_ = 0.0;
+        }
+        notify();
+        if (autopilot_) {
+            return;
+        }
+        decayInputs();
+        return;
     case Qt::Key_P:
         setAutopilot(!autopilot_);
         return;
@@ -147,7 +155,7 @@ void CarlaVehicleController::applyKeyDown(const int key)
         emergencyStopNow();
         return;
     default:
-        return;
+        break;
     }
     if (!autopilot_) {
         decayInputs();

@@ -21,7 +21,12 @@ public:
     void setVehicleId(const QString& vehicleId);
     void updateFromCarState(const QJsonObject& carState, bool mqttConnected);
     void updateNavGuidance(const QString& maneuverArrows, const QString& distanceText);
-    void updateControlTelemetry(double throttle, double brake, double steer, bool autopilot, bool emergencyStop);
+    void updateControlTelemetry(double throttle,
+                                double brake,
+                                double steer,
+                                bool autopilot,
+                                bool emergencyStop,
+                                bool reverse = false);
     void setDriveModeBadge(const QString& modeLabel);
     void updateTwinNavigation(const QString& arrow,
                               const QString& distanceText,
@@ -35,7 +40,7 @@ protected:
 private:
     void onEgoChanged();
     void refreshGpsLine();
-    void updateGearFromPipeline(double speedMps);
+    void updateGearFromPipeline(double speedMps, bool reverse = false);
 
     sdv::dash::ops::OpsTelemetryPipeline* pipeline_{nullptr};
     QString vehicleId_{QStringLiteral("car_1")};

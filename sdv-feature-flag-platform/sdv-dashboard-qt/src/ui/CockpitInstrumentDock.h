@@ -34,6 +34,9 @@ private:
     sdv::dash::ops::OpsTelemetryPipeline* pipeline_{nullptr};
     QWidget* gearRowWidget_{nullptr};
 
+    QLabel* adasHdr_{nullptr};
+    QLabel* naviHdr_{nullptr};
+    QLabel* evHdr_{nullptr};
     QLabel* speedValue_{nullptr};
     QLabel* adasState_{nullptr};
     QLabel* routeLine_{nullptr};
