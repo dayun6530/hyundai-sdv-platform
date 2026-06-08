@@ -23,7 +23,6 @@ const PREPARE_DEMO_READY_VALUES = {
   gear: 'P',
   ignition: 'OFF',
   battery: 75,
-  driver_approved: true,
   network: 'CONNECTED',
   vehicle_mode: 'PARKED',
   parking_brake: 'ON',
@@ -37,7 +36,6 @@ const PREPARE_DEMO_READY_OTA = {
   update_mode: 'READY',
   download_status: 'downloaded',
   install_status: 'not_started',
-  driver_approved: true,
   speed: 0,
   gear: 'P',
   ignition: 'OFF',
@@ -61,7 +59,6 @@ function getDefaultSafetyThresholds() {
       gear: 'P',
       ignition: 'OFF',
       min_battery: 30,
-      driver_approved: true,
       network: 'CONNECTED',
       update_mode: 'READY',
       vehicle_mode: 'PARKED',
@@ -240,14 +237,6 @@ function buildCheckResults(snapshot, thresholds, options = {}) {
         Number(v.battery) < Number(t.min_battery)
           ? `Battery must be at least ${t.min_battery}%.`
           : undefined,
-    },
-    {
-      key: 'driver_approved',
-      label: 'Driver approval',
-      actual: v.driver_approved,
-      required: String(Boolean(t.driver_approved)),
-      passed: Boolean(v.driver_approved) === Boolean(t.driver_approved),
-      reason: !v.driver_approved ? 'Driver approval is required.' : undefined,
     },
     {
       key: 'network',

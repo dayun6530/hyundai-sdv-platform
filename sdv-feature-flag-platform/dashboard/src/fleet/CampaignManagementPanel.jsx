@@ -2358,6 +2358,7 @@ export default function CampaignManagementPanel({ onVersionMapChanged }) {
           }
           promoteConfirmItems={promoteConfirmItems}
           onSafetyPrepared={handleSafetyPrepared}
+          onDriverApproved={handleSafetyPrepared}
           promoteLoading={promoteLoading}
           promotePhase={promotePhase}
           promoteCompleteMessage={promoteCompleteMessage}

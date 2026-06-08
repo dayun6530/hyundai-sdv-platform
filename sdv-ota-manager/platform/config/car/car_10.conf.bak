@@ -54,6 +54,14 @@ feature FeatureEvaluator
 
 
 
+
+
+
+
+
+
+
+
 # --- fleet deploy (managed by DeploymentMgr sync-config; do not edit) ---
 fleet_schema 1
 

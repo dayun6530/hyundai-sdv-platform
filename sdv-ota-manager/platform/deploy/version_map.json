@@ -38,11 +38,11 @@
         "binary": "EvEnergyFeature"
       },
       "B": {
-        "version": "v1.0",
+        "version": "v3.0",
         "role": "candidate",
         "binary": "EvEnergyFeature",
-        "package_id": "Energy_v1.0",
-        "package_path": "deploy/packages/Energy/v1.0"
+        "package_id": "Energy_v3.0",
+        "package_path": "deploy/packages/Energy/v3.0"
       }
     }
   }

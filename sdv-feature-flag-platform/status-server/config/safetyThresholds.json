@@ -3,7 +3,6 @@
   "gear": "P",
   "ignition": "OFF",
   "min_battery": 30,
-  "driver_approved": true,
   "network": "CONNECTED",
   "update_mode": "READY",
   "vehicle_mode": "PARKED",

@@ -181,7 +181,7 @@ export function requestPygamePromoteConfirm({
  */
 export async function requestPygamePromoteConfirmSequence(
   items,
-  { timeoutMs = DEFAULT_TIMEOUT_MS, onProgress } = {},
+  { timeoutMs = DEFAULT_TIMEOUT_MS, onProgress, onDriverAccepted } = {},
 ) {
   const list = Array.isArray(items) ? items.filter(Boolean) : [];
   const total = list.length;
@@ -209,8 +209,14 @@ export async function requestPygamePromoteConfirmSequence(
         timeoutMs,
       });
       if (ok) {
-        if (carId) accepted.push(carId);
-        else accepted.push(`__item_${i}`);
+        if (carId) {
+          accepted.push(carId);
+          if (onDriverAccepted) {
+            await onDriverAccepted(carId);
+          }
+        } else {
+          accepted.push(`__item_${i}`);
+        }
       } else if (carId) {
         declined.push(carId);
       }

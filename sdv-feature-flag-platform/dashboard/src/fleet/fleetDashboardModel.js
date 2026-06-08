@@ -94,12 +94,6 @@ function safetyCheckRows(ota) {
       detail: `value: ${String(ota.battery ?? "—")}${bat >= 30 ? ` (>= 30)` : ` (< 30)`}`,
     },
     {
-      id: "driver_approved",
-      pass: Boolean(ota.driver_approved) === true,
-      label: "driver_approved === true",
-      detail: `value: ${ota.driver_approved ? "true" : "false"}`,
-    },
-    {
       id: "network",
       pass: ota.network === "CONNECTED",
       label: "network === CONNECTED",
@@ -142,10 +136,6 @@ export function getOtaSafetyChecklist(state) {
       tooltip: "All OTA safety gates satisfied",
       rolloutReadiness: "READY",
     };
-  }
-  const onlyDriver = failed.length === 1 && failed[0].id === "driver_approved";
-  if (onlyDriver) {
-    return { level: "WAITING_APPROVAL", items, failed, tooltip, rolloutReadiness: "WAITING APPROVAL" };
   }
   return { level: "BLOCKED", items, failed, tooltip, rolloutReadiness: "BLOCKED" };
 }

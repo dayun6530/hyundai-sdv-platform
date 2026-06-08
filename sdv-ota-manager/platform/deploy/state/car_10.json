@@ -7,29 +7,27 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS":     {
+    "ADAS": {
       "active_slot": "B",
-      "active_version": "v4.0",
+      "active_version": "v1.0",
       "primary_slot": "B",
-      "primary_version": "v4.0",
-      "primary_image": "localhost:5000/sdv/adas-feature:v4.0",
+      "primary_version": "v1.0",
+      "primary_image": "localhost:5000/sdv/adas-feature:v1.0",
       "artifact_type": "docker_image",
-      "manifest_path": "deploy/packages/ADAS/v4.0/manifest.json",
-      "package_id": "ADAS_v4.0",
+      "manifest_path": "deploy/packages/ADAS/v1.0/manifest.json",
+      "package_id": "ADAS_v1.0",
       "docker_runtime_result": "success",
-      "docker_runtime_mode": "candidate",
-      "docker_runtime_action": "deploy-shadow",
-      "docker_runtime_time": "2026-06-08T07:48:39",
-      "docker_runtime_container": "car_10_agent_adas_shadow",
+      "docker_runtime_mode": "promote",
+      "docker_runtime_action": "promote",
+      "docker_runtime_time": "2026-06-08T09:33:59",
+      "docker_runtime_container": "car_10_agent_adas",
       "docker_runtime_image": "localhost:5000/sdv/adas-feature:v1.0",
-      "docker_runtime_pull_policy": "missing",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
-      "shadow_enabled": true,
-      "shadow_slot": "B",
-      "shadow_version": "v4.0",
-      "shadow_image": "localhost:5000/sdv/adas-feature:v1.0",
+      "shadow_enabled": false,
+      "shadow_slot": "",
+      "shadow_version": "",
       "shadow_status": "RUNNING",
       "shadow_validation_result": "UNKNOWN",
       "shadow_mode": "inactive",
@@ -40,25 +38,25 @@
       "rollback_stack": [
         {
           "slot": "B",
+          "version": "v4.0",
+          "docker_image": "",
+          "previous_role": "primary",
+          "recorded_at": "2026-06-08T09:33:32",
+          "reason": "promoted_to_primary",
+          "status": "stable"
+        },
+        {
+          "slot": "B",
           "version": "v1.0",
           "docker_image": "",
           "previous_role": "primary",
           "recorded_at": "2026-06-08T07:50:07",
           "reason": "promoted_to_primary",
           "status": "stable"
-        },
-        {
-          "slot": "B",
-          "version": "v4.0",
-          "docker_image": "",
-          "previous_role": "primary",
-          "recorded_at": "2026-06-08T07:37:29",
-          "reason": "promoted_to_primary",
-          "status": "stable"
         }
       ]
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "B",
       "active_version": "v3.0",
       "primary_slot": "B",
@@ -89,7 +87,7 @@
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     },
-    "Energy":     {
+    "Energy": {
       "active_slot": "B",
       "active_version": "v3.0",
       "primary_slot": "B",
@@ -121,12 +119,12 @@
       "fallback_version": "v1.0"
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "downloaded",
-    "install_status": "installed",
+    "install_status": "not_started",
     "vehicle_mode": "PARKED",
     "ignition": "OFF",
-    "update_mode": "COMPLETED",
+    "update_mode": "READY",
     "ota_phase": "INSTALL_COMPLETED",
     "gear": "P",
     "speed": 0,
@@ -136,7 +134,7 @@
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack":   {
+  "last_ack": {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",
@@ -144,11 +142,35 @@
     "deploy_id": "deploy_adas_004",
     "message": "ADAS v0.4 shadow installed"
   },
-  "last_deploy_id": "deploy_20260608_075007_car_10_ADAS",
+  "last_deploy_id": "deploy_20260608_093334_car_10_ADAS",
   "last_deploy_result": "success",
-  "last_deploy_time": "2026-06-08T07:50:07",
+  "last_deploy_time": "2026-06-08T09:33:34",
   "last_deploy_feature": "ADAS",
   "last_deploy_slot": "B",
-  "last_deploy_version": "v4.0",
-  "last_deploy_reason": ""
+  "last_deploy_version": "v1.0",
+  "last_deploy_reason": "",
+  "safety": {
+    "source": "manual-demo",
+    "updated_at": "2026-06-08T00:34:19.375Z",
+    "values": {
+      "speed": 0,
+      "gear": "P",
+      "ignition": "OFF",
+      "battery": 75,
+      "driver_approved": true,
+      "network": "CONNECTED",
+      "update_mode": "READY",
+      "vehicle_mode": "PARKED",
+      "parking_brake": "ON",
+      "target_system_running": false,
+      "download_status": "downloaded",
+      "install_status": "not_started"
+    },
+    "last_evaluation": {
+      "ready": true,
+      "evaluated_at": "2026-06-08T00:34:19.376Z",
+      "failed_checks": [],
+      "source": "manual-demo"
+    }
+  }
 }

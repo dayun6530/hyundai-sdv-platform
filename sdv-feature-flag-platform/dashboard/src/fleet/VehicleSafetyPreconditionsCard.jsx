@@ -16,7 +16,6 @@ const EDITABLE_FIELDS = [
   { key: "ignition", label: "Ignition", type: "text" },
   { key: "battery", label: "Battery (%)", type: "number" },
   { key: "network", label: "Network", type: "text" },
-  { key: "driver_approved", label: "Driver approved", type: "checkbox" },
   { key: "update_mode", label: "update_mode", type: "text" },
 ];
 
@@ -57,7 +56,6 @@ export default function VehicleSafetyPreconditionsCard({
         ignition: v.ignition ?? "OFF",
         battery: v.battery ?? 0,
         network: v.network ?? "DISCONNECTED",
-        driver_approved: Boolean(v.driver_approved),
         update_mode: v.update_mode ?? "",
       });
     }
@@ -82,7 +80,6 @@ export default function VehicleSafetyPreconditionsCard({
       ignition: v.ignition ?? "OFF",
       battery: v.battery ?? 0,
       network: v.network ?? "DISCONNECTED",
-      driver_approved: Boolean(v.driver_approved),
       update_mode: v.update_mode ?? "",
     });
     await onChanged?.(res);

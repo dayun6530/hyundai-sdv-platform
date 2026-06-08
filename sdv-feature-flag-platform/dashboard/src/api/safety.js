@@ -81,6 +81,10 @@ export async function prepareAllFleetDemoReady(carIds, feature = 'ADAS', action 
   return { ok: failed.length === 0, prepared, failed };
 }
 
+function promoteSafetyFailedChecks(failedChecks = []) {
+  return (failedChecks || []).filter((key) => key !== 'driver_approved');
+}
+
 /** Cars not READY for Primary promote (Run Candidate / shadow is not gated). */
 export async function checkPromoteSafetyForCars(items) {
   const list = Array.isArray(items) ? items : [];
@@ -95,11 +99,12 @@ export async function checkPromoteSafetyForCars(items) {
     seen.add(key);
 
     const res = await fetchFleetSafety(carId, feature);
-    if (!res.ok || !res.ready) {
+    const failedForPromote = promoteSafetyFailedChecks(res.failed_checks);
+    if (!res.ok || failedForPromote.length > 0) {
       blocked.push({
         carId,
         feature,
-        failed_checks: res.failed_checks || [],
+        failed_checks: failedForPromote,
         checks: res.checks || [],
         error: res.error || '',
       });

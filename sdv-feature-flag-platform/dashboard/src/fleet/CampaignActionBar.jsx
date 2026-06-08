@@ -4,6 +4,7 @@ import {
   checkPromoteSafetyForCars,
   forceDemoReadyForPromoteCars,
 } from "../api/safety.js";
+import { setDriverApproval } from "../api/fleet.js";
 import PromoteSafetyBlockedDialog from "./PromoteSafetyBlockedDialog.jsx";
 
 function runCandidateButtonTitle({
@@ -196,6 +197,7 @@ export default function CampaignActionBar({
   promoteFeatureSummary,
   promoteConfirmItems,
   onSafetyPrepared,
+  onDriverApproved,
 }) {
   const enabled =
     actionsEnabled !== undefined ? actionsEnabled : Boolean(selectedCampaignId);
@@ -290,6 +292,10 @@ export default function CampaignActionBar({
       const result = await requestPygamePromoteConfirmSequence(confirmItems, {
         onProgress: (current, total, carId) => {
           setPromoteConfirmProgress({ current, total, carId });
+        },
+        onDriverAccepted: async (carId) => {
+          await setDriverApproval(carId, true);
+          await onDriverApproved?.(carId);
         },
       });
       if (result.aborted) {

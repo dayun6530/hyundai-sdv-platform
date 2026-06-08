@@ -299,7 +299,6 @@ export default function FleetDeployPanel({
 
                     const notes = [];
                     if (sameTarget) notes.push("Already on target version");
-                    if (!missing && st.ota?.driver_approved === false) notes.push("Waiting approval — rollout may fail");
                     if (!missing && safety.level === "BLOCKED") notes.push("Safety blocked — rollout may fail");
 
                     return (
