@@ -1,2 +1,0 @@
-/usr/bin/ar qc libeventbus_proto.a CMakeFiles/eventbus_proto.dir/proto/eventbus.pb.cc.o CMakeFiles/eventbus_proto.dir/proto/eventbus.grpc.pb.cc.o
-/usr/bin/ranlib libeventbus_proto.a
