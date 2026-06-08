@@ -2,11 +2,13 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <climits>
 #include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -328,19 +330,75 @@ std::optional<VehicleRuntimeDomainVersions> readVehicleRuntimeDomainVersions(con
     return out;
 }
 
+std::string fleetDeployLogPrefixFromLabel(const std::string& fleetLabel, bool shadowProcess) {
+    if (fleetLabel == "ADAS") {
+        return shadowProcess ? "AdasFeature_Shadow_" : "AdasFeature_";
+    }
+    if (fleetLabel == "Navigation") {
+        return shadowProcess ? "NavigationFeature_Shadow_" : "NavigationFeature_";
+    }
+    if (fleetLabel == "Energy") {
+        return shadowProcess ? "EvEnergyFeature_Shadow_" : "EvEnergyFeature_";
+    }
+    return shadowProcess ? "Feature_Shadow_" : "Feature_";
+}
+
+std::string versionTokenForDeployLog(std::string version) {
+    version = normalizeVersionToken(std::move(version));
+    if (version.empty() || version == "unknown") {
+        return "v?";
+    }
+    return version;
+}
+
+constexpr const char kVersionLogBorder[] = "*********************";
+
+std::string formatSimpleVersionDeployedLogFromPrefix(const std::string& prefix, const std::string& version) {
+    return std::string(kVersionLogBorder) + "[VERSION] " + prefix + versionTokenForDeployLog(version) +
+           " is deployed!" + kVersionLogBorder;
+}
+
+std::string formatSimpleVersionDeployedLogForProcess(const std::string& processName, const std::string& version) {
+    if (processName == "AdasFeatureShadow") {
+        return formatSimpleVersionDeployedLogFromPrefix("AdasFeature_Shadow_", version);
+    }
+    if (processName == "AdasFeature") {
+        return formatSimpleVersionDeployedLogFromPrefix("AdasFeature_", version);
+    }
+    if (processName == "NavigationFeatureShadow") {
+        return formatSimpleVersionDeployedLogFromPrefix("NavigationFeature_Shadow_", version);
+    }
+    if (processName == "NavigationFeature") {
+        return formatSimpleVersionDeployedLogFromPrefix("NavigationFeature_", version);
+    }
+    if (processName == "EvEnergyFeatureShadow") {
+        return formatSimpleVersionDeployedLogFromPrefix("EvEnergyFeature_Shadow_", version);
+    }
+    if (processName == "EvEnergyFeature") {
+        return formatSimpleVersionDeployedLogFromPrefix("EvEnergyFeature_", version);
+    }
+    return formatSimpleVersionDeployedLogFromPrefix("Feature_", version);
+}
+
+std::string formatSimpleVersionDeployedLogForFleet(const FleetDomainRuntimeInfo& info) {
+    const bool shadow = (info.mode == "shadow");
+    return formatSimpleVersionDeployedLogFromPrefix(
+        fleetDeployLogPrefixFromLabel(info.fleet_label, shadow), info.version);
+}
+
 std::string formatVehicleRuntimeVersionLogLine(const VehicleRuntimeDomainVersions& rt,
     const std::string& carId,
     const std::string& processName,
     bool shadowProcess) {
-    std::ostringstream os;
-    os << "[VERSION] car_id=" << carId << " process=" << processName << " feature=" << rt.fleet_label
-       << " role=" << (shadowProcess ? "shadow" : "primary") << " primary_version="
-       << (rt.primary_version.empty() ? "-" : rt.primary_version);
-    if (!rt.shadow_version.empty()) {
-        os << " shadow_version=" << rt.shadow_version;
+    (void)carId;
+    std::string version = shadowProcess ? rt.shadow_version : rt.primary_version;
+    if (version.empty()) {
+        version = rt.primary_version;
     }
-    os << " source=vehicle_runtime json=" << rt.json_path;
-    return os.str();
+    if (version.empty()) {
+        version = "unknown";
+    }
+    return formatSimpleVersionDeployedLogForProcess(processName, version);
 }
 
 std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::string& processName,
@@ -515,23 +573,13 @@ std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::s
 }
 
 std::string formatVersionLogLine(const FleetDomainRuntimeInfo& info, const std::string& carId) {
-    std::ostringstream os;
-    os << "[VERSION] car_id=" << carId << " feature=" << info.fleet_label << " version=" << info.version
-       << " slot=" << info.slot << " mode=" << info.mode << " enabled=" << info.enabled << " image=" << info.image;
-    if (!info.artifact_type.empty()) {
-        os << " artifact_type=" << info.artifact_type;
-    }
-    if (!info.package_id.empty()) {
-        os << " package_id=" << info.package_id;
-    }
-    os << " binary_path=" << info.binary_path << " source=" << info.source;
-    return os.str();
+    (void)carId;
+    return formatSimpleVersionDeployedLogForFleet(info);
 }
 
 std::string formatFeatureStartedLogLine(const FleetDomainRuntimeInfo& info, const std::string& carId) {
     std::ostringstream os;
-    os << "[" << info.fleet_label << "] started car_id=" << carId << " version=" << info.version << " slot="
-       << info.slot << " mode=" << info.mode << " enabled=" << info.enabled << " source=" << info.source;
+    os << "[" << info.fleet_label << "] started car_id=" << carId << " version=" << info.version;
     return os.str();
 }
 
@@ -545,6 +593,29 @@ void appendRunSdvVersionLog(const std::string& carId, const std::string& line) {
     std::ofstream out(path, std::ios::out | std::ios::app);
     if (out) {
         out << line << '\n';
+    }
+}
+
+void appendCarVersionEventsLog(const std::string& carId, const std::string& line) {
+    if (carId.empty() || line.empty()) {
+        return;
+    }
+    mkdir("logs", 0755);
+    const std::string dir = "logs/" + carId;
+    mkdir(dir.c_str(), 0755);
+    const auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm tm{};
+#if defined(_WIN32)
+    gmtime_s(&tm, &t);
+#else
+    gmtime_r(&t, &tm);
+#endif
+    std::ostringstream iso;
+    iso << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+    const std::string path = dir + "/version_events.log";
+    std::ofstream out(path, std::ios::out | std::ios::app);
+    if (out) {
+        out << '[' << iso.str() << "] " << line << "\n\n";
     }
 }
 

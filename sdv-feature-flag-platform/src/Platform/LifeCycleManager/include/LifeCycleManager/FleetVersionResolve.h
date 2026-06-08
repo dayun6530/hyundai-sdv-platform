@@ -52,11 +52,19 @@ std::optional<FleetDomainRuntimeInfo> resolveFleetVersionForProcess(const std::s
 
 std::string formatVersionLogLine(const FleetDomainRuntimeInfo& info, const std::string& carId);
 
+/// Unified line: *********************[VERSION] AdasFeature_v3.0 is deployed!*********************
+std::string formatSimpleVersionDeployedLogForProcess(const std::string& processName, const std::string& version);
+
+std::string formatSimpleVersionDeployedLogForFleet(const FleetDomainRuntimeInfo& info);
+
 /// e.g. [ADAS] started car_id=car_1 version=v1.0 slot=B mode=primary enabled=ON source=config
 std::string formatFeatureStartedLogLine(const FleetDomainRuntimeInfo& info, const std::string& carId);
 
 /// Best-effort append to logs/run_sdv/<car_id>.log (parent or child).
 void appendRunSdvVersionLog(const std::string& carId, const std::string& line);
+
+/// Append to logs/<car_id>/version_events.log (car CMD tail) — used for native Shadow lane startup.
+void appendCarVersionEventsLog(const std::string& carId, const std::string& line);
 
 bool isFleetFeatureProcessName(const std::string& processName);
 

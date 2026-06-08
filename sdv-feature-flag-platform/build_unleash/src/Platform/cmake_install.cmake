@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/src/Platform
+# Install script for directory: /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,21 +44,21 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/src/Platform/LifeCycleManager/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/src/Platform/CenterCommunication/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/src/Platform/CenterCommunication/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/src/Platform/sdv_ota_manager__DeploymentManager/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/src/Platform/sdv_ota_manager__DeploymentManager/cmake_install.cmake")
 endif()
 

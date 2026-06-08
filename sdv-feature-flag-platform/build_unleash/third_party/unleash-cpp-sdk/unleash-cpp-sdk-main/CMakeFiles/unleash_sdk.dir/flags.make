@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DUNLEASH_SDK_VERSION=\"0.1.0\"
 
-CXX_INCLUDES = -I/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/third_party/unleash-cpp-sdk/unleash-cpp-sdk-main/include
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/third_party/unleash-cpp-sdk/unleash-cpp-sdk-main/include
 
 CXX_FLAGS = -std=gnu++17 -fPIC -Wall -Wextra -Wpedantic
 

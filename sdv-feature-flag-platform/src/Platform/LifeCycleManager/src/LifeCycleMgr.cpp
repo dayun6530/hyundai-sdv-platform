@@ -1,5 +1,6 @@
 #include "LifeCycleManager/LifeCycleMgr.h"
 #include "LifeCycleManager/FleetVersionResolve.h"
+#include "SdvSpacedConsole.h"
 
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -188,7 +189,7 @@ std::string LifeCycleMgr::resolveExecPath(const std::string& execName) {
 bool LifeCycleMgr::loadConfig(const std::string& configPath) {
     std::ifstream file(configPath);
     if (!file.is_open()) {
-        std::cerr << "[LifeCycleMgr] Failed to open config: " << configPath << std::endl;
+        SDV_SPC_CERR << "[LifeCycleMgr] Failed to open config: " << configPath << std::endl;
         return false;
     }
 
@@ -207,7 +208,7 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
         }
         carInstanceId_ = base;
     }
-    std::cout << "[LifeCycleMgr] Loading config: " << configPath << std::endl;
+    SDV_SPC_COUT << "[LifeCycleMgr] Loading config: " << configPath << std::endl;
 
     std::string line;
     while (std::getline(file, line)) {
@@ -219,7 +220,7 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
         if (key[0] == '#') continue;
 
         if (!(iss >> value)) {
-            std::cerr << "[LifeCycleMgr] Invalid config line: " << line << std::endl;
+            SDV_SPC_CERR << "[LifeCycleMgr] Invalid config line: " << line << std::endl;
             continue;
         }
         value = trimExecToken(value);
@@ -228,24 +229,24 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
             address_ = value;
         } else if (key == "communication") {
             communications_.push_back({value, -1, false});
-            std::cout << "[LifeCycleMgr] Communication: " << value << std::endl;
+            SDV_SPC_COUT << "[LifeCycleMgr] Communication: " << value << std::endl;
         } else if (key == "feature") {
             features_.push_back({value, -1, false});
-            std::cout << "[LifeCycleMgr] Feature: " << value << std::endl;
+            SDV_SPC_COUT << "[LifeCycleMgr] Feature: " << value << std::endl;
         }
     }
 
     if (communications_.empty() && features_.empty()) {
-        std::cerr << "[LifeCycleMgr] No processes defined in config." << std::endl;
+        SDV_SPC_CERR << "[LifeCycleMgr] No processes defined in config." << std::endl;
         return false;
     }
 
-    std::cout << "[LifeCycleMgr] " << communications_.size() << " communication(s), "
+    SDV_SPC_COUT << "[LifeCycleMgr] " << communications_.size() << " communication(s), "
               << features_.size() << " feature(s) loaded.\n" << std::endl;
 
 #if SDV_LIFECYCLE_HAS_NJSON
     removeInactiveShadowFeaturesUsingFleetState();
-    std::cout << "[LifeCycleMgr] After fleet shadow_mode filter: " << features_.size()
+    SDV_SPC_COUT << "[LifeCycleMgr] After fleet shadow_mode filter: " << features_.size()
               << " feature(s) will be spawned.\n"
               << std::endl;
 #endif
@@ -253,7 +254,7 @@ bool LifeCycleMgr::loadConfig(const std::string& configPath) {
     // Derive per-instance log root. This avoids crosstalk/cleanup issues when multiple platforms run together.
     // Keep backward-compatible fallback if instance id is missing.
     logRootDir_ = carInstanceId_.empty() ? "logs" : ("logs/" + carInstanceId_);
-    std::cout << "[LifeCycleMgr] Log root: " << logRootDir_ << std::endl;
+    SDV_SPC_COUT << "[LifeCycleMgr] Log root: " << logRootDir_ << std::endl;
     return true;
 }
 
@@ -288,14 +289,14 @@ void LifeCycleMgr::removeInactiveShadowFeaturesUsingFleetState() {
     }
     std::error_code ec;
     if (!fs::is_regular_file(fleetPath, ec)) {
-        std::cout << "[LifeCycleMgr] Fleet deploy state not found (" << fleetPath.string()
+        SDV_SPC_COUT << "[LifeCycleMgr] Fleet deploy state not found (" << fleetPath.string()
                   << "); omitting native *Shadow spawns (inactive)." << std::endl;
         const auto newEnd = std::remove_if(features_.begin(), features_.end(), [&](const ProcessInfo& pi) {
             const std::string w = trimExecToken(pi.execName);
             const bool isShadow = (w == "AdasFeatureShadow" || w == "NavigationFeatureShadow" ||
                 w == "EvEnergyFeatureShadow");
             if (isShadow) {
-                std::cout << "[LifeCycleMgr] Skipping " << w << " (no fleet state file)." << std::endl;
+                SDV_SPC_COUT << "[LifeCycleMgr] Skipping " << w << " (no fleet state file)." << std::endl;
             }
             return isShadow;
         });
@@ -310,7 +311,7 @@ void LifeCycleMgr::removeInactiveShadowFeaturesUsingFleetState() {
     try {
         in >> j;
     } catch (const std::exception& e) {
-        std::cerr << "[LifeCycleMgr] Failed to parse fleet state JSON: " << e.what() << std::endl;
+        SDV_SPC_CERR << "[LifeCycleMgr] Failed to parse fleet state JSON: " << e.what() << std::endl;
         return;
     }
     auto modeFor = [&](const char* fleetKey) -> std::string {
@@ -356,7 +357,7 @@ void LifeCycleMgr::removeInactiveShadowFeaturesUsingFleetState() {
         if (m == "candidate") {
             return false;
         }
-        std::cout << "[LifeCycleMgr] Skipping " << trimExecToken(pi.execName)
+        SDV_SPC_COUT << "[LifeCycleMgr] Skipping " << trimExecToken(pi.execName)
                   << " (fleet shadow lane inactive for " << d << ")." << std::endl;
         return true;
     });
@@ -368,24 +369,17 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
     const std::string want = trimExecToken(slot.execName);
 
     if (!carInstanceId_.empty() && isFleetFeatureProcessName(want)) {
-        const bool shadowProc = (want.size() >= 6 && want.compare(want.size() - 6, 6, "Shadow") == 0);
-        if (auto rt = readVehicleRuntimeDomainVersions(want, carInstanceId_)) {
-            const std::string rtLine =
-                formatVehicleRuntimeVersionLogLine(*rt, carInstanceId_, want, shadowProc);
-            std::cout << rtLine << std::endl;
-            appendFleetSpawnGateLog(carInstanceId_, logRootDir_, want, rtLine);
-        }
         std::string gateLine;
         std::string warnLine;
         if (!shouldSpawnFleetProcess(want, carInstanceId_, lifecycleConfigPath_, gateLine, warnLine)) {
-            std::cout << gateLine << std::endl;
+            SDV_SPC_COUT << gateLine << std::endl;
             appendFleetSpawnGateLog(carInstanceId_, logRootDir_, want, gateLine);
             slot.pid = 0;
             slot.alive = false;
             return;
         }
         if (!warnLine.empty()) {
-            std::cout << warnLine << std::endl;
+            SDV_SPC_COUT << warnLine << std::endl;
             appendFleetSpawnGateLog(carInstanceId_, logRootDir_, want, warnLine);
         }
     }
@@ -417,24 +411,14 @@ void LifeCycleMgr::spawnProcess(ProcessInfo& slot) {
         } else {
             execl(execPath.c_str(), want.c_str(), argv1Addr, nullptr);
         }
-        std::cerr << "Failed to exec " << execPath << std::endl;
+        SDV_SPC_CERR << "Failed to exec " << execPath << std::endl;
         _exit(1);
     } else if (pid > 0) {
         slot.pid = pid;
         slot.alive = true;
-        std::cout << "[LifeCycleMgr] Spawned " << want << " (PID:" << pid << ")" << std::endl;
-        if (!carInstanceId_.empty() && isFleetFeatureProcessName(want)) {
-            if (auto info = resolveFleetVersionForProcess(want, carInstanceId_, lifecycleConfigPath_)) {
-                const std::string verLine = formatVersionLogLine(*info, carInstanceId_);
-                const std::string startedLine = formatFeatureStartedLogLine(*info, carInstanceId_);
-                std::cout << verLine << std::endl;
-                std::cout << startedLine << std::endl;
-                appendRunSdvVersionLog(carInstanceId_, verLine);
-                appendRunSdvVersionLog(carInstanceId_, startedLine);
-            }
-        }
+        SDV_SPC_COUT << "[LifeCycleMgr] Spawned " << want << " (PID:" << pid << ")" << std::endl;
     } else {
-        std::cerr << "[LifeCycleMgr] fork() failed for " << want << std::endl;
+        SDV_SPC_CERR << "[LifeCycleMgr] fork() failed for " << want << std::endl;
     }
 }
 
@@ -473,7 +457,7 @@ void LifeCycleMgr::killDuplicatePlatformManagers() {
             continue;
         }
 
-        std::cout << "[LifeCycleMgr] Killing duplicate platform parent: " << id << " (PID:" << pid << ")"
+        SDV_SPC_COUT << "[LifeCycleMgr] Killing duplicate platform parent: " << id << " (PID:" << pid << ")"
                   << std::endl;
         kill(pid, SIGKILL);
         (void)waitpid(pid, nullptr, WNOHANG);
@@ -486,7 +470,7 @@ void LifeCycleMgr::killExistingProcesses() {
 
     const std::string instance = carInstanceId_;
     if (instance.empty()) {
-        std::cout << "[LifeCycleMgr] No car instance id; skip stale process cleanup." << std::endl;
+        SDV_SPC_COUT << "[LifeCycleMgr] No car instance id; skip stale process cleanup." << std::endl;
         return;
     }
 
@@ -534,7 +518,7 @@ void LifeCycleMgr::killExistingProcesses() {
 
             // Exact argv0 basename only (Shadow names are distinct executables).
             pid_t targetPid = static_cast<pid_t>(pidVal);
-            std::cout << "[LifeCycleMgr] Killing stale process: " << name
+            SDV_SPC_COUT << "[LifeCycleMgr] Killing stale process: " << name
                       << " (PID:" << targetPid << ", carId=" << instance << ")" << std::endl;
             kill(targetPid, SIGKILL);
             waitpid(targetPid, nullptr, WNOHANG);
@@ -542,7 +526,7 @@ void LifeCycleMgr::killExistingProcesses() {
         closedir(procDir);
     };
 
-    std::cout << "[LifeCycleMgr] Checking for stale processes..." << std::endl;
+    SDV_SPC_COUT << "[LifeCycleMgr] Checking for stale processes..." << std::endl;
     for (const auto& c : communications_) killByName(c.execName);
     for (const auto& f : features_) killByName(f.execName);
 }
@@ -574,14 +558,14 @@ void LifeCycleMgr::applyPendingNativeRolloutBeforeSpawn() {
         }
     }
     if (dmPath.empty()) {
-        std::cout << "[LifeCycleMgr] apply-pending-native-car skipped (DeploymentMgr not found next to platform "
+        SDV_SPC_COUT << "[LifeCycleMgr] apply-pending-native-car skipped (DeploymentMgr not found next to platform "
                      "binary; set SDV_DEPLOYMENT_MGR_EXE)\n";
         return;
     }
 
     pid_t pid = fork();
     if (pid < 0) {
-        std::cerr << "[LifeCycleMgr] fork() failed for apply-pending-native-car\n";
+        SDV_SPC_CERR << "[LifeCycleMgr] fork() failed for apply-pending-native-car\n";
         return;
     }
     if (pid == 0) {
@@ -594,13 +578,13 @@ void LifeCycleMgr::applyPendingNativeRolloutBeforeSpawn() {
     }
     int st = 0;
     if (waitpid(pid, &st, 0) < 0) {
-        std::cerr << "[LifeCycleMgr] waitpid apply-pending-native-car: " << std::strerror(errno) << std::endl;
+        SDV_SPC_CERR << "[LifeCycleMgr] waitpid apply-pending-native-car: " << std::strerror(errno) << std::endl;
         return;
     }
     if (WIFEXITED(st) && WEXITSTATUS(st) == 0) {
-        std::cout << "[LifeCycleMgr] apply-pending-native-car " << carInstanceId_ << " completed.\n";
+        SDV_SPC_COUT << "[LifeCycleMgr] apply-pending-native-car " << carInstanceId_ << " completed.\n";
     } else {
-        std::cerr << "[LifeCycleMgr] apply-pending-native-car " << carInstanceId_ << " failed (exit "
+        SDV_SPC_CERR << "[LifeCycleMgr] apply-pending-native-car " << carInstanceId_ << " failed (exit "
                   << (WIFEXITED(st) ? WEXITSTATUS(st) : -1) << ")\n";
     }
 #endif
@@ -618,7 +602,7 @@ void LifeCycleMgr::cleanLogDirectory() {
         std::remove(path.c_str());
     }
     closedir(dir);
-    std::cout << "[LifeCycleMgr] Cleaned " << logRootDir_ << " directory." << std::endl;
+    SDV_SPC_COUT << "[LifeCycleMgr] Cleaned " << logRootDir_ << " directory." << std::endl;
 }
 
 void LifeCycleMgr::start() {
@@ -659,9 +643,9 @@ void LifeCycleMgr::start() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
-    std::cout << "==========================================" << std::endl;
-    std::cout << " SDV Feature Flag Platform" << std::endl;
-    std::cout << "==========================================" << std::endl;
+    SDV_SPC_COUT << "==========================================" << std::endl;
+    SDV_SPC_COUT << " SDV Feature Flag Platform" << std::endl;
+    SDV_SPC_COUT << "==========================================" << std::endl;
 
     for (auto& c : communications_) {
         spawnProcess(c);
@@ -674,7 +658,7 @@ void LifeCycleMgr::start() {
         spawnProcess(f);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    std::cout << std::endl;
+    SDV_SPC_COUT << std::endl;
 }
 
 void LifeCycleMgr::monitor() {
@@ -719,10 +703,10 @@ void LifeCycleMgr::monitor() {
     sdv::platform::communications::eventbus::EventBusProxy proxy(clientAddress);
     int64_t mgrComponentId = proxy.registerComponent();
     if (mgrComponentId <= 0) {
-        std::cerr << "[LifeCycleMgr] EventBus registration failed. Feature flag start/stop disabled."
+        SDV_SPC_CERR << "[LifeCycleMgr] EventBus registration failed. Feature flag start/stop disabled."
                   << std::endl;
     } else {
-        std::cout << "[LifeCycleMgr] EventBus connected for flag control (ID:" << mgrComponentId
+        SDV_SPC_COUT << "[LifeCycleMgr] EventBus connected for flag control (ID:" << mgrComponentId
                   << ", addr=" << clientAddress << ")" << std::endl;
     }
 
@@ -756,8 +740,7 @@ void LifeCycleMgr::monitor() {
     };
 
     while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        std::cout << "[LifeCycleMgr] --- Process Status ---" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(5));
 
         // Drain control events and apply desired process states.
         if (mgrComponentId > 0) {
@@ -768,20 +751,23 @@ void LifeCycleMgr::monitor() {
             }
         }
 
+        std::ostringstream statusBlock;
+        statusBlock << "[LifeCycleMgr] --- Process Status ---\n";
+
         for (auto& c : communications_) {
             bool wasAlive = c.alive;
             checkProcess(c);
 
             if (wasAlive && !c.alive) {
-                std::cerr << "[LifeCycleMgr]   [comm] " << c.execName
+                SDV_SPC_CERR << "[LifeCycleMgr]   [comm] " << c.execName
                           << " (PID:" << c.pid << ") died. Restarting..."
                           << std::endl;
                 c.pid = -1;
                 spawnProcess(c);
             } else {
-                std::cout << "[LifeCycleMgr]   [comm] " << c.execName
-                          << " (PID:" << c.pid << ") : "
-                          << (c.alive ? "running" : "stopped") << std::endl;
+                statusBlock << "[LifeCycleMgr]   [comm] " << c.execName
+                            << " (PID:" << c.pid << ") : "
+                            << (c.alive ? "running" : "stopped") << '\n';
             }
         }
 
@@ -796,7 +782,7 @@ void LifeCycleMgr::monitor() {
 
             // Enforce desired state.
             if (!wantAlive && f.alive) {
-                std::cout << "[LifeCycleMgr]   [feat] " << exec
+                SDV_SPC_COUT << "[LifeCycleMgr]   [feat] " << exec
                           << " (PID:" << f.pid << ") : stopping (FLAG_OFF)" << std::endl;
                 kill(f.pid, SIGTERM);
                 // Do not block here; status will flip on next iteration.
@@ -805,10 +791,10 @@ void LifeCycleMgr::monitor() {
                 std::string warnLine;
                 if (shouldSpawnFleetProcess(exec, carInstanceId_, lifecycleConfigPath_, gateLine, warnLine)) {
                     if (!warnLine.empty()) {
-                        std::cout << warnLine << std::endl;
+                        SDV_SPC_COUT << warnLine << std::endl;
                         appendFleetSpawnGateLog(carInstanceId_, logRootDir_, exec, warnLine);
                     }
-                    std::cout << "[LifeCycleMgr]   [feat] " << exec
+                    SDV_SPC_COUT << "[LifeCycleMgr]   [feat] " << exec
                               << " : starting (FLAG_ON)" << std::endl;
                     f.pid = -1;
                     spawnProcess(f);
@@ -818,13 +804,15 @@ void LifeCycleMgr::monitor() {
             if (f.alive) {
                 featureRunning++;
             }
-            std::cout << "[LifeCycleMgr]   [feat] " << f.execName
-                      << " (PID:" << f.pid << ") : "
-                      << (f.alive ? "running" : "stopped") << std::endl;
+            statusBlock << "[LifeCycleMgr]   [feat] " << f.execName
+                        << " (PID:" << f.pid << ") : "
+                        << (f.alive ? "running" : "stopped") << '\n';
         }
 
+        SDV_SPC_COUT << statusBlock.str() << std::flush;
+
         if (featureRunning == 0) {
-            std::cout << "[LifeCycleMgr] All features stopped." << std::endl;
+            SDV_SPC_COUT << "[LifeCycleMgr] All features stopped." << std::endl;
             break;
         }
     }
@@ -853,7 +841,7 @@ void LifeCycleMgr::terminateWithTimeout(std::vector<ProcessInfo>& list,
         }
 
         if (!exited) {
-            std::cerr << "[LifeCycleMgr] " << label << " " << p.execName
+            SDV_SPC_CERR << "[LifeCycleMgr] " << label << " " << p.execName
                       << " (PID:" << p.pid << ") not responding, sending SIGKILL"
                       << std::endl;
             kill(p.pid, SIGKILL);
@@ -867,12 +855,12 @@ void LifeCycleMgr::terminateWithTimeout(std::vector<ProcessInfo>& list,
 void LifeCycleMgr::shutdown() {
     if (communications_.empty() && features_.empty()) return;
 
-    std::cout << "[LifeCycleMgr] Shutting down..." << std::endl;
+    SDV_SPC_COUT << "[LifeCycleMgr] Shutting down..." << std::endl;
 
     terminateWithTimeout(features_, "[feat]");
     terminateWithTimeout(communications_, "[comm]");
 
-    std::cout << "[LifeCycleMgr] Platform shutdown complete." << std::endl;
+    SDV_SPC_COUT << "[LifeCycleMgr] Platform shutdown complete." << std::endl;
 }
 
 }  // namespace sdv::platform::lifecyclemgr
@@ -913,14 +901,14 @@ int main(int argc, char* argv[]) {
         : resolveDefaultConfigPathFromArgv0((argv != nullptr) ? argv[0] : nullptr);
 
     if (configPath.empty()) {
-        std::cerr << "[Error] Please specify a config file or run as 'car_<n>' (e.g., car_1)."
+        SDV_SPC_CERR << "[Error] Please specify a config file or run as 'car_<n>' (e.g., car_1)."
                   << std::endl;
         return 1;
     }
 
     sdv::platform::lifecyclemgr::LifeCycleMgr mgr;
     if (!mgr.loadConfig(configPath)) {
-        std::cerr << "[LifeCycleMgr] Config load failed. Aborting." << std::endl;
+        SDV_SPC_CERR << "[LifeCycleMgr] Config load failed. Aborting." << std::endl;
         return 1;
     }
     mgr.start();

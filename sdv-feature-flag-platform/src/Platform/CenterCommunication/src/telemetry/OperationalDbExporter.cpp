@@ -100,9 +100,6 @@ bool OperationalDbExporter::postBatch(const std::vector<TelemetryRecord>& record
 
     // Batch failed (HTTP, validation rollback, or oversized body on raw-socket transport).
     // Fall back to per-event ingest so Loki/Grafana and Postgres stay aligned.
-    std::cerr << "[OperationalDbExporter] batch ingest failed (" << lastError
-              << "); retrying " << nonEmpty.size() << " event(s) individually" << std::endl;
-
     bool allOk = true;
     for (const TelemetryRecord& record : nonEmpty) {
         if (record.rawJson.empty()) {
@@ -111,8 +108,6 @@ bool OperationalDbExporter::postBatch(const std::vector<TelemetryRecord>& record
         const std::string singleBody = eventObjectFromRecord(record, defaultCarId_).dump();
         std::string singleError;
         if (!httpPostJsonWithRetry(ingestUrl_, singleBody, "OperationalDbExporter", &singleError)) {
-            std::cerr << "[OperationalDbExporter] single ingest failed for event_type="
-                      << record.eventType << " (" << singleError << ")" << std::endl;
             allOk = false;
         }
     }

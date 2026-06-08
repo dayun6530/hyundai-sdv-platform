@@ -17,6 +17,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+include_directories(${CMAKE_SOURCE_DIR}/src/Platform)
+
 option(SDV_ENABLE_UNLEASH "Enable Unleash flag sync via unleash-cpp-sdk" OFF)
 
 if(SDV_ENABLE_UNLEASH)

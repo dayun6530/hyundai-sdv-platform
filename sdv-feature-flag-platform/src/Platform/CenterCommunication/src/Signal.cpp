@@ -1,5 +1,6 @@
 #include "CenterCommunication/Signal.h"
 
+#include "SdvSpacedConsole.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -86,14 +87,14 @@ bool Signal::isRunning() const {
 
 bool Signal::httpPost(const std::string& endpoint, const std::string& body) {
     // TODO: Replace with real HTTP client (libcurl, cpp-httplib, etc.)
-    std::cout << "[Signal] HTTP POST " << centerUrl_ << endpoint
+    SDV_SPC_COUT << "[Signal] HTTP POST " << centerUrl_ << endpoint
               << " body=" << body << std::endl;
     return true;
 }
 
 std::string Signal::httpGet(const std::string& endpoint) {
     // TODO: Replace with real HTTP client
-    std::cout << "[Signal] HTTP GET " << centerUrl_ << endpoint << std::endl;
+    SDV_SPC_COUT << "[Signal] HTTP GET " << centerUrl_ << endpoint << std::endl;
     return "";
 }
 

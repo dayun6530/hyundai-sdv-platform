@@ -7,7 +7,7 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS": {
+    "ADAS":     {
       "active_slot": "B",
       "active_version": "v4.0",
       "primary_slot": "B",
@@ -34,25 +34,23 @@
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0",
-      "rollback_stack": [],
-      "blocked_versions": []
+      "fallback_version": "v1.0"
     },
-    "Navigation": {
+    "Navigation":     {
       "active_slot": "B",
-      "active_version": "v3.0",
+      "active_version": "v1.0",
       "primary_slot": "B",
-      "primary_version": "v3.0",
-      "primary_image": "localhost:5000/sdv/navigation-feature:v3.0",
+      "primary_version": "v1.0",
+      "primary_image": "localhost:5000/sdv/navigation-feature:v1.0",
       "artifact_type": "docker_image",
-      "manifest_path": "deploy/packages/Navigation/v3.0/manifest.json",
-      "package_id": "Navigation_v3.0",
+      "manifest_path": "deploy/packages/Navigation/v1.0/manifest.json",
+      "package_id": "Navigation_v1.0",
       "docker_runtime_result": "success",
       "docker_runtime_mode": "promote",
       "docker_runtime_action": "promote",
-      "docker_runtime_time": "2026-06-07 15:42:27",
+      "docker_runtime_time": "2026-06-08T08:44:20",
       "docker_runtime_container": "car_5_agent_navigation",
-      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v3.0",
+      "docker_runtime_image": "localhost:5000/sdv/navigation-feature:v1.0",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
@@ -68,9 +66,19 @@
       "kill_reason": "",
       "fallback_slot": "A",
       "fallback_version": "v1.0",
-      "rollback_stack": []
+      "rollback_stack": [
+        {
+          "slot": "B",
+          "version": "v3.0",
+          "docker_image": "",
+          "previous_role": "primary",
+          "recorded_at": "2026-06-08T08:44:11",
+          "reason": "promoted_to_primary",
+          "status": "stable"
+        }
+      ]
     },
-    "Energy": {
+    "Energy":     {
       "active_slot": "B",
       "active_version": "v3.0",
       "primary_slot": "B",
@@ -88,8 +96,8 @@
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
-      "charging_recommend_flag": "ON",
       "advanced_range_flag": "ON",
+      "charging_recommend_flag": "ON",
       "shadow_enabled": false,
       "shadow_slot": "",
       "shadow_version": "",
@@ -99,11 +107,10 @@
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
-      "fallback_version": "v1.0",
-      "rollback_stack": []
+      "fallback_version": "v1.0"
     }
   },
-  "ota": {
+  "ota":   {
     "download_status": "downloaded",
     "install_status": "installed",
     "vehicle_mode": "PARKED",
@@ -118,7 +125,7 @@
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack": {
+  "last_ack":   {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",
@@ -126,11 +133,11 @@
     "deploy_id": "deploy_adas_004",
     "message": "ADAS v0.4 shadow installed"
   },
-  "last_deploy_id": "deploy_20260608_002839_car_5_Navigation",
-  "last_deploy_result": "",
-  "last_deploy_time": "2026-06-08T00:28:39",
-  "last_deploy_feature": "",
+  "last_deploy_id": "deploy_20260608_084411_car_5_Navigation",
+  "last_deploy_result": "success",
+  "last_deploy_time": "2026-06-08T08:44:11",
+  "last_deploy_feature": "Navigation",
   "last_deploy_slot": "B",
-  "last_deploy_version": "",
+  "last_deploy_version": "v1.0",
   "last_deploy_reason": ""
 }

@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform
+CMAKE_SOURCE_DIR = /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash
+CMAKE_BINARY_DIR = /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash
 
 # Include any dependencies generated for this target.
 include tests/unit/CMakeFiles/unit_signal_receiver.dir/depend.make
@@ -70,32 +70,32 @@ include tests/unit/CMakeFiles/unit_signal_receiver.dir/progress.make
 include tests/unit/CMakeFiles/unit_signal_receiver.dir/flags.make
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o: tests/unit/CMakeFiles/unit_signal_receiver.dir/flags.make
-tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o: /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp
+tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o: /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp
 tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o: tests/unit/CMakeFiles/unit_signal_receiver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o -MF CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o.d -o CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o -c /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o -MF CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o.d -o CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.o -c /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.i"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp > CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp > CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.i
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.s"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp -o CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/tests/unit/Platform/centercommunication/SignalReceiverTest.cpp -o CMakeFiles/unit_signal_receiver.dir/Platform/centercommunication/SignalReceiverTest.cpp.s
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o: tests/unit/CMakeFiles/unit_signal_receiver.dir/flags.make
-tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o: /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp
+tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o: /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp
 tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o: tests/unit/CMakeFiles/unit_signal_receiver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o -MF CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o.d -o CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o -c /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o"
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o -MF CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o.d -o CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.o -c /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.i"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp > CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.i
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp > CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.i
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.s"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp -o CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.s
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform/CenterCommunication/src/SignalReceiver.cpp -o CMakeFiles/unit_signal_receiver.dir/__/__/src/Platform/CenterCommunication/src/SignalReceiver.cpp.s
 
 # Object files for target unit_signal_receiver
 unit_signal_receiver_OBJECTS = \
@@ -178,18 +178,18 @@ tests/unit/unit_signal_receiver: /usr/lib/x86_64-linux-gnu/libcrypto.so
 tests/unit/unit_signal_receiver: /usr/lib/x86_64-linux-gnu/libspdlog.so.1.12.0
 tests/unit/unit_signal_receiver: /usr/lib/x86_64-linux-gnu/libfmt.so.9.1.0
 tests/unit/unit_signal_receiver: tests/unit/CMakeFiles/unit_signal_receiver.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable unit_signal_receiver"
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_signal_receiver.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable unit_signal_receiver"
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_signal_receiver.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 tests/unit/CMakeFiles/unit_signal_receiver.dir/build: tests/unit/unit_signal_receiver
 .PHONY : tests/unit/CMakeFiles/unit_signal_receiver.dir/build
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/clean:
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -P CMakeFiles/unit_signal_receiver.dir/cmake_clean.cmake
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit && $(CMAKE_COMMAND) -P CMakeFiles/unit_signal_receiver.dir/cmake_clean.cmake
 .PHONY : tests/unit/CMakeFiles/unit_signal_receiver.dir/clean
 
 tests/unit/CMakeFiles/unit_signal_receiver.dir/depend:
-	cd /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/tests/unit /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit/CMakeFiles/unit_signal_receiver.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/tests/unit /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit/CMakeFiles/unit_signal_receiver.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : tests/unit/CMakeFiles/unit_signal_receiver.dir/depend
 

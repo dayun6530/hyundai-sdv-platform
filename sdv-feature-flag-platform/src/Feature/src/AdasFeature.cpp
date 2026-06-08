@@ -3,6 +3,7 @@
 #include "Feature/SubFeatures/SubFeatureModule.h"
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
+#include "SdvSpacedConsole.h"
 
 #include <chrono>
 #include <cstring>
@@ -241,10 +242,10 @@ namespace {
 
 // OTA/도커 데모용: gRPC 없이 표준 출력으로 배포·주기 로그만 남김 (docker logs 검증용)
 void runOtaDemoLoop(const char* versionLabel) {
-    std::cout << "[SYSTEM] AdasFeature_v" << versionLabel << " is deployed!" << std::endl;
+    SDV_SPC_COUT << "[SYSTEM] AdasFeature_v" << versionLabel << " is deployed!" << std::endl;
     std::cout.flush();
     while (true) {
-        std::cout << "[SYSTEM] AdasFeature is running (Version: " << versionLabel << ")..." << std::endl;
+        SDV_SPC_COUT << "[SYSTEM] AdasFeature is running (Version: " << versionLabel << ")..." << std::endl;
         std::cout.flush();
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }

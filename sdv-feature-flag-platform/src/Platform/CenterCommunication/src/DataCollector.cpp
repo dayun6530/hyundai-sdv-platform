@@ -1,5 +1,6 @@
 #include "CenterCommunication/DataCollector.h"
 
+#include "SdvSpacedConsole.h"
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -66,7 +67,7 @@ DataCollector::DataCollector(const std::string& eventBusAddress,
 void DataCollector::reloadRuntimeTuningIfChanged() {
     if (sdv::platform::lifecyclemgr::tryReloadTelemetryRuntimeTuning(runtimeConfigPath_, tuning_,
                                                                   runtimeConfigMtime_)) {
-        std::cout << "[DataCollector] Runtime tuning updated: batch_max=" << tuning_.batchMax
+        SDV_SPC_COUT << "[DataCollector] Runtime tuning updated: batch_max=" << tuning_.batchMax
                   << " flush_ms=" << tuning_.flushMs << " (from " << runtimeConfigPath_ << ")"
                   << std::endl;
     }
@@ -93,7 +94,7 @@ void DataCollector::dispatchTelemetryBatch(const std::vector<TelemetryRecord>& r
             continue;
         }
         if (!exporter->exportRecords(records)) {
-            std::cerr << "[DataCollector] exporter '" << exporter->name()
+            SDV_SPC_CERR << "[DataCollector] exporter '" << exporter->name()
                       << "' batch export failed (check SDV_OPERATIONAL_DB_INGEST_URL / "
                          "SDV_OTLP_LOGS_ENDPOINT from start_platform_wsl.sh)"
                       << std::endl;
@@ -107,7 +108,7 @@ void DataCollector::flushExporters() {
             continue;
         }
         if (!exporter->flush()) {
-            std::cerr << "[DataCollector] exporter '" << exporter->name() << "' flush failed"
+            SDV_SPC_CERR << "[DataCollector] exporter '" << exporter->name() << "' flush failed"
                       << std::endl;
         }
     }
@@ -173,7 +174,7 @@ void DataCollector::run() {
     const int64_t cid = proxy.registerComponent();
 
     if (cid < 0) {
-        std::cerr << "[DataCollector] FATAL: EventBus registerComponent failed (address="
+        SDV_SPC_CERR << "[DataCollector] FATAL: EventBus registerComponent failed (address="
                   << eventBusAddress_ << ")" << std::endl;
         running_ = false;
         telemetryQueue_.close();
@@ -183,7 +184,7 @@ void DataCollector::run() {
         return;
     }
 
-    std::cout << "[DataCollector] Started. EventBus=" << eventBusAddress_
+    SDV_SPC_COUT << "[DataCollector] Started. EventBus=" << eventBusAddress_
               << " component_id=" << cid
               << " carId=" << carId_
               << " queueCapacity=" << queueCapacity_
@@ -216,11 +217,11 @@ void DataCollector::run() {
 
     const std::uint64_t drops = telemetryQueue_.dropCount();
     if (drops > 0) {
-        std::cerr << "[DataCollector] NOTE: dropped " << drops
+        SDV_SPC_CERR << "[DataCollector] NOTE: dropped " << drops
                   << " telemetry item(s) while queue was at capacity (" << queueCapacity_
                   << ")" << std::endl;
     }
-    std::cout << "[DataCollector] Stopped." << std::endl;
+    SDV_SPC_COUT << "[DataCollector] Stopped." << std::endl;
 }
 
 void DataCollector::stop() {

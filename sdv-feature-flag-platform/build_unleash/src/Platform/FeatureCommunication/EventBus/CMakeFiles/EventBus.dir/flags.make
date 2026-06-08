@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DSDV_WITH_UNLEASH=1
 
-CXX_INCLUDES = -I/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform/FeatureCommunication/EventBus/include -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/src/Platform/FeatureCommunication/EventBus/proto
 
 CXX_FLAGS = -std=gnu++17 -fPIC -Wall -Wextra -Wpedantic -pthread
 

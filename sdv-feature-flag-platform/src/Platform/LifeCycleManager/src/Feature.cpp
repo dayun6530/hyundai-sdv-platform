@@ -1,6 +1,7 @@
 #include "LifeCycleManager/Feature.h"
 #include "LifeCycleManager/TelemetryRuntimeConfig.h"
 #include "LifeCycleManager/FleetVersionResolve.h"
+#include "SdvSpacedConsole.h"
 
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 #include "FeatureCommunication/EventBus/EventId.h"
@@ -437,9 +438,9 @@ void Feature::maybeLogFleetFeatureDeployBanner() {
         return;
     }
 
-    const std::string msg = std::string(row->logPrefix) + canon + " is deployed!";
-    log(LogLevel::info, msg);
-    std::cerr << "[VERSION] " << msg << std::endl;
+    const std::string line = formatSimpleVersionDeployedLogForProcess(name_, canon);
+    log(LogLevel::info, line);
+    SDV_SPC_CERR << line << std::endl;
 }
 
 int Feature::run() {
@@ -461,18 +462,13 @@ int Feature::run() {
             }
         }
         const bool shadowProc = (name_.size() >= 6 && name_.compare(name_.size() - 6, 6, "Shadow") == 0);
-        if (auto rt = readVehicleRuntimeDomainVersions(name_, carId_)) {
-            const std::string rtLine =
-                formatVehicleRuntimeVersionLogLine(*rt, carId_, name_, shadowProc);
-            log(LogLevel::info, rtLine);
-            std::cerr << rtLine << std::endl;
-            appendRunSdvVersionLog(carId_, rtLine);
-            const std::string& laneVer = shadowProc ? rt->shadow_version : rt->primary_version;
-            if (!laneVer.empty()) {
-                distVer = stripLeadingVForDisplay(laneVer);
-            }
-        }
         if (auto info = resolveFleetVersionForProcess(name_, carId_, configPath)) {
+            if (auto rt = readVehicleRuntimeDomainVersions(name_, carId_)) {
+                const std::string& laneVer = shadowProc ? rt->shadow_version : rt->primary_version;
+                if (!laneVer.empty()) {
+                    distVer = stripLeadingVForDisplay(laneVer);
+                }
+            }
             if (distVer.empty() && info->version != "unknown") {
                 distVer = stripLeadingVForDisplay(info->version);
             }
@@ -480,10 +476,16 @@ int Feature::run() {
             const std::string startedLine = formatFeatureStartedLogLine(*info, carId_);
             log(LogLevel::info, verLine);
             log(LogLevel::info, startedLine);
-            std::cerr << verLine << std::endl;
-            std::cerr << startedLine << std::endl;
+            if (!shadowProc) {
+                SDV_SPC_CERR << verLine << std::endl;
+                SDV_SPC_CERR << startedLine << std::endl;
+            }
             appendRunSdvVersionLog(carId_, verLine);
             appendRunSdvVersionLog(carId_, startedLine);
+            if (shadowProc) {
+                appendCarVersionEventsLog(carId_, verLine);
+                appendCarVersionEventsLog(carId_, startedLine);
+            }
         }
     }
     effectiveVersionLabelForLog_ = distVer;
@@ -560,10 +562,15 @@ void Feature::log(LogLevel level, const std::string& message) {
     }
 
     const char* roleStr = isShadowMode_ ? "SHADOW" : "PRIMARY";
-    logFile_ << "[" << std::put_time(tm, "%Y-%m-%d %H:%M:%S") << "] "
+    logFile_ << '\n' << "[" << std::put_time(tm, "%Y-%m-%d %H:%M:%S") << "] "
              << "[" << levelStr << "] "
              << "[" << roleStr << "][" << featureDomainTagForLogging() << "] "
              << message << std::endl;
+
+    if (isShadowMode_) {
+        SDV_SPC_CERR << "[" << roleStr << "][" << featureDomainTagForLogging() << "] "
+                     << message << std::endl;
+    }
 }
 
 const std::string& Feature::getName() const {

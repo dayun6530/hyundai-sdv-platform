@@ -4,6 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { formatSimpleVersionDeployedLog } = require('./versionLogFormat');
 
 const CAR_ID_RE = /^car_(10|[1-9])$/;
 const ALL_CAR_IDS = Array.from({ length: 10 }, (_, i) => `car_${i + 1}`);
@@ -115,15 +116,9 @@ function buildRuntimeFingerprint(carId, runtimeDir, deployRoot) {
   return parts.join('|');
 }
 
-function formatRuntimeVersionLine(carId, spec, dom, jsonRel) {
-  const pv = normalizeVersionToken(dom.primary_version) || '-';
-  const sv = normalizeVersionToken(dom.shadow_version);
-  let line =
-    `[VERSION] car_id=${carId} process=${spec.processName} feature=${spec.fleetLabel}` +
-    ` role=primary primary_version=${pv}`;
-  if (sv) line += ` shadow_version=${sv}`;
-  line += ` source=vehicle_runtime json=${jsonRel}`;
-  return line;
+function formatRuntimeVersionLine(_carId, spec, dom, _jsonRel) {
+  const pv = normalizeVersionToken(dom.primary_version) || 'v?';
+  return formatSimpleVersionDeployedLog(spec.fleetLabel, pv, false);
 }
 
 function appendCarVersionEventLines(repoRoot, carId, lines) {
@@ -131,7 +126,7 @@ function appendCarVersionEventLines(repoRoot, carId, lines) {
   const carLogDir = path.join(repoRoot, 'logs', carId);
   const runSdvLog = path.join(repoRoot, 'logs', 'run_sdv', `${carId}.log`);
   const iso = new Date().toISOString();
-  const payload = lines.map((l) => `[${iso}] ${l}\n`).join('');
+  const payload = lines.map((l) => `\n[${iso}] ${l}\n`).join('');
   try {
     fs.mkdirSync(carLogDir, { recursive: true });
     fs.appendFileSync(
@@ -214,7 +209,7 @@ function syncAllCarsVehicleRuntimeToCmd(deps, options = {}) {
 
 function startVehicleRuntimeCmdPoller(deps, intervalMs = 3000) {
   const ms = Math.max(1000, Number(intervalMs) || 3000);
-  syncAllCarsVehicleRuntimeToCmd(deps, { force: true });
+  // Do not force-write on startup: native Feature processes already emit [VERSION]/started once.
   const timer = setInterval(() => {
     try {
       syncAllCarsVehicleRuntimeToCmd(deps, { force: false });

@@ -1,5 +1,6 @@
 #include "CenterCommunication/SignalReceiver.h"
 
+#include "SdvSpacedConsole.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -252,7 +253,7 @@ static void publishFlagState(mqtt::async_client& client,
         msg->set_retained(true);
         client.publish(msg)->wait_for(std::chrono::seconds(2));
     } catch (const std::exception& e) {
-        std::cerr << "[SignalReceiver] flags/state publish failed: " << e.what() << std::endl;
+        SDV_SPC_CERR << "[SignalReceiver] flags/state publish failed: " << e.what() << std::endl;
     }
 }
 
@@ -293,7 +294,7 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
                 feature = trim(feature);
                 if (feature.empty()) return false;
                 for (const auto& resolved : expandKillTarget(feature, declaredFeatures)) {
-                    std::cout << "[SignalReceiver] Received Message:KILL:" << resolved << std::endl;
+                    SDV_SPC_COUT << "[SignalReceiver] Received Message:KILL:" << resolved << std::endl;
                     if (!proxy.sendEvent(Event(EventId::KillSwitch, resolved))) return false;
                 }
                 if (rx && rx->mirror) {
@@ -304,10 +305,10 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
             }
 
             // Allow future JSON controls to coexist without breaking receivers.
-            std::cerr << "[SignalReceiver] Unknown inbound JSON command ignored: " << cmd << std::endl;
+            SDV_SPC_CERR << "[SignalReceiver] Unknown inbound JSON command ignored: " << cmd << std::endl;
             return true;
         } catch (const std::exception& e) {
-            std::cerr << "[SignalReceiver] Inbound JSON parse failed; falling back to legacy format. err="
+            SDV_SPC_CERR << "[SignalReceiver] Inbound JSON parse failed; falling back to legacy format. err="
                       << e.what() << std::endl;
         }
     }
@@ -320,7 +321,7 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
         const std::string target = trim(rest);
         if (target.empty()) return false;
         for (const auto& resolved : expandKillTarget(target, declaredFeatures)) {
-            std::cout << "[SignalReceiver] Received Message:KILL:" << resolved << std::endl;
+            SDV_SPC_COUT << "[SignalReceiver] Received Message:KILL:" << resolved << std::endl;
             if (!proxy.sendEvent(Event(EventId::KillSwitch, resolved))) return false;
         }
         if (rx && rx->mirror) {
@@ -338,7 +339,7 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
         const std::string logicalBase = LogicalFlagSnapshot::logicalBaseFromFlagRest(target);
         const std::string logical = toLogicalFeatureName(logicalBase);
         if (rx && rx->mirror && rx->mirror->isLogicalKilled(logical)) {
-            std::cout << "[SignalReceiver] FLAG_ON ignored (KILL latched for " << logical << "): " << target
+            SDV_SPC_COUT << "[SignalReceiver] FLAG_ON ignored (KILL latched for " << logical << "): " << target
                       << std::endl;
             return true;
         }
@@ -393,7 +394,7 @@ static bool forwardControlToEventBus(sdv::platform::communications::eventbus::Ev
     }
 
     // Unknown signal types are ignored (forward-compatible).
-    std::cerr << "[SignalReceiver] Unknown inbound signal ignored: " << t << std::endl;
+    SDV_SPC_CERR << "[SignalReceiver] Unknown inbound signal ignored: " << t << std::endl;
     return true;
 }
 
@@ -407,14 +408,14 @@ SignalReceiver::SignalReceiver(const std::string& centerUrl,
 
 void SignalReceiver::start() {
     running_ = true;
-    std::cout << "[SignalReceiver] Started (MQTT->EventBus). " << std::endl;
+    SDV_SPC_COUT << "[SignalReceiver] Started (MQTT->EventBus). " << std::endl;
 
     while (running_) {
         pollExternalSignals();
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 
-    std::cout << "[SignalReceiver] Stopped." << std::endl;
+    SDV_SPC_COUT << "[SignalReceiver] Stopped." << std::endl;
 }
 
 void SignalReceiver::stop() {
@@ -460,7 +461,7 @@ int main(int argc, char** argv) {
     sdv::platform::communications::eventbus::EventBusProxy proxy(eventBusAddress);
     const int64_t componentId = proxy.registerComponent();
     if (componentId < 0) {
-        std::cerr << "[SignalReceiver] EventBus registerComponent failed" << std::endl;
+        SDV_SPC_CERR << "[SignalReceiver] EventBus registerComponent failed" << std::endl;
         return 2;
     }
 
@@ -482,12 +483,12 @@ int main(int argc, char** argv) {
         client.start_consuming();
         client.subscribe(subscribeTopic, 1)->wait();
         publishFlagState(client, stateTopic, carId, mirror);
-        std::cout << "[SignalReceiver] Connected. broker=" << brokerUri
+        SDV_SPC_COUT << "[SignalReceiver] Connected. broker=" << brokerUri
                   << " topic=" << subscribeTopic
                   << " stateTopic=" << stateTopic
                   << " eventBus=" << eventBusAddress << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "[SignalReceiver] MQTT connect/subscribe failed: " << e.what() << std::endl;
+        SDV_SPC_CERR << "[SignalReceiver] MQTT connect/subscribe failed: " << e.what() << std::endl;
         proxy.unRegister(componentId);
         return 3;
     }
@@ -499,7 +500,7 @@ int main(int argc, char** argv) {
         const std::string payload = msg->to_string();
         const bool ok = forwardControlToEventBus(proxy, payload, declaredFeatures, &rxCtx);
         if (!ok) {
-            std::cerr << "[SignalReceiver] Failed to forward inbound signal: " << payload << std::endl;
+            SDV_SPC_CERR << "[SignalReceiver] Failed to forward inbound signal: " << payload << std::endl;
         }
     }
 

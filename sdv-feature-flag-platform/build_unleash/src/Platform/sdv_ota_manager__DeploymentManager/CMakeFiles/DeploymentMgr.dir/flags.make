@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DSDV_WITH_UNLEASH=1
 
-CXX_INCLUDES = -I/mnt/c/Users/82107/Desktop/TP4/sdv-ota-manager/platform/DeploymentManager/include
+CXX_INCLUDES = -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/src/Platform -I/mnt/c/Users/82108/Desktop/teamproject_2/sdv-ota-manager/platform/DeploymentManager/include
 
 CXX_FLAGS = -std=gnu++17 -fPIE -Wall -Wextra -Wpedantic
 

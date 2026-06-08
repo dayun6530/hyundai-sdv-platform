@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/tests
+# Install script for directory: /mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/tests
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,6 +44,6 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/82107/Desktop/TP4/sdv-feature-flag-platform/build_unleash/tests/unit/cmake_install.cmake")
+  include("/mnt/c/Users/82108/Desktop/teamproject_2/sdv-feature-flag-platform/build_unleash/tests/unit/cmake_install.cmake")
 endif()
 

@@ -44,6 +44,9 @@ const {
   registerTelemetryCollectorConfigRoutes,
 } = require('./services/telemetryCollectorConfigApi');
 const {
+  formatSimpleVersionDeployedLog,
+} = require('./services/versionLogFormat');
+const {
   registerDockerPackagePipelineRoutes,
 } = require('./services/dockerPackagePipelineApi');
 const {
@@ -3227,6 +3230,19 @@ function readFleetStatePendingVersion(carId, fleetFeatureLabel) {
   }
 }
 
+function readFleetStateShadowVersion(carId, fleetFeatureLabel) {
+  const key = fleetFeatureToStateKey(fleetFeatureLabel);
+  if (!key) return null;
+  const fp = path.join(DEPLOY_ROOT, 'state', `${carId}.json`);
+  try {
+    const j = readJson(fp);
+    const v = j?.features?.[key]?.shadow_version;
+    return typeof v === 'string' && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function fleetStateVersionMatchesRequested(stateVersion, requestedToken) {
   if (!stateVersion) return false;
   return fleetVersionToken(stateVersion) === requestedToken;
@@ -3385,39 +3401,41 @@ function syncFleetStateAfterDockerRuntime(
  */
 function notifyCarVersionChange(carId, fleetFeatureLabel, opts) {
   const {
+    version,
+    shadowVersion,
     rolePrimary = 'DEPLOY',
     messagePrimary,
     alsoShadowLog = false,
     messageShadow,
-    plainConsoleLine,
     writeFeatureLog = false,
     alsoShadowEvent = false,
-    plainConsoleLineShadow,
   } = opts;
   if (!CAR_ID_RE.test(carId)) {
     return;
   }
-  const plain = plainConsoleLine || messagePrimary;
+  const primaryLine = formatSimpleVersionDeployedLog(fleetFeatureLabel, version, false);
   const iso = new Date().toISOString();
-  const bundleLine = `[${iso}] [VERSION] ${carId} ${fleetFeatureLabel} ${plain}`;
+  const bundleLine = `[${iso}] ${primaryLine}`;
   const carLogDir = path.join(REPO_ROOT, 'logs', carId);
   const runSdvLog = path.join(REPO_ROOT, 'logs', 'run_sdv', `${carId}.log`);
   try {
     fs.mkdirSync(carLogDir, { recursive: true });
     fs.appendFileSync(
       path.join(carLogDir, 'version_events.log'),
-      `${bundleLine}\n`,
+      `${bundleLine}\n\n`,
       { encoding: 'utf8' },
     );
-    // Split streams for separate CMD windows
     fs.appendFileSync(
       path.join(carLogDir, 'version_events.primary.log'),
-      `${bundleLine}\n`,
+      `${bundleLine}\n\n`,
       { encoding: 'utf8' },
     );
     if (alsoShadowEvent) {
-      const plainS = plainConsoleLineShadow || messageShadow || messagePrimary;
-      const shadowLine = `[${iso}] [VERSION] ${carId} ${fleetFeatureLabel} ${plainS}`;
+      const shadowLine = `[${iso}] ${formatSimpleVersionDeployedLog(
+        fleetFeatureLabel,
+        shadowVersion != null ? shadowVersion : version,
+        true,
+      )}`;
       fs.appendFileSync(
         path.join(carLogDir, 'version_events.shadow.log'),
         `${shadowLine}\n`,
@@ -3433,7 +3451,7 @@ function notifyCarVersionChange(carId, fleetFeatureLabel, opts) {
   } catch (_) {
     /* ignore */
   }
-  console.log(bundleLine);
+  console.log(`\n${bundleLine}`);
 
   if (!writeFeatureLog) {
     return;
@@ -3443,13 +3461,13 @@ function notifyCarVersionChange(carId, fleetFeatureLabel, opts) {
     return;
   }
   const dom = fleetFeatureToDomainTag(fleetFeatureLabel);
-  const primaryLine = formatFeatureStyleLogLine(
+  const featureLogLine = formatFeatureStyleLogLine(
     rolePrimary,
     dom,
     messagePrimary,
   );
   try {
-    fs.appendFileSync(path.join(carLogDir, `${base}.log`), `${primaryLine}\n`, {
+    fs.appendFileSync(path.join(carLogDir, `${base}.log`), `${featureLogLine}\n`, {
       encoding: 'utf8',
     });
   } catch (_) {
@@ -3567,8 +3585,8 @@ app.post('/api/fleet/action', async (req, res) => {
         const prev = result.previous_primary_before_rollback || '—';
         const restored = result.restored_version || '—';
         notifyCarVersionChange(car_id, feature, {
+          version: restored,
           messagePrimary: `Rollback success: ${feature} Primary restored from ${prev} to ${restored}`,
-          plainConsoleLine: `fleet-rollback OK ${feature} ${prev} -> ${restored}`,
         });
       }
       res.status(result.ok ? 200 : 400).json({
@@ -3683,18 +3701,21 @@ app.post('/api/fleet/action', async (req, res) => {
           .toUpperCase();
         msg = `Fleet shadow mode ${shadow_action} for ${feature}.`;
         notifyCarVersionChange(car_id, feature, {
+          version: readFleetStateActiveVersion(car_id, feature) || 'v?',
+          shadowVersion:
+            readFleetStateShadowVersion(car_id, feature) ||
+            readFleetStateActiveVersion(car_id, feature) ||
+            'v?',
           messagePrimary: msg,
           alsoShadowLog: true,
           messageShadow: `Shadow observer slot: fleet shadow ${shadow_action} for ${feature}.`,
-          plainConsoleLine: `fleet-action shadow ${shadow_action} OK`,
           alsoShadowEvent: true,
-          plainConsoleLineShadow: `fleet-action shadow ${shadow_action} OK (shadow)`,
         });
       }
       if (action !== 'shadow') {
         notifyCarVersionChange(car_id, feature, {
+          version: readFleetStateActiveVersion(car_id, feature) || 'v?',
           messagePrimary: msg,
-          plainConsoleLine: `fleet-action ${action} OK`,
         });
       }
       if (RUNTIME_DOCKER_CAR_RE.test(car_id)) {
@@ -3846,31 +3867,31 @@ app.post('/api/fleet/deploy', async (req, res) => {
 
       if (okActive && actualAfter) {
         notifyCarVersionChange(cid, feature, {
+          version: requestedToken,
+          shadowVersion: readFleetStateShadowVersion(cid, feature) || requestedToken,
           messagePrimary: verMsg,
-          plainConsoleLine: verMsg,
           writeFeatureLog: false,
           alsoShadowEvent: true,
-          plainConsoleLineShadow: fleetDeployShadowConsoleLine(verMsg),
         });
         loggedCars.push(cid);
       } else if (okPending && pendingAfter) {
         const sched = `${feature} ${requestedToken} scheduled (stays on ${actualAfter || 'previous'} until next car restart / apply-pending-native-car).`;
         notifyCarVersionChange(cid, feature, {
+          version: requestedToken,
+          shadowVersion: readFleetStateShadowVersion(cid, feature) || requestedToken,
           messagePrimary: sched,
-          plainConsoleLine: sched,
           writeFeatureLog: false,
           alsoShadowEvent: true,
-          plainConsoleLineShadow: `Shadow observer: ${sched}`,
         });
         loggedCars.push(cid);
       } else {
         const note = `Deploy requested (${requestedToken}) but state not updated (active=${actualAfter || '<missing>'}, pending=${pendingAfter || '<missing>'}).`;
         notifyCarVersionChange(cid, feature, {
+          version: requestedToken,
+          shadowVersion: readFleetStateShadowVersion(cid, feature) || requestedToken,
           messagePrimary: note,
-          plainConsoleLine: note,
           writeFeatureLog: false,
           alsoShadowEvent: true,
-          plainConsoleLineShadow: `Shadow observer: ${note}`,
         });
         notAppliedCars.push({
           car_id: cid,
@@ -3884,18 +3905,12 @@ app.post('/api/fleet/deploy', async (req, res) => {
     }
     if (!cars.length) {
       console.log(
-        `[VERSION] fleet-deploy ${scope} ${feature} ${slot} ${version} (exit_code=${r.code}) (no success_targets in SUMMARY_JSON)`,
+        formatSimpleVersionDeployedLog(feature, version),
       );
     }
     if (notAppliedCars.length) {
       console.log(
-        `[VERSION] fleet-deploy verify failed for ${feature} ${requestedToken}: ` +
-          notAppliedCars
-            .map(
-              (x) =>
-                `${x.car_id} active=${x.active_version} pending=${x.pending_version ?? '<missing>'}`,
-            )
-            .join(', '),
+        formatSimpleVersionDeployedLog(feature, requestedToken),
       );
     }
 
@@ -4065,26 +4080,32 @@ function notifyVehicleRuntimeDockerSuccess(subcommand, t) {
   );
   if (subcommand === 'bootstrap') {
     notifyCarVersionChange(t.car_id, ff, {
+      version: t.version,
+      shadowVersion: t.version,
       messagePrimary: `Docker OTA bootstrap: Primary and Shadow image tag v${t.version} (${t.domain}).`,
       alsoShadowLog: true,
       messageShadow: `Docker OTA bootstrap: Shadow image tag v${t.version} (${t.domain}).`,
-      plainConsoleLine: `docker-ota bootstrap ${t.domain} v${t.version} OK`,
+      alsoShadowEvent: true,
     });
   } else if (subcommand === 'deploy-shadow') {
     notifyCarVersionChange(t.car_id, ff, {
+      version: readFleetStateActiveVersion(t.car_id, ff) || t.version,
+      shadowVersion: t.version,
       messagePrimary: `Docker OTA: Shadow-only redeploy to v${t.version} (${t.domain}); Primary unchanged.`,
       alsoShadowLog: true,
       messageShadow: `Docker OTA deploy-shadow: Shadow updated to v${t.version} (${t.domain}).`,
-      plainConsoleLine: `docker-ota deploy-shadow ${t.domain} v${t.version} OK`,
+      alsoShadowEvent: true,
     });
   } else if (subcommand === 'promote') {
     notifyCarVersionChange(t.car_id, ff, {
+      version: t.version,
+      shadowVersion: t.sync_shadow ? t.version : readFleetStateShadowVersion(t.car_id, ff),
       messagePrimary: `Docker OTA promote: Primary updated to v${t.version} (${t.domain}).`,
       alsoShadowLog: Boolean(t.sync_shadow),
       messageShadow: t.sync_shadow
         ? `Docker OTA promote: Shadow synced to v${t.version} (${t.domain}).`
         : undefined,
-      plainConsoleLine: `docker-ota promote ${t.domain} v${t.version}${t.sync_shadow ? ' +sync-shadow' : ''} OK`,
+      alsoShadowEvent: Boolean(t.sync_shadow),
     });
   }
   syncRuntimeCmdForCars([t.car_id]);

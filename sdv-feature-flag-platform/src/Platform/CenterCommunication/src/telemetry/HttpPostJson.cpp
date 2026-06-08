@@ -1,5 +1,7 @@
 #include "CenterCommunication/telemetry/HttpPostJson.h"
 
+#include "SdvSpacedConsole.h"
+
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -259,12 +261,14 @@ bool httpPostJsonWithRetry(const std::string& url,
     };
 
     const char* prefix = (logPrefix != nullptr && logPrefix[0] != '\0') ? logPrefix : "HttpPost";
+    const bool silentOperationalDb =
+        std::strstr(prefix, "OperationalDbExporter") != nullptr;
 
     for (int attempt = 1; attempt <= kMaxAttempts; ++attempt) {
         std::string error;
         if (httpPostJson(url, body, &error)) {
             if (attempt > 1) {
-                std::cout << "[" << prefix << "] export recovered on attempt " << attempt << "/"
+                SDV_SPC_COUT << "[" << prefix << "] export recovered on attempt " << attempt << "/"
                           << kMaxAttempts << std::endl;
             }
             return true;
@@ -275,18 +279,20 @@ bool httpPostJsonWithRetry(const std::string& url,
         }
         if (attempt < kMaxAttempts) {
             const auto delay = kBackoffDelays[attempt - 1];
-            std::cerr << "[" << prefix << "] WARN: attempt " << attempt << "/" << kMaxAttempts
-                      << " failed to " << url << " (" << error << "); retrying in "
-                      << delay.count() << "ms" << std::endl;
+            if (!silentOperationalDb) {
+                SDV_SPC_CERR << "[" << prefix << "] WARN: attempt " << attempt << "/" << kMaxAttempts
+                          << " failed to " << url << " (" << error << "); retrying in "
+                          << delay.count() << "ms" << std::endl;
+            }
             std::this_thread::sleep_for(delay);
         }
     }
 
-    std::cerr << "[" << prefix << "] WARN: failed after " << kMaxAttempts << " attempts to " << url;
-    if (lastError != nullptr && !lastError->empty()) {
-        std::cerr << " (" << *lastError << ")";
+    if (!silentOperationalDb) {
+        SDV_SPC_CERR << "[" << prefix << "] WARN: failed after " << kMaxAttempts << " attempts to " << url
+                     << (lastError != nullptr && !lastError->empty() ? " (" + *lastError + ")" : "")
+                     << std::endl;
     }
-    std::cerr << std::endl;
     return false;
 }
 

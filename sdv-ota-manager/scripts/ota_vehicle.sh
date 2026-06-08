@@ -115,6 +115,19 @@ esac
 PRIMARY_NAME="${CAR}_agent_${DOMAIN_LOWER}"
 SHADOW_NAME="${PRIMARY_NAME}_shadow"
 
+format_version_deploy_log() {
+  local version="$1"
+  local shadow="${2:-0}"
+  local v="v${version#v}"
+  v="v${v#V}"
+  local border="*********************"
+  if [[ "$shadow" == "1" ]]; then
+    printf '\n%s[VERSION] %s_Shadow_%s is deployed!%s\n' "$border" "$BINARY_NAME" "$v" "$border"
+  else
+    printf '\n%s[VERSION] %s_%s is deployed!%s\n' "$border" "$BINARY_NAME" "$v" "$border"
+  fi
+}
+
 # 버전 문자열에서 선행 v/V 제거 후 이미지 태그에 사용 (v1.0 / 1.0 모두 허용)
 image_for_version() {
   local ver="$1"
@@ -503,7 +516,8 @@ case "$CMD" in
     LAST_MSG_KO="${BINARY_NAME}: Primary·Shadow 모두 실행 버전 v${VERSION#v}으로 기동했습니다 (bootstrap, 검증 후 전환)."
     PRIMARY_VER="$VERSION" LAST_ACTION="bootstrap" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
-    echo "[VERSION] ${CAR} ${DOMAIN}: Bootstrap completed — Primary and Shadow now run image ${IMG} (v${VERSION#v})."
+    format_version_deploy_log "$VERSION"
+    format_version_deploy_log "$VERSION" 1
     sleep 1
     echo "Primary: $PRIMARY_NAME"
     docker logs --tail 6 "$PRIMARY_NAME" 2>/dev/null || true
@@ -540,7 +554,7 @@ case "$CMD" in
     LAST_MSG_KO="${BINARY_NAME}: Shadow(관측) 실행 버전이 v${VERSION#v}으로 변경되었습니다. Primary(운영)는 그대로입니다."
     SHADOW_VER="$VERSION" LAST_ACTION="deploy-shadow" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
-    echo "[VERSION] ${CAR} ${DOMAIN}: Deploy-shadow completed — Shadow updated to v${VERSION#v} (${IMG}); Primary unchanged."
+    format_version_deploy_log "$VERSION" 1
     sleep 1
     echo "Shadow 로그:"
     docker logs --tail 8 "$SHADOW_NAME" 2>/dev/null || true
@@ -576,7 +590,7 @@ case "$CMD" in
     LAST_MSG_KO="${BINARY_NAME}: Primary(운영) 실행 버전이 v${VERSION#v}으로 승격되었습니다."
     PRIMARY_VER="$VERSION" SHADOW_VER="" LAST_ACTION="promote" update_state_json
     echo "[OTA-DEMO] ${LAST_MSG_KO}"
-    echo "[VERSION] ${CAR} ${DOMAIN}: Promote completed — Primary updated to v${VERSION#v} (${IMG}); Shadow lane inactive."
+    format_version_deploy_log "$VERSION"
     # NOTE (metadata sync): this script updates deploy/vehicle_runtime/<car>.json and best-effort aligns
     # platform/deploy/state/<car>.json versions. If you want rollback_stack / primary_image metadata to
     # reflect this promotion event, call (metadata-only; no container ops):

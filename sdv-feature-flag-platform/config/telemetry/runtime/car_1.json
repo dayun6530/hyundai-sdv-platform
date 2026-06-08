@@ -1,11 +1,17 @@
 {
   "batch_max": 50,
   "flush_ms": 1000,
-  "publish_default_ms": 2000,
+  "publish_default_ms": 4000,
   "features": {
-    "AdasFeature": { "publish_interval_ms": 2000 },
-    "NavigationFeature": { "publish_interval_ms": 1000 },
-    "EvEnergyFeature": { "publish_interval_ms": 2000 }
+    "AdasFeature": {
+      "publish_interval_ms": 4000
+    },
+    "NavigationFeature": {
+      "publish_interval_ms": 4000
+    },
+    "EvEnergyFeature": {
+      "publish_interval_ms": 4000
+    }
   },
-  "updated_at": "2026-05-25T19:45:00.000Z"
+  "updated_at": "2026-06-07T21:13:01.114Z"
 }

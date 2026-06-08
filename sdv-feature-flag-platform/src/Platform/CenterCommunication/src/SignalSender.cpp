@@ -1,5 +1,6 @@
 #include "CenterCommunication/SignalSender.h"
 
+#include "SdvSpacedConsole.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -22,14 +23,14 @@ SignalSender::SignalSender(const std::string& centerUrl,
 
 void SignalSender::start() {
     running_ = true;
-    std::cout << "[SignalSender] Started (EventBus->MQTT)." << std::endl;
+    SDV_SPC_COUT << "[SignalSender] Started (EventBus->MQTT)." << std::endl;
 
     while (running_) {
         processOutboundSignals();
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 
-    std::cout << "[SignalSender] Stopped." << std::endl;
+    SDV_SPC_COUT << "[SignalSender] Stopped." << std::endl;
 }
 
 void SignalSender::stop() {
@@ -41,7 +42,7 @@ void SignalSender::processOutboundSignals() {
 }
 
 void SignalSender::sendToCenter(const SignalData& data) {
-    std::cout << "[SignalSender] Sending to center: " << data.serialize() << std::endl;
+    SDV_SPC_COUT << "[SignalSender] Sending to center: " << data.serialize() << std::endl;
     httpPost("/api/signals", data.serialize());
 }
 
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
     sdv::platform::communications::eventbus::EventBusProxy proxy(eventBusAddress);
     const int64_t componentId = proxy.registerComponent();
     if (componentId < 0) {
-        std::cerr << "[SignalSender] EventBus registerComponent failed" << std::endl;
+        SDV_SPC_CERR << "[SignalSender] EventBus registerComponent failed" << std::endl;
         return 2;
     }
 
@@ -155,11 +156,11 @@ int main(int argc, char** argv) {
 
     try {
         client.connect(conn)->wait();
-        std::cout << "[SignalSender] Connected. broker=" << brokerUri
+        SDV_SPC_COUT << "[SignalSender] Connected. broker=" << brokerUri
                   << " topic=" << publishTopic
                   << " eventBus=" << eventBusAddress << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "[SignalSender] MQTT connect failed: " << e.what() << std::endl;
+        SDV_SPC_CERR << "[SignalSender] MQTT connect failed: " << e.what() << std::endl;
         proxy.unRegister(componentId);
         return 3;
     }
@@ -180,11 +181,11 @@ int main(int argc, char** argv) {
                     appendLogLine("SignalSender.log", std::string("TX ") + payload);
                     if (e.getEventId() == sdv::platform::communications::eventbus::EventId::KillSwitchAck) {
                         const std::string feat = killAckFeatureFromMessage(e.getMessage());
-                        std::cout << "[SignalSender] Sent Message:KILL_ACK:" << feat << std::endl;
+                        SDV_SPC_COUT << "[SignalSender] Sent Message:KILL_ACK:" << feat << std::endl;
                     }
                 } catch (const std::exception& ex) {
                     if (attempt == 1) {
-                        std::cerr << "[SignalSender] publish failed: " << ex.what() << std::endl;
+                        SDV_SPC_CERR << "[SignalSender] publish failed: " << ex.what() << std::endl;
                         appendLogLine("SignalSender.log", std::string("TX_FAIL ") + ex.what());
                     }
                 }

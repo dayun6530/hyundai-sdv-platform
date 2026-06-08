@@ -1,5 +1,6 @@
 #include "FeatureCommunication/EventBus/EventBusProxy.h"
 
+#include "SdvSpacedConsole.h"
 #include <chrono>
 #include <iostream>
 #include <thread>
@@ -90,7 +91,7 @@ int64_t EventBusProxy::registerComponent() {
 
     grpc::Status status = stub_->registerComponent(&context, request, &response);
     if (!status.ok()) {
-        std::cerr << "registerComponent failed: " << status.error_message() << std::endl;
+        SDV_SPC_CERR << "registerComponent failed: " << status.error_message() << std::endl;
         return -1;
     }
     const int64_t id = response.component_id();
@@ -108,7 +109,7 @@ void EventBusProxy::unRegister(int64_t componentId) {
 
     grpc::Status status = stub_->unRegister(&context, request, &response);
     if (!status.ok()) {
-        std::cerr << "unRegister failed: " << status.error_message() << std::endl;
+        SDV_SPC_CERR << "unRegister failed: " << status.error_message() << std::endl;
     }
 }
 
@@ -121,7 +122,7 @@ bool EventBusProxy::sendEvent(const Event& event) {
 
     grpc::Status status = stub_->sendEvent(&context, request, &response);
     if (!status.ok()) {
-        std::cerr << "sendEvent failed: " << status.error_message() << std::endl;
+        SDV_SPC_CERR << "sendEvent failed: " << status.error_message() << std::endl;
         return false;
     }
     return true;
@@ -159,7 +160,7 @@ void EventBusProxy::consumeEventStream(int64_t componentId,
         std::unique_ptr<grpc::ClientReader<EventMessage>> reader(
             stub_->SubscribeEvents(&context, request));
         if (!reader) {
-            std::cerr << "SubscribeEvents failed to start for component " << componentId << std::endl;
+            SDV_SPC_CERR << "SubscribeEvents failed to start for component " << componentId << std::endl;
             return;
         }
 
@@ -188,7 +189,7 @@ void EventBusProxy::consumeEventStream(int64_t componentId,
             return;
         }
 
-        std::cerr << "[EventBusProxy] SubscribeEvents stream ended for component " << componentId
+        SDV_SPC_CERR << "[EventBusProxy] SubscribeEvents stream ended for component " << componentId
                   << "; reconnecting..." << std::endl;
     }
 }
