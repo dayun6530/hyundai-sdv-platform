@@ -1,13 +1,52 @@
+import { useMemo, useState } from "react";
+import { requestPygamePromoteConfirmSequence } from "../api/pygameBridge.js";
+import {
+  checkPromoteSafetyForCars,
+  forceDemoReadyForPromoteCars,
+} from "../api/safety.js";
+import { setDriverApproval } from "../api/fleet.js";
+import PromoteSafetyBlockedDialog from "./PromoteSafetyBlockedDialog.jsx";
+
 function runCandidateButtonTitle({
   validateResult,
   runCandidateLoading,
   canRunCandidate,
 }) {
-  if (runCandidateLoading) return 'Running candidate…';
-  if (!validateResult) return 'Validate first';
-  if ((validateResult.summary?.fail ?? 0) > 0) return 'Fix validation failures';
-  if (canRunCandidate) return 'Run Candidate';
-  return 'Validate first';
+  if (runCandidateLoading) return "Running candidate…";
+  if (!validateResult) return "Validate first";
+  if ((validateResult.summary?.fail ?? 0) > 0) return "Fix validation failures";
+  if (canRunCandidate) return "Run Candidate";
+  return "Validate first";
+}
+
+const PROMOTE_FEATURE_LABELS = {
+  ADAS: "ADAS",
+  Navigation: "Navigation",
+  Energy: "EV Energy",
+};
+
+function promoteFeatureConfirmContent(
+  promoteFeature,
+  promoteTargetVersion,
+  promoteFeatureSummary,
+) {
+  if (promoteFeatureSummary) {
+    return {
+      title: "Primary 업데이트 확인",
+      message: "새 버전을 Primary로 업데이트하시겠습니까?",
+      detail: promoteFeatureSummary,
+    };
+  }
+  const label =
+    PROMOTE_FEATURE_LABELS[promoteFeature] || promoteFeature || "선택된";
+  const verLine = promoteTargetVersion
+    ? `Feature: ${label}\n버전: ${promoteTargetVersion}`
+    : `Feature: ${label}`;
+  return {
+    title: "Primary 업데이트 확인",
+    message: `${label} feature의 새 버전을 Primary로 업데이트하시겠습니까?`,
+    detail: verLine,
+  };
 }
 
 function promoteButtonTitle({
@@ -50,7 +89,7 @@ function actionHintValidate({
   if (fail > 0) {
     const detail = firstValidateFailMessage(validateResult);
     if (/version_map/i.test(detail)) {
-      return `FAIL: ${detail} — re-select the campaign (auto-syncs version_map) or align deploy/version_map.json slot B manually.`;
+      return `FAIL: ${detail} — re-select the campaign (auto-syncs version_map) or align deploy/version_map.json Candidate role manually.`;
     }
     return detail ? `FAIL: ${detail}` : 'Fix FAIL items before Run Candidate.';
   }
@@ -112,8 +151,8 @@ function actionHintPromote({
   }
   if (canPromote) {
     return targetVehicleCount > 1
-      ? `Promote after candidate success on all ${targetVehicleCount} targets.`
-      : 'Available after successful candidate run.';
+      ? `차량 ${targetVehicleCount}대 — Promote 시 OTA Safety READY 필수 + pygame 차량별 확인.`
+      : "Promote requires OTA Safety READY, then pygame confirm.";
   }
   return 'Run candidate first, or stage candidate in vehicle_runtime.';
 }
@@ -153,17 +192,29 @@ export default function CampaignActionBar({
   targetVehicleCount,
   imageAvailable,
   candidateStagedInRuntime,
+  promoteFeature,
+  promoteTargetVersion,
+  promoteFeatureSummary,
+  promoteConfirmItems,
+  onSafetyPrepared,
+  onDriverApproved,
 }) {
   const enabled =
     actionsEnabled !== undefined ? actionsEnabled : Boolean(selectedCampaignId);
   const imageOk = imageAvailable !== false;
+  const [promoteAwaitingPygame, setPromoteAwaitingPygame] = useState(false);
+  const [promoteConfirmProgress, setPromoteConfirmProgress] = useState(null);
+  const [safetyBlockedCars, setSafetyBlockedCars] = useState([]);
+  const [safetyForceLoading, setSafetyForceLoading] = useState(false);
+  const [safetyForceError, setSafetyForceError] = useState("");
+  const promoteBusy = promoteLoading || promoteAwaitingPygame;
   const runDisabled =
     !enabled ||
     !deploymentHasTarget ||
     !canRunCandidate ||
     !imageOk ||
     runCandidateLoading ||
-    promoteLoading ||
+    promoteBusy ||
     dropCandidateLoading;
   const runTitle = runCandidateButtonTitle({
     validateResult,
@@ -175,27 +226,142 @@ export default function CampaignActionBar({
     !deploymentHasTarget ||
     !canPromote ||
     !imageOk ||
-    promoteLoading ||
+    promoteBusy ||
     runCandidateLoading ||
     dropCandidateLoading;
   const dropDisabled =
     !enabled ||
     !deploymentHasTarget ||
     !canDropCandidate ||
-    promoteLoading ||
+    promoteBusy ||
     runCandidateLoading ||
     dropCandidateLoading ||
     validateLoading;
   const promoteTitle = promoteButtonTitle({
     validateResult,
-    promoteLoading,
+    promoteLoading: promoteBusy,
     runCandidateLoading,
     canPromote,
     hasFailedCandidateRun,
   });
 
+  const promoteConfirm = useMemo(
+    () =>
+      promoteFeatureConfirmContent(
+        promoteFeature,
+        promoteTargetVersion,
+        promoteFeatureSummary,
+      ),
+    [promoteFeature, promoteTargetVersion, promoteFeatureSummary],
+  );
+
+  const confirmItems = useMemo(() => {
+    if (Array.isArray(promoteConfirmItems) && promoteConfirmItems.length) {
+      return promoteConfirmItems;
+    }
+    return [
+      {
+        carId: "",
+        feature: promoteFeature || "",
+        version: promoteTargetVersion || "",
+        message: promoteConfirm.message,
+        detail: promoteConfirm.detail || "",
+      },
+    ];
+  }, [
+    promoteConfirmItems,
+    promoteFeature,
+    promoteTargetVersion,
+    promoteConfirm.message,
+    promoteConfirm.detail,
+  ]);
+
+  const handlePromoteClick = async () => {
+    if (!onPromote || promoteDisabled || promoteAwaitingPygame) return;
+    setSafetyForceError("");
+
+    const blocked = await checkPromoteSafetyForCars(confirmItems);
+    if (blocked.length) {
+      setSafetyBlockedCars(blocked);
+      return;
+    }
+
+    setPromoteAwaitingPygame(true);
+    setPromoteConfirmProgress(null);
+    try {
+      const result = await requestPygamePromoteConfirmSequence(confirmItems, {
+        onProgress: (current, total, carId) => {
+          setPromoteConfirmProgress({ current, total, carId });
+        },
+        onDriverAccepted: async (carId) => {
+          await setDriverApproval(carId, true);
+          await onDriverApproved?.(carId);
+        },
+      });
+      if (result.aborted) {
+        window.alert(result.error || "pygame 확인이 중단되었습니다.");
+        return;
+      }
+      if (!result.accepted.length) {
+        window.alert("Promote할 차량을 선택하지 않았습니다.");
+        return;
+      }
+      onPromote?.({
+        carIds: result.accepted,
+        declinedCarIds: result.declined,
+      });
+    } catch (e) {
+      window.alert(e?.message || String(e));
+    } finally {
+      setPromoteAwaitingPygame(false);
+      setPromoteConfirmProgress(null);
+    }
+  };
+
+  const handleForceSafetyReady = async () => {
+    if (!safetyBlockedCars.length || safetyForceLoading) return;
+    setSafetyForceLoading(true);
+    setSafetyForceError("");
+    try {
+      const res = await forceDemoReadyForPromoteCars(safetyBlockedCars);
+      if (!res.ok) {
+        const detail = (res.failed || [])
+          .map((f) => `${f.car_id}: ${f.error}`)
+          .join("; ");
+        setSafetyForceError(detail || "데모 READY 설정에 실패했습니다.");
+        return;
+      }
+      setSafetyBlockedCars([]);
+      await onSafetyPrepared?.();
+      window.alert(
+        `OTA Safety READY 설정 완료 (${(res.prepared || []).join(", ")}). 다시 Promote Primary를 눌러 주세요.`,
+      );
+    } catch (e) {
+      setSafetyForceError(e?.message || String(e));
+    } finally {
+      setSafetyForceLoading(false);
+    }
+  };
+
+  const promoteAwaitingLabel = promoteConfirmProgress
+    ? `pygame 확인 (${promoteConfirmProgress.current}/${promoteConfirmProgress.total}${promoteConfirmProgress.carId ? ` · ${promoteConfirmProgress.carId}` : ""})…`
+    : "pygame 확인 대기…";
+
   return (
     <div className="campaign-action-bar-wrap">
+      <PromoteSafetyBlockedDialog
+        open={safetyBlockedCars.length > 0}
+        blockedCars={safetyBlockedCars}
+        forcing={safetyForceLoading}
+        forceError={safetyForceError}
+        onForceReady={handleForceSafetyReady}
+        onClose={() => {
+          if (!safetyForceLoading) {
+            setSafetyBlockedCars([]);
+            setSafetyForceError("");
+          }
+        }}
+      />
       <div className="campaign-action-flow">
         <div className="campaign-action-step">
           <button
@@ -251,9 +417,13 @@ export default function CampaignActionBar({
               className="btn btn-primary"
               disabled={promoteDisabled}
               title={promoteTitle}
-              onClick={onPromote}
+              onClick={handlePromoteClick}
             >
-              {promoteLoading ? 'Promoting…' : 'Promote Primary'}
+              {promoteAwaitingPygame
+                ? promoteAwaitingLabel
+                : promoteLoading
+                  ? "Promoting…"
+                  : "Promote Primary"}
             </button>
             <button
               type="button"
@@ -290,8 +460,9 @@ export default function CampaignActionBar({
       </div>
       {updateModeWarnings?.length ? (
         <div className="campaign-logs-alert campaign-logs-alert-muted tiny campaign-action-ota-warn">
-          OTA: {updateModeWarnings.join(' · ')} — Validate / Run Candidate /
-          Promote apply Prepare Demo READY automatically before each step.
+          OTA: {updateModeWarnings.join(' · ')} — Validate / Run Candidate는 자동
+          READY 준비를 사용할 수 있습니다. Promote Primary는 OTA Safety READY가
+          필수입니다.
         </div>
       ) : null}
     </div>

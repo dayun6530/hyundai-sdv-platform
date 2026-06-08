@@ -13,6 +13,7 @@ import {
 } from "../api/vehicleRuntime.js";
 import { normalizeOtaDockerVersionArg, pkgFeatureToOtaDomain } from "../dockerVersionUtils.js";
 import { carIdOptions } from "./rolloutModel.js";
+import { requestPygamePromoteConfirm } from "../api/pygameBridge.js";
 
 const DOMAINS = [
   { value: "ADAS", label: "ADAS" },
@@ -66,6 +67,7 @@ export default function DockerVehicleRuntimePanel({
   const [lastOut, setLastOut] = useState({ stdout: "", stderr: "", exit_code: null, label: "" });
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingQueueItems, setPendingQueueItems] = useState([]);
+  const [promoteAwaitingPygame, setPromoteAwaitingPygame] = useState(false);
 
   const deferMutatingOps = Boolean(integrationMode && queueMutatingDockerOps);
   const compactRuntimeUi = Boolean(integrationMode && integrationCompact);
@@ -226,17 +228,48 @@ export default function DockerVehicleRuntimePanel({
           postVehicleRuntimeDeployShadow({ car_id: activeCarId, domain: effectiveDomain, version: effectiveVersion }),
         );
 
-  const onPromote = () =>
-    deferMutatingOps
-      ? runOp("queue-promote", () => postVehicleRuntimeQueueOperation(queueBody("promote")))
-      : runOp("promote", () =>
-          postVehicleRuntimePromote({
-            car_id: activeCarId,
-            domain: effectiveDomain,
-            version: effectiveVersion,
-            sync_shadow: false,
-          }),
-        );
+  const promoteFeatureLabel = useMemo(() => {
+    if (integrationFeature) {
+      if (integrationFeature === "Energy") return "EV Energy";
+      return integrationFeature;
+    }
+    if (effectiveDomain === "EvEnergy") return "EV Energy";
+    if (effectiveDomain === "Navigation") return "Navigation";
+    return "ADAS";
+  }, [integrationFeature, effectiveDomain]);
+
+  const executePromote = () => {
+    if (deferMutatingOps) {
+      runOp("queue-promote", () => postVehicleRuntimeQueueOperation(queueBody("promote")));
+    } else {
+      runOp("promote", () =>
+        postVehicleRuntimePromote({
+          car_id: activeCarId,
+          domain: effectiveDomain,
+          version: effectiveVersion,
+          sync_shadow: false,
+        }),
+      );
+    }
+  };
+
+  const onPromote = async () => {
+    if (busy || promoteAwaitingPygame) return;
+    setPromoteAwaitingPygame(true);
+    try {
+      const accepted = await requestPygamePromoteConfirm({
+        feature: promoteFeatureLabel,
+        version: effectiveVersion ? `v${versionForTag || effectiveVersion}` : "",
+        message: `${promoteFeatureLabel} feature의 새 버전을 Primary로 업데이트하시겠습니까?`,
+        detail: `차량: ${activeCarId}\n버전: v${effectiveVersion || "—"}`,
+      });
+      if (accepted) executePromote();
+    } catch (e) {
+      setError(e?.message || String(e));
+    } finally {
+      setPromoteAwaitingPygame(false);
+    }
+  };
 
   const onApplyPending = () => runOp("apply-pending", () => postVehicleRuntimeApplyPending());
 
@@ -331,7 +364,7 @@ export default function DockerVehicleRuntimePanel({
               path). Requires Docker in WSL, images like <code className="mono">sdv/adas-feature:v1.0</code>.
             </p>
             <p className="rollout-subtitle subtle" style={{ marginTop: "0.35rem" }}>
-              위 Fleet 표의 <strong>A/B 슬롯</strong>은 <code className="mono">deploy/state/*.json</code> + DeploymentMgr
+              위 Fleet 표의 <strong>Primary/Candidate 역할</strong>은 <code className="mono">deploy/state/*.json</code> + DeploymentMgr
               모델이고, 이 카드의 <strong>버전 숫자</strong>는 Docker 이미지 태그(
               <code className="mono">sdv/adas-feature:v1.0</code> 등)와 별개입니다.
             </p>
@@ -481,8 +514,17 @@ export default function DockerVehicleRuntimePanel({
               <button type="button" className="btn" disabled={busy || scriptMissing} onClick={onDeployShadow}>
                 {deferMutatingOps ? "Queue deploy to shadow only" : "Deploy to shadow only"}
               </button>
-              <button type="button" className="btn" disabled={busy || scriptMissing} onClick={onPromote}>
-                {deferMutatingOps ? "Queue promote primary" : "Promote primary"}
+              <button
+                type="button"
+                className="btn"
+                disabled={busy || promoteAwaitingPygame || scriptMissing}
+                onClick={onPromote}
+              >
+                {promoteAwaitingPygame
+                  ? "pygame 확인 대기…"
+                  : deferMutatingOps
+                    ? "Queue promote primary"
+                    : "Promote primary"}
               </button>
               {deferMutatingOps ? (
                 <button type="button" className="btn btn-primary" disabled={busy || scriptMissing} onClick={onApplyPending}>

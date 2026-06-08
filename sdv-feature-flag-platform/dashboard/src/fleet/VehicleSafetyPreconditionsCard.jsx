@@ -1,37 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  fetchVehicleSafetyState,
-  prepareVehicleDemoReady,
-  updateVehicleSafetyState,
-} from "../api/campaigns.js";
-import { getOtaSafetyChecklist } from "./fleetDashboardModel.js";
-import { RawJsonDetails, StatusBadge } from "./campaignShared.jsx";
+  fetchFleetSafety,
+  prepareFleetDemoReady,
+  updateFleetSafety,
+} from "../api/safety.js";
+import { StatusBadge } from "./campaignShared.jsx";
 
-const UPDATE_MODE_OPTIONS = ["READY", "COMPLETED", "FAILED", "DOWNLOADING", "READY_TO_INSTALL", "INSTALLING"];
-const DOWNLOAD_OPTIONS = ["not_started", "downloading", "downloaded", "failed"];
-const INSTALL_OPTIONS = ["not_started", "installing", "installed", "failed"];
-
-function badgeForDemoReady(ready) {
+function badgeForReady(ready) {
   return ready ? "status-green" : "status-red";
 }
 
-async function fetchFleetStateForCar(carId) {
-  const id = encodeURIComponent(String(carId || "").trim());
-  try {
-    const res = await fetch(`/api/fleet/state/${id}`, { cache: "no-store" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) return null;
-    return data.state || null;
-  } catch {
-    return null;
-  }
-}
+const EDITABLE_FIELDS = [
+  { key: "speed", label: "Speed (km/h)", type: "number" },
+  { key: "gear", label: "Gear", type: "text" },
+  { key: "ignition", label: "Ignition", type: "text" },
+  { key: "battery", label: "Battery (%)", type: "number" },
+  { key: "network", label: "Network", type: "text" },
+  { key: "update_mode", label: "update_mode", type: "text" },
+];
 
 export default function VehicleSafetyPreconditionsCard({
   carId,
   feature = "ADAS",
   onChanged,
   defaultOpen = false,
+  prepareAction = "",
+  refreshToken = 0,
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [safety, setSafety] = useState(null);
@@ -39,30 +33,30 @@ export default function VehicleSafetyPreconditionsCard({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [fleetState, setFleetState] = useState(null);
 
   const load = useCallback(async () => {
     if (!carId) {
       setSafety(null);
       setDraft(null);
-      setFleetState(null);
       return;
     }
     setLoading(true);
     setError("");
-    const [res, st] = await Promise.all([fetchVehicleSafetyState(carId, feature), fetchFleetStateForCar(carId)]);
-    setFleetState(st);
+    const res = await fetchFleetSafety(carId, feature);
     if (!res.ok) {
       setSafety(null);
       setDraft(null);
       setError(res.error || "Failed to load safety state");
     } else {
       setSafety(res);
+      const v = res.snapshot?.values || {};
       setDraft({
-        update_mode: res.ota?.update_mode || "",
-        download_status: res.ota?.download_status || "",
-        install_status: res.ota?.install_status || "",
-        driver_approved: Boolean(res.ota?.driver_approved),
+        speed: v.speed ?? 0,
+        gear: v.gear ?? "P",
+        ignition: v.ignition ?? "OFF",
+        battery: v.battery ?? 0,
+        network: v.network ?? "DISCONNECTED",
+        update_mode: v.update_mode ?? "",
       });
     }
     setLoading(false);
@@ -70,20 +64,23 @@ export default function VehicleSafetyPreconditionsCard({
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshToken]);
 
   const applyResult = async (res) => {
     if (!res.ok) {
-      setError(res.error || "Safety update failed");
+      setError(res.error || res.message || "Safety update failed");
       return;
     }
     setError("");
     setSafety(res);
+    const v = res.snapshot?.values || {};
     setDraft({
-      update_mode: res.ota?.update_mode || "",
-      download_status: res.ota?.download_status || "",
-      install_status: res.ota?.install_status || "",
-      driver_approved: Boolean(res.ota?.driver_approved),
+      speed: v.speed ?? 0,
+      gear: v.gear ?? "P",
+      ignition: v.ignition ?? "OFF",
+      battery: v.battery ?? 0,
+      network: v.network ?? "DISCONNECTED",
+      update_mode: v.update_mode ?? "",
     });
     await onChanged?.(res);
   };
@@ -91,7 +88,7 @@ export default function VehicleSafetyPreconditionsCard({
   const saveDraft = async () => {
     if (!carId || !draft) return;
     setSaving(true);
-    const res = await updateVehicleSafetyState(carId, draft, feature);
+    const res = await updateFleetSafety(carId, { ...draft, source: "manual-demo" }, feature);
     await applyResult(res);
     setSaving(false);
   };
@@ -99,27 +96,35 @@ export default function VehicleSafetyPreconditionsCard({
   const onPrepareDemoReady = async () => {
     if (!carId) return;
     setSaving(true);
-    const res = await prepareVehicleDemoReady(carId, feature);
+    const res = await prepareFleetDemoReady(carId, feature, prepareAction);
     await applyResult(res);
     setSaving(false);
   };
+
+  const prepareLabel =
+    prepareAction === "promote"
+      ? "Prepare Demo READY for Promote"
+      : prepareAction === "rollback"
+        ? "Prepare Demo READY for Rollback"
+        : prepareAction === "candidate-deploy"
+          ? "Prepare Demo READY for Candidate"
+          : "Prepare Demo READY";
 
   if (!carId) {
     return (
       <div className="card campaign-safety-card">
         <h3>Safety Preconditions</h3>
         <p className="tiny subtle">
-          Select deployment target (vehicle or region) above to edit OTA demo
-          safety. For multi-vehicle targets, the first selected car is shown
-          here; Promote runs Prepare Demo READY on all targets automatically.
+          Select a deployment target above to view OTA safety preconditions. Values are simulated from{" "}
+          <code className="mono">deploy/state/*.json</code>, not live vehicle sensors.
         </p>
       </div>
     );
   }
 
-  const fleetChecklist = fleetState ? getOtaSafetyChecklist(fleetState.missing ? null : fleetState) : null;
-  const demoReady = safety?.demo_ready;
-  const demoLabel = safety?.demo_ready_label || (demoReady ? "YES" : "NO");
+  const ready = safety?.ready;
+  const checks = safety?.checks || [];
+  const failed = safety?.failed_checks || [];
 
   return (
     <details className="card campaign-safety-card" open={open} onToggle={(e) => setOpen(e.target.open)}>
@@ -128,24 +133,14 @@ export default function VehicleSafetyPreconditionsCard({
           <div>
             <h3>Safety Preconditions</h3>
             <p className="tiny subtle">
-              Demo safety controls — prepares <code className="mono">deploy/state/{carId}.json</code> for campaign
-              execution (does not run deploy).
+              {safety?.simulation_notice_ko ||
+                "현재 안전 조건 값은 실제 차량 센서가 아니라 데모용 state JSON 값을 기반으로 시뮬레이션됩니다."}
             </p>
           </div>
           <div className="vd-badge-row">
-            <StatusBadge text={`Demo Ready: ${demoLabel}`} className={badgeForDemoReady(demoReady)} />
-            {safety?.ota?.update_mode ? (
-              <StatusBadge
-                text={`update_mode ${safety.ota.update_mode}`}
-                className={safety.ota.update_mode === "READY" ? "status-green" : "status-yellow"}
-              />
-            ) : null}
-            {safety?.kill_switch ? <StatusBadge text="kill_switch ON" className="status-red" /> : null}
-            {!safety?.ota?.driver_approved && safety ? (
-              <StatusBadge text="driver not approved" className="status-yellow" />
-            ) : null}
-            {fleetChecklist && fleetChecklist.level !== "READY" ? (
-              <StatusBadge text={`Fleet gate: ${fleetChecklist.rolloutReadiness}`} className="status-yellow" />
+            <StatusBadge text={ready ? "READY" : "NOT READY"} className={badgeForReady(ready)} />
+            {safety?.source_label ? (
+              <StatusBadge text={`Source: ${safety.source_label}`} className="status-blue" />
             ) : null}
           </div>
         </div>
@@ -154,116 +149,87 @@ export default function VehicleSafetyPreconditionsCard({
       {loading ? <p className="tiny subtle">Loading safety state…</p> : null}
       {error ? <div className="campaign-logs-alert campaign-logs-alert-error tiny">{error}</div> : null}
 
-      {safety && !demoReady && safety.demo_ready_reasons?.length ? (
-        <ul className="warning-list tiny" style={{ marginTop: 8 }}>
-          {safety.demo_ready_reasons.map((r) => (
-            <li key={r}>{r}</li>
+      {!ready && failed.length ? (
+        <div className="campaign-logs-alert campaign-logs-alert-error tiny" style={{ marginTop: 8 }}>
+          Blocked checks: {failed.join(", ")}
+        </div>
+      ) : null}
+
+      {checks.length ? (
+        <ul className="campaign-validate-items tiny" style={{ marginTop: 10 }}>
+          {checks.map((c) => (
+            <li
+              key={c.key}
+              className={c.passed ? "campaign-validate-item-ok" : "campaign-validate-item-warn"}
+            >
+              <StatusBadge text={c.passed ? "PASS" : "FAIL"} className={c.passed ? "status-green" : "status-red"} />
+              <span>
+                <strong>{c.label}</strong>: {String(c.actual)} / required {c.required}
+                {!c.passed && c.reason ? ` — ${c.reason}` : ""}
+              </span>
+            </li>
           ))}
         </ul>
       ) : null}
 
       <div className="campaign-safety-actions">
         <button type="button" className="btn btn-primary" disabled={saving} onClick={onPrepareDemoReady}>
-          {saving ? "Applying…" : "Prepare Demo READY"}
+          {saving ? "Applying…" : prepareLabel}
         </button>
         <button type="button" className="btn" disabled={saving || loading} onClick={load}>
           Refresh
         </button>
         <span className="tiny subtle">
-          Sets OTA fields in state JSON only (not version_map / campaign package). Re-runs Validate for the selected
-          campaign automatically.
+          Updates <code className="mono">deploy/state/{carId}.json</code> safety fields only — does not change feature
+          versions or campaign state.
         </span>
       </div>
 
       {draft ? (
         <div className="campaign-safety-form">
-          <label className="campaign-safety-field">
-            <span>update_mode</span>
-            <select
-              className="select mono"
-              value={draft.update_mode}
-              onChange={(e) => setDraft((d) => ({ ...d, update_mode: e.target.value }))}
-            >
-              {UPDATE_MODE_OPTIONS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="campaign-safety-field">
-            <span>download_status</span>
-            <select
-              className="select mono"
-              value={draft.download_status}
-              onChange={(e) => setDraft((d) => ({ ...d, download_status: e.target.value }))}
-            >
-              {DOWNLOAD_OPTIONS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="campaign-safety-field">
-            <span>install_status</span>
-            <select
-              className="select mono"
-              value={draft.install_status}
-              onChange={(e) => setDraft((d) => ({ ...d, install_status: e.target.value }))}
-            >
-              {INSTALL_OPTIONS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="campaign-safety-field campaign-safety-check">
-            <input
-              type="checkbox"
-              checked={draft.driver_approved}
-              onChange={(e) => setDraft((d) => ({ ...d, driver_approved: e.target.checked }))}
-            />
-            <span>driver_approved</span>
-          </label>
+          {EDITABLE_FIELDS.map(({ key, label, type }) => (
+            <label key={key} className={`campaign-safety-field${type === "checkbox" ? " campaign-safety-check" : ""}`}>
+              {type === "checkbox" ? (
+                <>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(draft[key])}
+                    onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.checked }))}
+                  />
+                  <span>{label}</span>
+                </>
+              ) : (
+                <>
+                  <span>{label}</span>
+                  <input
+                    className="select mono"
+                    type={type}
+                    value={draft[key] ?? ""}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        [key]: type === "number" ? Number(e.target.value) : e.target.value,
+                      }))
+                    }
+                  />
+                </>
+              )}
+            </label>
+          ))}
           <button type="button" className="btn btn-primary" disabled={saving} onClick={saveDraft}>
-            {saving ? "Saving…" : "Apply changes"}
+            {saving ? "Saving…" : "Apply manual values"}
           </button>
         </div>
       ) : null}
 
-      {safety?.extra ? (
-        <details className="campaign-raw-details" style={{ marginTop: 10 }}>
-          <summary className="tiny subtle">Other OTA / vehicle signals (read-only)</summary>
-          <dl className="campaign-kv campaign-kv-wide">
-            {Object.entries(safety.extra).map(([k, v]) => (
-              <div key={k} style={{ display: "contents" }}>
-                <dt>{k}</dt>
-                <dd className="mono tiny">{String(v)}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
-      ) : null}
-
-      {fleetChecklist?.items?.length ? (
-        <details className="campaign-raw-details" style={{ marginTop: 8 }}>
-          <summary className="tiny subtle">Fleet deploy safety checklist</summary>
-          <ul className="campaign-validate-items tiny">
-            {fleetChecklist.items.map((item) => (
-              <li key={item.id} className={item.pass ? "campaign-validate-item-ok" : "campaign-validate-item-warn"}>
-                <StatusBadge text={item.pass ? "OK" : "WARN"} className={item.pass ? "status-green" : "status-yellow"} />
-                <span>
-                  {item.label} — {item.detail}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-
-      <RawJsonDetails label="Raw deploy/state ota (full file in Advanced)" data={fleetState} />
+      <details className="campaign-raw-details" style={{ marginTop: 10 }}>
+        <summary className="tiny subtle">Future: vehicle signal source</summary>
+        <p className="tiny subtle">
+          Demo mode uses values stored in deploy/state JSON. In a real vehicle, this snapshot can be populated from
+          vehicle signals or MQTT/Signal I/F, then passed through <code className="mono">normalizeSafetySnapshot()</code>{" "}
+          — the same <code className="mono">evaluateSafetyPreconditions()</code> logic applies.
+        </p>
+      </details>
     </details>
   );
 }

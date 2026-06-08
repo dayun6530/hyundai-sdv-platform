@@ -215,7 +215,7 @@ export default function App() {
                   <StatusDot status={health[view.id]} />
                   <span>
                     <span className="nav-item-title">{view.shortLabel}</span>
-                    <span className="nav-item-desc">{view.label}</span>
+                    <span className="nav-item-desc">{view.description || view.label}</span>
                   </span>
                 </span>
               </button>

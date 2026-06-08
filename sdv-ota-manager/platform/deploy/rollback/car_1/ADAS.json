@@ -1,6 +1,6 @@
 {
-  "rollback_id": "rollback_20260608_042812_001",
-  "timestamp": "2026-06-08T04:28:12",
+  "rollback_id": "rollback_20260608_075415_001",
+  "timestamp": "2026-06-08T07:54:15",
   "car_id": "car_1",
   "feature": "ADAS",
   "previous_slot": "B",

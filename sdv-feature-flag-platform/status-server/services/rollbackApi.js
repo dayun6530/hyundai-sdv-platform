@@ -7,6 +7,7 @@ const {
   buildRollbackStackEntry,
   pushEntryToFeatureState,
 } = require('./rollbackStackSync');
+const { assertSafetyReady } = require('./safetyPreconditionsApi');
 
 const FLEET_FEATURES = ['ADAS', 'Navigation', 'Energy'];
 
@@ -559,6 +560,24 @@ function registerRollbackRoutes(app, deps) {
     const syncConfig = req.body?.sync_config === true;
     if (!carRe.test(carId)) {
       res.status(400).json({ ok: false, error: 'car_id must be car_1 .. car_10' });
+      return;
+    }
+    const safety = assertSafetyReady(DEPLOY_ROOT, carId, {
+      feature,
+      action: 'rollback',
+    });
+    if (!safety.ready) {
+      res.status(409).json({
+        ok: false,
+        result: 'blocked',
+        safety_blocked: true,
+        reason: safety.message,
+        failed_checks: safety.failed_checks,
+        checks: safety.checks,
+        next_action: safety.next_action,
+        car_id: carId,
+        feature,
+      });
       return;
     }
     const out = applyRollback({

@@ -1,5 +1,6 @@
 #include "DeploymentManager/CampaignManager.h"
 #include "DeploymentManager/CampaignRunManager.h"
+#include "DeploymentManager/CampaignDocument.h"
 #include "DeploymentManager/DeploymentManager.h"
 #include "DeploymentManager/StateManager.h"
 
@@ -32,7 +33,8 @@ namespace {
             << "                      After a deferred fleet-deploy: copy packages → active for pending features, then promote pending→active in deploy/state.\n"
             << "                      Optional --feature limits apply to one fleet feature (campaign promote uses this).\n"
             << "                      Invoked automatically at car platform start when SDV_PLATFORM_DEPLOY_ROOT is set.\n"
-            << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n"
+            << "  fleet-deploy <SCOPE> <TARGET...> <FEATURE> <ROLE|LEGACY_SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n"
+            << "                      ROLE: primary|candidate (legacy internal slot A|B also accepted)\n"
             << "                      SCOPE=vehicle|group|region|group_region\n"
             << "                      vehicle: <car_id>\n"
             << "                      group: <group>\n"
@@ -589,9 +591,17 @@ int main(int argc, char* argv[]) {
             docker_runtime.mode = runtimeMode;
         }
         if (fd.size() < 5) {
-            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
+            std::cerr << "Usage: DeploymentMgr fleet-deploy <vehicle|group|region|group_region> <target...> <FEATURE> <ROLE|LEGACY_SLOT> <VERSION> [--sync-config] [--no-defer-native] [--docker-runtime[=candidate|promote]] [--docker-pull[=missing|always]]\n";
             return 1;
         }
+        const std::size_t slotIdx = (fd[0] == "group_region") ? 4 : 3;
+        const std::string slotNorm = sdv::platform::deployment::normalizeFleetDeploySlotArg(fd[slotIdx]);
+        if (slotNorm.empty()) {
+            std::cerr << "fleet-deploy: invalid deployment role: expected primary or candidate\n";
+            std::cerr << "fleet-deploy: (internal legacy slot must be A or B; got \"" << fd[slotIdx] << "\")\n";
+            return 1;
+        }
+        fd[slotIdx] = slotNorm;
         const std::string& scope = fd[0];
         sdv::platform::deployment::DeploymentManager::DeploySummary sum;
         if (scope == "vehicle") {

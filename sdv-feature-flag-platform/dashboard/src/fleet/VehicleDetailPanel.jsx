@@ -6,6 +6,7 @@ import {
   getOtaSafetyChecklist,
 } from "./fleetDashboardModel.js";
 import VehicleActionsSection from "./VehicleActionsSection.jsx";
+import { addRoleViewToFeatureState, legacySlotToLabel } from "./roleMapping.js";
 import { filterHistoryForCar, historyExtraCell } from "./vehicleHistoryFilter.js";
 
 const FEATURE_ORDER = ["ADAS", "Navigation", "Energy"];
@@ -33,9 +34,8 @@ function FeatureDetailCard({ name, feat }) {
   const kill = Boolean(feat.kill_switch);
   const shadow = Boolean(feat.shadow_enabled);
   const rollout = featureShadowRolloutActive(feat);
-  const primarySlot = feat.primary_slot || feat.active_slot || "—";
+  const roleView = addRoleViewToFeatureState(feat);
   const primaryVer = feat.primary_version || feat.active_version || "—";
-  const shadowSlot = feat.shadow_slot || "—";
   const shadowVer = feat.shadow_version || "—";
 
   return (
@@ -48,33 +48,42 @@ function FeatureDetailCard({ name, feat }) {
           <span className={`vd-mini-badge ${rollout ? "info" : shadow ? "info" : "ok"}`}>
             SHADOW {rollout ? "ROLLOUT" : shadow ? "ADMIN" : "OFF"}
           </span>
-          <span className="vd-mini-badge neutral">PRIMARY {primaryVer} (slot {primarySlot})</span>
+          <span className="vd-mini-badge neutral">PRIMARY {primaryVer}</span>
           <span className="vd-mini-badge neutral">
-            SHADOW {shadow ? `${shadowVer} (slot ${shadowSlot})` : "OFF"}
+            SHADOW {shadow ? shadowVer : "OFF"}
           </span>
-          {(feat.fallback_slot || feat.fallback_version) && (
+          {(feat.fallback_version) && (
             <span className="vd-mini-badge neutral">
-              FALLBACK {feat.fallback_slot || "—"} / {feat.fallback_version || "—"}
+              FALLBACK Primary {feat.fallback_version || "—"}
             </span>
           )}
         </div>
       </div>
       <div className="vd-feature-grid">
-        {kv("primary_slot", feat.primary_slot ?? "—")}
         {kv("primary_version", feat.primary_version ?? "—")}
         {kv("primary_image", feat.primary_image ?? "—")}
+        {kv("shadow_version", feat.shadow_version ?? "—")}
         {kv("shadow_image", feat.shadow_image ?? "—")}
-        {kv("active_slot", feat.active_slot)}
-        {kv("active_version", feat.active_version)}
         {kv("flag", feat.flag)}
         {kv("kill_switch", String(Boolean(feat.kill_switch)))}
-        {kv("kill_reason", feat.kill_reason || "—")}
+        {kv("kill_reason", feat.kill_reason || feat.previous_kill_reason || "—")}
+        {kv("kill_source", feat.kill_source || feat.clear_source || "—")}
+        {kv("killed_at", feat.killed_at || "—")}
+        {kv("cleared_at", feat.cleared_at || "—")}
         {kv("shadow_enabled", String(Boolean(feat.shadow_enabled)))}
-        {kv("shadow_slot", feat.shadow_slot)}
-        {kv("shadow_version", feat.shadow_version)}
-        {kv("fallback_slot", feat.fallback_slot)}
-        {kv("fallback_version", feat.fallback_version)}
+        {kv("fallback_version", feat.fallback_version ?? "—")}
       </div>
+      <details className="campaign-raw-details tiny subtle" style={{ marginTop: 8 }}>
+        <summary>Advanced · internal legacy slots</summary>
+        <div className="vd-feature-grid">
+          {kv("internal active_slot", roleView.internal?.active_slot ?? "—")}
+          {kv("internal primary_slot", roleView.internal?.primary_slot ?? "—")}
+          {kv("internal shadow_slot", roleView.internal?.shadow_slot ?? "—")}
+          {kv("internal fallback_slot", roleView.internal?.fallback_slot ?? "—")}
+          {kv("active_role", roleView.active_role ? legacySlotToLabel(roleView.internal?.active_slot) : "—")}
+          {kv("shadow_role", roleView.shadow_role ? legacySlotToLabel(roleView.internal?.shadow_slot) : "—")}
+        </div>
+      </details>
       {name === "Navigation" ? (
         <div className="vd-feature-extra">
           {kv("realtime_route_flag", feat.realtime_route_flag === undefined ? "—" : String(feat.realtime_route_flag))}

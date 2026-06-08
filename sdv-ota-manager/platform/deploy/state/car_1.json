@@ -19,7 +19,7 @@
       "docker_runtime_result": "success",
       "docker_runtime_mode": "promote",
       "docker_runtime_action": "promote",
-      "docker_runtime_time": "2026-06-08T04:28:37",
+      "docker_runtime_time": "2026-06-08T07:54:54",
       "docker_runtime_container": "car_1_agent_adas",
       "docker_runtime_image": "localhost:5000/sdv/adas-feature:v1.0",
       "pending_active_slot": "",
@@ -41,7 +41,16 @@
           "version": "v4.0",
           "docker_image": "",
           "previous_role": "primary",
-          "recorded_at": "2026-06-08T04:28:14",
+          "recorded_at": "2026-06-08T07:54:22",
+          "reason": "promoted_to_primary",
+          "status": "stable"
+        },
+        {
+          "slot": "B",
+          "version": "v1.0",
+          "docker_image": "",
+          "previous_role": "primary",
+          "recorded_at": "2026-06-08T07:49:46",
           "reason": "promoted_to_primary",
           "status": "stable"
         }
@@ -120,7 +129,7 @@
     "gear": "P",
     "speed": 0,
     "parking_brake": "ON",
-    "battery": 82,
+    "battery": 75,
     "driver_approved": true,
     "network": "CONNECTED",
     "target_system_running": false
@@ -133,11 +142,35 @@
     "deploy_id": "deploy_adas_004",
     "message": "ADAS v0.4 shadow installed"
   },
-  "last_deploy_id": "deploy_20260608_042814_car_1_ADAS",
+  "last_deploy_id": "deploy_20260608_075423_car_1_ADAS",
   "last_deploy_result": "success",
-  "last_deploy_time": "2026-06-08T04:28:14",
+  "last_deploy_time": "2026-06-08T07:54:23",
   "last_deploy_feature": "ADAS",
   "last_deploy_slot": "B",
   "last_deploy_version": "v1.0",
-  "last_deploy_reason": ""
+  "last_deploy_reason": "",
+  "safety": {
+    "source": "manual-demo",
+    "updated_at": "2026-06-07T23:10:05.236Z",
+    "values": {
+      "speed": 0,
+      "gear": "P",
+      "ignition": "OFF",
+      "battery": 75,
+      "driver_approved": true,
+      "network": "CONNECTED",
+      "update_mode": "READY",
+      "vehicle_mode": "PARKED",
+      "parking_brake": "ON",
+      "target_system_running": false,
+      "download_status": "downloaded",
+      "install_status": "not_started"
+    },
+    "last_evaluation": {
+      "ready": true,
+      "evaluated_at": "2026-06-07T23:10:05.236Z",
+      "failed_checks": [],
+      "source": "manual-demo"
+    }
+  }
 }

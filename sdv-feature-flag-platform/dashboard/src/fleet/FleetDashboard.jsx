@@ -27,22 +27,19 @@ function FeatureStatusBadge({ name, feat }) {
   const kill = Boolean(feat.kill_switch);
   const shadow = Boolean(feat.shadow_enabled);
   const rollout = featureShadowRolloutActive(feat);
-  const primarySlot = feat.primary_slot || feat.active_slot || "—";
   const primaryVer = feat.primary_version || feat.active_version || "—";
   const primaryImg = feat.primary_image || "";
 
-  const shadowSlot = feat.shadow_slot || "—";
   const shadowVer = feat.shadow_version || "—";
   const shadowImg = feat.shadow_image || "";
 
   const lines = [];
-  // Show Primary/Shadow explicitly (A/B is secondary detail).
   lines.push({
-    text: `PRIMARY → ${primaryVer}${primaryImg ? ` (${primaryImg})` : ""}  [slot ${primarySlot}]`,
+    text: `PRIMARY → ${primaryVer}${primaryImg ? ` (${primaryImg})` : ""}`,
     cls: "fb-line",
   });
   lines.push({
-    text: shadow ? `SHADOW  → ${shadowVer}${shadowImg ? ` (${shadowImg})` : ""}  [slot ${shadowSlot}]` : "SHADOW  → OFF",
+    text: shadow ? `SHADOW  → ${shadowVer}${shadowImg ? ` (${shadowImg})` : ""}` : "SHADOW  → OFF",
     cls: classNames("fb-line", shadow && "fb-info"),
   });
   lines.push({

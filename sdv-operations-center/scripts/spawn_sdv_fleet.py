@@ -90,17 +90,13 @@ def main() -> int:
     SetAutopilot = carla.command.SetAutopilot
     FutureActor = carla.command.FutureActor
 
-    batch = []
-    spawn_idx = 0
-    spawned_ids: list[int] = []
+    point_idx = 0
+    missing_after: list[str] = []
 
     for car_id in fleet_ids:
         if car_id in already:
             logging.info("Skip %s — already present (id=%s)", car_id, already[car_id].id)
             continue
-        if spawn_idx >= len(spawn_points):
-            logging.warning("No free spawn points left for %s", car_id)
-            break
 
         blueprint = random.choice(blueprints)
         if blueprint.has_attribute("color"):
@@ -108,26 +104,52 @@ def main() -> int:
             blueprint.set_attribute("color", color)
         blueprint.set_attribute("role_name", role_name_for_car_id(car_id))
 
-        transform = spawn_points[spawn_idx]
-        spawn_idx += 1
-        cmd = SpawnActor(blueprint, transform)
-        if car_id != "car_1":
-            cmd = cmd.then(SetAutopilot(FutureActor, True, tm.get_port()))
-        batch.append((car_id, cmd))
+        spawned = False
+        attempts = 0
+        while attempts < len(spawn_points):
+            transform = spawn_points[point_idx % len(spawn_points)]
+            point_idx += 1
+            attempts += 1
+            cmd = SpawnActor(blueprint, transform)
+            if car_id != "car_1":
+                cmd = cmd.then(SetAutopilot(FutureActor, True, tm.get_port()))
+            responses = client.apply_batch_sync([cmd], False)
+            response = responses[0] if responses else None
+            if response and not response.error:
+                spawned = True
+                logging.info(
+                    "Spawned %s actor id=%s role=%s (spawn attempt %s/%s)",
+                    car_id,
+                    response.actor_id,
+                    role_name_for_car_id(car_id),
+                    attempts,
+                    len(spawn_points),
+                )
+                break
+            err = response.error if response else "no response"
+            logging.warning("%s spawn attempt %s failed: %s", car_id, attempts, err)
 
-    for car_id, cmd in batch:
-        responses = client.apply_batch_sync([cmd], False)
-        for response in responses:
-            if response.error:
-                logging.error("%s spawn failed: %s", car_id, response.error)
-            else:
-                spawned_ids.append(response.actor_id)
-                logging.info("Spawned %s actor id=%s role=%s", car_id, response.actor_id, role_name_for_car_id(car_id))
+        if not spawned:
+            missing_after.append(car_id)
+            logging.error(
+                "Failed to spawn %s after %s spawn points — free map slots or reset CARLA",
+                car_id,
+                len(spawn_points),
+            )
 
-    total = len(existing_fleet(world))
+    final = existing_fleet(world)
+    total = len(final)
+    if missing_after:
+        logging.error(
+            "Missing vehicles in CARLA: %s — close other traffic scripts or run: "
+            "python spawn_sdv_fleet.py --count %s",
+            ", ".join(missing_after),
+            count,
+        )
     print(
         f"SDV fleet ready: {total}/{count} vehicles in CARLA "
-        f"(car_1=hero, car_2..car_{count}=autopilot). Keep this window open.",
+        f"({', '.join(sorted(final.keys())) or 'none'}). "
+        f"car_1=hero, car_2..car_{count}=autopilot. Keep this window open.",
         flush=True,
     )
 

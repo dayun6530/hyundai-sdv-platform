@@ -4,6 +4,7 @@ import {
   previewRollback,
   verifyRollback,
 } from "../api/rollback.js";
+import VehicleSafetyPreconditionsCard from "./VehicleSafetyPreconditionsCard.jsx";
 
 const FEATURES = ["ADAS", "Navigation", "Energy"];
 const FEATURE_LABELS = {
@@ -110,7 +111,14 @@ export default function RollbackPanel({
         sync_config: syncRollback,
       });
       if (!data.ok && data.result !== "no_op") {
-        setErr(data.reason || data.error || "Rollback failed");
+        if (data.safety_blocked) {
+          const checks = (data.failed_checks || []).join(", ");
+          setErr(
+            `${data.reason || "Safety preconditions not READY"}${checks ? ` (${checks})` : ""}`,
+          );
+        } else {
+          setErr(data.reason || data.error || "Rollback failed");
+        }
         setLastRestored(null);
       } else if (data.result === "no_op") {
         setSuccessMsg(data.warning || "No change (already at target version).");
@@ -170,6 +178,13 @@ export default function RollbackPanel({
       <p className="tiny subtle va-rollback-hint">
         Rollback target = stack 최신 항목(또는 선택한 버전). Apply 후 Fleet Dashboard Primary가 즉시 갱신됩니다.
       </p>
+
+      <VehicleSafetyPreconditionsCard
+        carId={carId}
+        feature="ADAS"
+        prepareAction="rollback"
+        onChanged={onFleetRefresh}
+      />
 
       <div className="va-rollback-rows">
         {FEATURES.map((feature) => {

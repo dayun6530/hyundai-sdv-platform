@@ -40,7 +40,12 @@
     "binary_name": { "type": "string", "description": "Legacy alias for executable_name" },
 
     "default_role": { "type": "string", "description": "Default package role (e.g. candidate/stable)" },
-    "slot_role": { "type": "string", "description": "Legacy role field retained for compatibility" },
+    "deployment_role": {
+      "type": "string",
+      "description": "Primary/Candidate deployment role for this package",
+      "enum": ["primary", "candidate"]
+    },
+    "slot_role": { "type": "string", "description": "Deprecated legacy alias retained for backward compatibility (maps to deployment_role)" },
     "supported_targets": {
       "type": "array",
       "items": { "type": "string" },
@@ -49,7 +54,24 @@
 
     "created_at": { "type": "string", "description": "UTC timestamp ISO-8601 (e.g. 2026-05-06T00:00:00Z)" },
     "status": { "type": "string", "description": "Optional lifecycle status for tooling (e.g. registered/built/failed)" },
-    "failure_reason": { "type": "string", "description": "Optional failure reason when status indicates failure" }
+    "failure_reason": { "type": "string", "description": "Optional failure reason when status indicates failure" },
+    "rollback": {
+      "type": "object",
+      "description": "Optional rollback policy metadata",
+      "properties": {
+        "fallback_role": {
+          "type": "string",
+          "enum": ["primary", "candidate"],
+          "description": "Fallback role used during rollback"
+        },
+        "fallback_slot": {
+          "type": "string",
+          "description": "Deprecated legacy internal slot (A=primary, B=candidate)"
+        },
+        "fallback_required": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
   },
   "required": ["domain", "feature", "version", "artifact_type", "docker_image", "checksum_file", "created_at", "supported_targets"]
 }

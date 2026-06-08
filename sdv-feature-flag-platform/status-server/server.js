@@ -34,6 +34,22 @@ const {
 } = require('./services/dockerImageAvailability');
 const { registerVehicleSafetyRoutes } = require('./services/vehicleSafetyApi');
 const {
+  registerSafetyPreconditionsRoutes,
+  assertSafetyReadyForCars,
+} = require('./services/safetyPreconditionsApi');
+const {
+  addRoleViewToVersionMap,
+  enrichFleetStateWithRoleView,
+  enrichManifestForWrite,
+  resolveLegacySlotFromRequest,
+  roleToLabel,
+  legacySlotToRole,
+  roleToLegacySlot,
+  normalizeRole,
+  translateHistoryRecordForDisplay,
+  buildUiSummary,
+} = require('./services/roleMapping');
+const {
   startVehicleRuntimeCmdPoller,
   syncCarsVehicleRuntimeToCmd,
   syncAllCarsVehicleRuntimeToCmd,
@@ -49,6 +65,10 @@ const {
 const {
   registerDockerPackagePipelineRoutes,
 } = require('./services/dockerPackagePipelineApi');
+const {
+  registerIntegratedKillSwitchRoutes,
+  applyIntegratedKillSwitch,
+} = require('./services/integratedKillSwitchApi');
 const {
   mqttFlagCache,
   forceOfflineFeatureFlags,
@@ -1891,7 +1911,12 @@ app.get('/api/fleet/version-map', (_req, res) => {
       return res.json({ ok: true, raw: null, warnings });
     }
     const data = readJson(filePath);
-    res.json({ ok: true, raw: data, warnings });
+    res.json({
+      ok: true,
+      raw: data,
+      role_view: addRoleViewToVersionMap(data),
+      warnings,
+    });
   } catch (err) {
     warnings.push(`version_map.json: ${err.message}`);
     res.json({ ok: false, raw: null, warnings });
@@ -2137,7 +2162,11 @@ app.post('/api/fleet/package-register', (req, res) => {
     0,
     Math.min(100, Number(body.min_battery) || 30),
   );
-  const fallback_slot = body.fallback_slot === 'B' ? 'B' : 'A';
+  const fallback_role =
+    normalizeRole(body.fallback_role) ||
+    legacySlotToRole(body.fallback_slot === 'B' ? 'B' : 'A') ||
+    'primary';
+  const fallback_slot = roleToLegacySlot(fallback_role) || 'A';
 
   const now = new Date().toISOString();
   const package_id =
@@ -2170,7 +2199,7 @@ app.post('/api/fleet/package-register', (req, res) => {
   const binary_name = String(body.binary_name || '').trim() || binary;
   const executable_name = String(body.executable_name || '').trim() || binary;
 
-  const manifest = {
+  const manifest = enrichManifestForWrite({
     // NOTE: manifest.schema.json uses "domain" to mean the high-level feature domain (ADAS/Navigation/Energy).
     // For this UI/server, "feature" already carries that domain label; we write both for compatibility.
     domain: feature,
@@ -2212,10 +2241,11 @@ app.post('/api/fleet/package-register', (req, res) => {
       },
     },
     rollback: {
+      fallback_role,
       fallback_slot,
       fallback_required: true,
     },
-  };
+  });
 
   const shapeErr = validateManifestShape(manifest);
   if (shapeErr) {
@@ -2289,17 +2319,28 @@ app.post('/api/fleet/package-register', (req, res) => {
 app.post('/api/fleet/version-map/assign', (req, res) => {
   const body = req.body || {};
   const package_id = String(body.package_id || '').trim();
-  const slotRaw = String(body.slot || '')
-    .trim()
-    .toUpperCase();
   const featureIn = String(body.feature || '').trim();
 
   if (!package_id) {
     res.status(400).json({ ok: false, error: 'package_id is required' });
     return;
   }
+
+  let resolved;
+  try {
+    resolved = resolveLegacySlotFromRequest(body);
+  } catch (err) {
+    res.status(err.statusCode || 400).json({ ok: false, error: err.message });
+    return;
+  }
+
+  const slotRaw = resolved.slot;
   if (slotRaw !== 'A' && slotRaw !== 'B') {
-    res.status(400).json({ ok: false, error: 'slot must be A or B' });
+    res.status(400).json({
+      ok: false,
+      error: 'role must be primary or candidate',
+      detail: 'internal legacy slot must be A or B',
+    });
     return;
   }
 
@@ -2378,7 +2419,8 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
   ) {
     res.status(400).json({
       ok: false,
-      error: `version_map missing ${feature}.${slotRaw} slot`,
+      error: `version_map missing ${feature} entry for role ${resolved.role_label || resolved.role}`,
+      detail: `internal legacy slot ${slotRaw} not found`,
     });
     return;
   }
@@ -2426,9 +2468,19 @@ app.post('/api/fleet/version-map/assign', (req, res) => {
   res.json({
     ok: true,
     feature,
+    role: resolved.role,
+    role_label: resolved.role_label,
+    internal_legacy_slot: slotRaw,
     slot: slotRaw,
     previous,
     assigned,
+    ui_summary: {
+      feature,
+      role: resolved.role,
+      role_label: resolved.role_label,
+      version,
+      internal_legacy_slot: slotRaw,
+    },
     version_map_path: vmRel,
     backup_path: 'deploy/version_map.json.bak',
     warnings,
@@ -2976,7 +3028,7 @@ function readFleetStatesCar1To10(warnings) {
 app.get('/api/fleet/state', async (_req, res) => {
   const warnings = [];
   try {
-    const states = readFleetStatesCar1To10(warnings);
+    const states = readFleetStatesCar1To10(warnings).map(enrichFleetStateWithRoleView);
     const probeMap = await probeFleetCarProcessesWsl(warnings);
     mergeRuntimeProbeIntoStates(states, probeMap, warnings);
     forceOfflineFeatureFlags(states, probeMap, warnings);
@@ -3033,10 +3085,31 @@ app.get('/api/fleet/fleet-history', (req, res) => {
   const lim = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
   const { records, skipped_lines, total_lines, parsed_total } =
     readFleetHistoryJsonl(lim, warnings);
+  const enriched = records.map((rec) => {
+    const display = translateHistoryRecordForDisplay(rec);
+    const slot =
+      rec.target_slot ||
+      rec.internal_legacy_slot ||
+      rec.legacy_slot ||
+      null;
+    const role =
+      display.target_role ||
+      legacySlotToRole(slot) ||
+      normalizeRole(rec.target_role);
+    return {
+      ...display,
+      ui_summary: buildUiSummary({
+        feature: rec.feature,
+        role,
+        version: rec.version || rec.target_version,
+        legacySlot: slot,
+      }),
+    };
+  });
   res.json({
     ok: true,
-    records,
-    record_count: records.length,
+    records: enriched,
+    record_count: enriched.length,
     skipped_lines,
     total_lines,
     parsed_total,
@@ -3068,7 +3141,7 @@ app.get('/api/fleet/state/:carId', (req, res) => {
   const carId = String(req.params.carId || '');
   const filePath = path.join(DEPLOY_ROOT, 'state', `${carId}.json`);
   try {
-    const data = readJson(filePath);
+    const data = enrichFleetStateWithRoleView(readJson(filePath));
     res.json({ ok: true, state: data });
   } catch (err) {
     res.status(404).json({ ok: false, error: err.message, file: filePath });
@@ -3649,9 +3722,64 @@ app.post('/api/fleet/action', async (req, res) => {
       res.status(400).json({ ok: false, error: 'reason is required' });
       return;
     }
-    const sync_config = req.body?.sync_config === true;
-    cmd += `fleet-kill vehicle ${car_id} ${feature} ${bashSingleQuote(reason)}`;
-    if (sync_config) cmd += ' --sync-config';
+    try {
+      const integrated = await applyIntegratedKillSwitch(
+        {
+          DEPLOY_ROOT,
+          PLATFORM_DEPLOY_ROOT,
+          mqttFlagCache,
+          execWslBash,
+          detectDeploymentMgrPath,
+          toWslPath,
+          bashSingleQuote,
+        },
+        {
+          car_id,
+          feature,
+          reason,
+          source: 'dashboard',
+          kill: true,
+          send_runtime: req.body?.send_runtime !== false,
+          apply_fleet_kill_policy: true,
+          sync_config: req.body?.sync_config === true,
+        },
+      );
+      if (integrated.ok && RUNTIME_DOCKER_CAR_RE.test(car_id)) {
+        syncRuntimeCmdForCars([car_id]);
+      }
+      notifyCarVersionChange(car_id, feature, {
+        messagePrimary: `Kill switch ${integrated.kill_switch ? 'ON' : 'OFF'} for ${feature}.`,
+        plainConsoleLine: `kill-switch ${integrated.kill_switch ? 'ON' : 'OFF'} OK`,
+      });
+      const fk = integrated.fleet_kill || {};
+      res.json({
+        ok: integrated.ok,
+        action: 'kill',
+        car_id,
+        feature,
+        exit_code: fk.exit_code ?? (integrated.ok ? 0 : 1),
+        stdout: fk.stdout || '',
+        stderr: fk.stderr || '',
+        summary_json: fk.summary_json || {
+          action: 'kill-switch',
+          kill_switch: true,
+          kill_reason: reason,
+          feature,
+          car_id,
+        },
+        ...integrated,
+      });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({
+        ok: false,
+        action: 'kill',
+        car_id,
+        feature,
+        error: err.message,
+        details: err.details,
+      });
+    }
+    return;
   } else if (action === 'shadow') {
     const shadow_action = String(req.body?.shadow_action || '')
       .trim()
@@ -4626,6 +4754,7 @@ registerCampaignRunRoutes(app, {
 registerFleetStalePendingRoutes(app, { DEPLOY_ROOT });
 
 registerVehicleSafetyRoutes(app, { DEPLOY_ROOT, syncRuntimeCmdForCars });
+registerSafetyPreconditionsRoutes(app, { DEPLOY_ROOT, syncRuntimeCmdForCars });
 registerTelemetryCollectorConfigRoutes(app, { repoRoot: REPO_ROOT });
 
 registerRollbackRoutes(app, {
@@ -4647,6 +4776,16 @@ registerDockerPackagePipelineRoutes(app, {
       syncFleetStateAfterDockerRuntime(t.car_id, ff, 'bootstrap', t.version, false);
     }
   },
+});
+
+registerIntegratedKillSwitchRoutes(app, {
+  DEPLOY_ROOT,
+  PLATFORM_DEPLOY_ROOT,
+  mqttFlagCache,
+  execWslBash,
+  detectDeploymentMgrPath,
+  toWslPath,
+  bashSingleQuote,
 });
 
 const SDV_MQTT_BROKER_URI = String(

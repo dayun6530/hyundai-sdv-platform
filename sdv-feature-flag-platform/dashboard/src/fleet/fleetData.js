@@ -20,7 +20,7 @@ export function loadVehiclesNormalized(payload) {
 
 /**
  * @param {unknown} payload
- * @returns {{ rows: { feature: string, slotA: any, slotB: any }[], raw: any, warnings: string[] }}
+ * @returns {{ rows: { feature: string, primary: any, candidate: any, legacySlotPrimary: string, legacySlotCandidate: string }[], raw: any, warnings: string[] }}
  */
 export function loadVersionMapNormalized(payload) {
   const warnings = Array.isArray(payload?.warnings) ? [...payload.warnings] : [];
@@ -28,6 +28,11 @@ export function loadVersionMapNormalized(payload) {
   const features = raw?.features || {};
   const rows = FEATURE_ORDER.map((feature) => ({
     feature,
+    primary: features[feature]?.A ?? null,
+    candidate: features[feature]?.B ?? null,
+    legacySlotPrimary: "A",
+    legacySlotCandidate: "B",
+    // backward compat for any code still reading slotA/slotB
     slotA: features[feature]?.A ?? null,
     slotB: features[feature]?.B ?? null,
   }));

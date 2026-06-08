@@ -4,12 +4,13 @@ import { computeOtaSafetyFleet, getEffectiveVehicleStatus } from "./fleetDashboa
 import {
   buildFleetDeployCliPreview,
   carIdOptions,
+  DEPLOYMENT_ROLES,
   getVersionMapSlotEntry,
   matchVehiclesForScope,
 } from "./rolloutModel.js";
+import { legacySlotToLabel, roleToLegacySlot } from "./roleMapping.js";
 
 const FEATURES = ["ADAS", "Navigation", "Energy"];
-const SLOTS = ["A", "B"];
 const SCOPES = [
   { value: "vehicle", label: "vehicle (single car)" },
   { value: "group", label: "group" },
@@ -28,7 +29,8 @@ export default function FleetDeployPanel({
   deployError,
 }) {
   const [feature, setFeature] = useState("ADAS");
-  const [slot, setSlot] = useState("B");
+  const [deploymentRole, setDeploymentRole] = useState("candidate");
+  const slot = roleToLegacySlot(deploymentRole);
   const [scope, setScope] = useState("group_region");
   const [carId, setCarId] = useState("car_1");
   const [group, setGroup] = useState("canary");
@@ -147,7 +149,7 @@ export default function FleetDeployPanel({
         <div>
           <h2>Create Rollout Campaign</h2>
           <p className="rollout-subtitle subtle">
-            Campaign-style form for <code className="mono">fleet-deploy</code> (no campaign file is saved in this step). Slot versions come from{" "}
+            Campaign-style form for <code className="mono">fleet-deploy</code> (no campaign file is saved in this step). Primary/Candidate versions come from{" "}
             <code className="mono">version_map.json</code>; packages registered under <code className="mono">deploy/package_registry.json</code> can be wired to slots in a later step.
           </p>
         </div>
@@ -169,13 +171,19 @@ export default function FleetDeployPanel({
         </section>
 
         <section className="rollout-block">
-          <h3 className="rollout-step-title">2. Slot</h3>
-          <p className="tiny rollout-hint">B is recommended for candidate rollouts; A is typically stable.</p>
+          <h3 className="rollout-step-title">2. Deployment role</h3>
+          <p className="tiny rollout-hint">Candidate is recommended for validation rollouts; Primary is typically stable production.</p>
           <div className="rollout-chip-row">
-            {SLOTS.map((s) => (
-              <label key={s} className={`rollout-chip ${slot === s ? "active" : ""}`}>
-                <input type="radio" name="rollout-slot" value={s} checked={slot === s} onChange={() => setSlot(s)} />
-                <span>Slot {s}</span>
+            {DEPLOYMENT_ROLES.map((r) => (
+              <label key={r.value} className={`rollout-chip ${deploymentRole === r.value ? "active" : ""}`}>
+                <input
+                  type="radio"
+                  name="rollout-role"
+                  value={r.value}
+                  checked={deploymentRole === r.value}
+                  onChange={() => setDeploymentRole(r.value)}
+                />
+                <span>{r.label}</span>
               </label>
             ))}
           </div>
@@ -183,7 +191,10 @@ export default function FleetDeployPanel({
 
         <section className="rollout-block">
           <h3 className="rollout-step-title">3. Version map (read-only)</h3>
-          <p className="tiny rollout-hint">Values come from <code className="mono">deploy/version_map.json</code> for the selected feature and slot.</p>
+          <p className="tiny rollout-hint">
+            Values come from <code className="mono">deploy/version_map.json</code> for the selected feature and{" "}
+            {legacySlotToLabel(slot)} role.
+          </p>
           <div className="rollout-readonly-grid">
             <div>
               <div className="label">version</div>
@@ -275,18 +286,19 @@ export default function FleetDeployPanel({
                     const missing = !st || st.missing;
                     const safety = computeOtaSafetyFleet(missing ? null : st);
                     const feat = missing ? null : st.features?.[feature];
-                    const curSlot = feat?.active_slot ?? "—";
+                    const curRoleLabel = feat?.role_labels?.active || legacySlotToLabel(feat?.active_slot) || "—";
                     const curVer = feat?.active_version ?? "—";
-                    const tgt = `${slot} / ${targetVersion || "—"}`;
+                    const tgt = `${legacySlotToLabel(slot)} / ${targetVersion || "—"}`;
                     const sameTarget =
-                      !missing && String(feat?.active_slot) === String(slot) && String(feat?.active_version) === String(targetVersion);
+                      !missing &&
+                      String(feat?.active_slot) === String(slot) &&
+                      String(feat?.active_version) === String(targetVersion);
                     const appr = missing ? "—" : st.ota?.driver_approved ? "Approved" : "Waiting Driver Approval";
                     const net = missing ? "—" : String(st.ota?.network ?? "—");
                     const effStatus = missing ? "missing" : getEffectiveVehicleStatus(st, v);
 
                     const notes = [];
                     if (sameTarget) notes.push("Already on target version");
-                    if (!missing && st.ota?.driver_approved === false) notes.push("Waiting approval — rollout may fail");
                     if (!missing && safety.level === "BLOCKED") notes.push("Safety blocked — rollout may fail");
 
                     return (
@@ -306,10 +318,10 @@ export default function FleetDeployPanel({
                         </td>
                         <td className="tiny mono">
                           <div>
-                            {feature}: {curSlot} / {curVer} → {tgt}
+                            {feature}: {curRoleLabel} / {curVer} → {tgt}
                           </div>
                           <div className="rollout-meta-line">
-                            Current: {curSlot} / {curVer}
+                            Current: {curRoleLabel} / {curVer}
                           </div>
                           <div className="rollout-meta-line">
                             Target: {tgt}

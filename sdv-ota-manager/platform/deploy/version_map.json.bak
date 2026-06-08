@@ -3,9 +3,11 @@
   "features": {
     "ADAS": {
       "A": {
-        "version": "v1.0",
-        "role": "stable",
-        "binary": "AdasFeature"
+        "version": "v0.4",
+        "binary": "AdasFeature",
+        "role": "candidate",
+        "package_id": "ADAS_v0.4_20260507_090035",
+        "package_path": "deploy/packages/ADAS/v0.4"
       },
       "B": {
         "version": "v1.0",
@@ -36,11 +38,11 @@
         "binary": "EvEnergyFeature"
       },
       "B": {
-        "version": "v3.0",
+        "version": "v1.0",
         "role": "candidate",
         "binary": "EvEnergyFeature",
-        "package_id": "Energy_v3.0",
-        "package_path": "deploy/packages/Energy/v3.0"
+        "package_id": "Energy_v1.0",
+        "package_path": "deploy/packages/Energy/v1.0"
       }
     }
   }

@@ -2,6 +2,8 @@
  * Client-side helpers for Campaign / Rollout preview (no API).
  */
 
+import { DEPLOYMENT_ROLES, legacySlotToLabel, roleToLegacySlot, normalizeRole } from "./roleMapping.js";
+
 const DEFAULT_CAR_IDS = Array.from({ length: 10 }, (_, i) => `car_${i + 1}`);
 
 export function carIdOptions(vehicles) {
@@ -27,27 +29,39 @@ export function matchVehiclesForScope(vehicles, scope, opts) {
   }
 }
 
-export function getVersionMapSlotEntry(raw, feature, slot) {
+/** @param {string} slotOrRole legacy A/B or primary/candidate */
+export function resolveLegacySlot(slotOrRole) {
+  return roleToLegacySlot(slotOrRole) || String(slotOrRole || "").trim().toUpperCase();
+}
+
+export function getVersionMapSlotEntry(raw, feature, slotOrRole) {
+  const slot = resolveLegacySlot(slotOrRole);
   const e = raw?.features?.[feature]?.[slot];
   if (!e || typeof e !== "object") return null;
   return {
     version: e.version || "",
     role: e.role || "",
     binary: e.binary || "",
+    deployment_role: normalizeRole(slot) || normalizeRole(e.role),
+    deployment_role_label: legacySlotToLabel(slot),
+    internal_legacy_slot: slot,
   };
 }
 
 /**
  * Human-readable CLI (DeploymentMgr name only; status-server uses resolved binary path).
  */
-export function buildFleetDeployCliPreview({ scope, carId, group, region, feature, slot, version, syncConfig }) {
+export function buildFleetDeployCliPreview({ scope, carId, group, region, feature, slot, role, version, syncConfig }) {
+  const legacySlot = resolveLegacySlot(role || slot);
   let mid = "";
   if (scope === "vehicle") mid = `${carId} `;
   else if (scope === "group") mid = `${group} `;
   else if (scope === "region") mid = `${region} `;
   else if (scope === "group_region") mid = `${group} ${region} `;
 
-  let cmd = `DeploymentMgr fleet-deploy ${scope} ${mid}${feature} ${slot} ${version}`;
+  let cmd = `DeploymentMgr fleet-deploy ${scope} ${mid}${feature} ${legacySlot} ${version}`;
   if (syncConfig) cmd += " --sync-config";
   return cmd;
 }
+
+export { DEPLOYMENT_ROLES };

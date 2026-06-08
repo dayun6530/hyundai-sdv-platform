@@ -3,9 +3,11 @@
   "features": {
     "ADAS": {
       "A": {
-        "version": "v1.0",
-        "role": "stable",
-        "binary": "AdasFeature"
+        "version": "v0.4",
+        "binary": "AdasFeature",
+        "role": "candidate",
+        "package_id": "ADAS_v0.4_20260507_090035",
+        "package_path": "deploy/packages/ADAS/v0.4"
       },
       "B": {
         "version": "v1.0",

@@ -105,15 +105,15 @@
   },
   "ota": {
     "download_status": "downloaded",
-    "install_status": "installed",
+    "install_status": "not_started",
     "vehicle_mode": "PARKED",
     "ignition": "OFF",
-    "update_mode": "COMPLETED",
+    "update_mode": "READY",
     "ota_phase": "INSTALL_COMPLETED",
     "gear": "P",
     "speed": 0,
     "parking_brake": "ON",
-    "battery": 82,
+    "battery": 75,
     "driver_approved": true,
     "network": "CONNECTED",
     "target_system_running": false
@@ -132,5 +132,29 @@
   "last_deploy_feature": "",
   "last_deploy_slot": "B",
   "last_deploy_version": "",
-  "last_deploy_reason": ""
+  "last_deploy_reason": "",
+  "safety": {
+    "source": "manual-demo",
+    "updated_at": "2026-06-07T23:15:34.596Z",
+    "values": {
+      "speed": 0,
+      "gear": "P",
+      "ignition": "OFF",
+      "battery": 75,
+      "driver_approved": true,
+      "network": "CONNECTED",
+      "update_mode": "READY",
+      "vehicle_mode": "PARKED",
+      "parking_brake": "ON",
+      "target_system_running": false,
+      "download_status": "downloaded",
+      "install_status": "not_started"
+    },
+    "last_evaluation": {
+      "ready": true,
+      "evaluated_at": "2026-06-07T23:15:34.596Z",
+      "failed_checks": [],
+      "source": "manual-demo"
+    }
+  }
 }

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import mqtt from "mqtt";
 
 const DEFAULT_FEATURES = [
-  { label: "Navigation", name: "NavigationFeature" },
-  { label: "ADAS", name: "AdasFeature" },
-  { label: "EV Energy", name: "EvEnergyFeature" },
+  { label: "Navigation", name: "NavigationFeature", stateKey: "Navigation" },
+  { label: "ADAS", name: "AdasFeature", stateKey: "ADAS" },
+  { label: "EV Energy", name: "EvEnergyFeature", stateKey: "Energy" },
 ];
 
 const SUB_FEATURES = {
@@ -270,19 +270,62 @@ export default function App() {
     await publishFlagsState(id, next);
   };
 
+  const statusApiBase = import.meta.env.VITE_STATUS_API || "";
+  const [killSyncLog, setKillSyncLog] = useState([]);
+
   const onKill = async (feature) => {
     const id = normalizeCarId(carId);
+    const meta = DEFAULT_FEATURES.find((f) => f.name === feature);
+    const stateKey = meta?.stateKey || feature;
     const next = { ...(uiByCar[id] || ui) };
     next[feature] = { ...(next[feature] || {}), mainOn: false };
     for (const s of SUB_FEATURES[feature] || []) {
       next[feature][s.key] = false;
     }
     applyUiSlice(id, next);
-    await publish(`KILL:${feature}`);
+    const runtimePayload = `KILL:${feature}`;
+    await publish(runtimePayload);
+    // Retained flags/state OFF (separate from deploy/state kill_switch — runtime mirror only).
     await publishFlagsState(id, next);
+
+    const logLines = [`Runtime KILL sent: ${runtimePayload}`];
+    try {
+      const res = await fetch(`${statusApiBase}/api/fleet/kill-switch`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          car_id: id,
+          feature: stateKey,
+          runtime_feature: feature,
+          kill: true,
+          reason: "MQTT TEST runtime kill",
+          source: "mqtt-test-ui",
+          send_runtime: false,
+          apply_fleet_kill_policy: false,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        logLines.push(`Deploy state sync FAILED: ${data.error || res.statusText}`);
+      } else {
+        logLines.push(`Deploy state synced: ${stateKey} KILL ${data.kill_switch ? "ON" : "OFF"}`);
+        logLines.push(`History written: ${data.history_written ? "success" : "unknown"}`);
+        if (data.runtime_dispatched) {
+          logLines.push("Runtime dispatch (server): sent");
+        }
+      }
+    } catch (e) {
+      logLines.push(`Deploy state sync FAILED: ${e.message}`);
+    }
+    setKillSyncLog((prev) => [{ ts: nowIso(), feature, lines: logLines }, ...prev].slice(0, 12));
   };
 
-  const statusApiBase = import.meta.env.VITE_STATUS_API || "";
+  const onKillAll = async () => {
+    for (const f of DEFAULT_FEATURES) {
+      await onKill(f.name);
+    }
+  };
+
   const [collectorBatch, setCollectorBatch] = useState(50);
   const [collectorFlush, setCollectorFlush] = useState(1000);
   const [publishDefault, setPublishDefault] = useState(2000);
@@ -413,6 +456,23 @@ export default function App() {
             </div>
           ))}
         </div>
+        <div className="buttons" style={{ marginTop: 12 }}>
+          <button type="button" className="btn kill" onClick={onKillAll}>
+            KILL ALL (runtime + deploy state per feature)
+          </button>
+        </div>
+        {killSyncLog.length ? (
+          <div className="kill-sync-log" style={{ marginTop: 12 }}>
+            <div className="hint">Integrated Kill Switch sync (MQTT TEST → status-server)</div>
+            <ul className="mono tiny">
+              {killSyncLog.map((entry, idx) => (
+                <li key={`${entry.ts}-${entry.feature}-${idx}`}>
+                  [{entry.ts}] {entry.feature}: {entry.lines.join(" · ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
       <section className="card">

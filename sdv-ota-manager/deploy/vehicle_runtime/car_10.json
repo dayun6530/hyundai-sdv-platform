@@ -2,13 +2,13 @@
   "car_id": "car_10",
   "domains": {
     "adas": {
-      "primary_version": "v4.0",
+      "primary_version": "v1.0",
       "shadow_version": "",
       "binary": "AdasFeature",
       "primary_container": "car_10_agent_adas",
       "shadow_container": "car_10_agent_adas_shadow",
-      "last_action": "reset",
-      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v4.0(으)로 정리되었습니다 (artifact cleanup).",
+      "last_action": "promote",
+      "last_message_ko": "AdasFeature: Primary(운영) 실행 버전이 v1.0으로 승격되었습니다.",
       "shadow_enabled": false,
       "shadow_mode": "inactive",
       "primary_image": "localhost:5000/sdv/adas-feature:v4.0"

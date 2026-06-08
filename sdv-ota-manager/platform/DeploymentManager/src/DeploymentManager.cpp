@@ -660,7 +660,8 @@ bool DeploymentManager::validateTargetVersion(const VersionManager& vm, const st
         return false;
     }
     if (!isValidFleetSlot(slot)) {
-        reason = "invalid slot: " + slot;
+        reason = "invalid deployment role / internal legacy slot: " + slot
+            + " (expected primary|candidate or internal A|B)";
         return false;
     }
     if (version.empty()) {

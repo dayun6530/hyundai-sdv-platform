@@ -7,7 +7,7 @@
   "last_seen_at": "2026-05-07T09:07:19Z",
   "heartbeat_source": "ack",
   "features": {
-    "ADAS":     {
+    "ADAS": {
       "active_slot": "B",
       "active_version": "v4.0",
       "primary_slot": "B",
@@ -36,7 +36,7 @@
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     },
-    "Navigation":     {
+    "Navigation": {
       "active_slot": "B",
       "active_version": "v1.0",
       "primary_slot": "B",
@@ -78,21 +78,22 @@
         }
       ]
     },
-    "Energy":     {
+    "Energy": {
       "active_slot": "B",
-      "active_version": "v3.0",
+      "active_version": "v1.0",
       "primary_slot": "B",
-      "primary_version": "v3.0",
-      "primary_image": "localhost:5000/sdv/evenergy-feature:v3.0",
+      "primary_version": "v1.0",
+      "primary_image": "localhost:5000/sdv/evenergy-feature:v1.0",
       "artifact_type": "docker_image",
       "manifest_path": "deploy/packages/Energy/v3.0/manifest.json",
       "package_id": "Energy_v3.0",
       "docker_runtime_result": "success",
-      "docker_runtime_mode": "promote",
-      "docker_runtime_action": "promote",
-      "docker_runtime_time": "2026-06-07 15:42:27",
-      "docker_runtime_container": "car_4_agent_evenergy",
-      "docker_runtime_image": "localhost:5000/sdv/evenergy-feature:v3.0",
+      "docker_runtime_mode": "candidate",
+      "docker_runtime_action": "deploy-shadow",
+      "docker_runtime_time": "2026-06-08T08:43:09",
+      "docker_runtime_container": "car_4_agent_evenergy_shadow",
+      "docker_runtime_image": "localhost:5000/sdv/evenergy-feature:v1.0",
+      "docker_runtime_pull_policy": "missing",
       "pending_active_slot": "",
       "pending_active_version": "",
       "flag": "ON",
@@ -103,14 +104,14 @@
       "shadow_version": "",
       "shadow_status": "RUNNING",
       "shadow_validation_result": "UNKNOWN",
-      "shadow_mode": "inactive",
+      "shadow_mode": "candidate",
       "kill_switch": false,
       "kill_reason": "",
       "fallback_slot": "A",
       "fallback_version": "v1.0"
     }
   },
-  "ota":   {
+  "ota": {
     "download_status": "downloaded",
     "install_status": "installed",
     "vehicle_mode": "PARKED",
@@ -120,12 +121,12 @@
     "gear": "P",
     "speed": 0,
     "parking_brake": "ON",
-    "battery": 82,
+    "battery": 75,
     "driver_approved": true,
     "network": "CONNECTED",
     "target_system_running": false
   },
-  "last_ack":   {
+  "last_ack": {
     "status": "INSTALL_COMPLETED",
     "at": "2026-05-07T09:07:19Z",
     "feature": "ADAS",

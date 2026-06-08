@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { previewFleetCommand, runFleetAction } from "../api/fleet.js";
+import { previewFleetCommand, applyKillSwitch, runFleetAction } from "../api/fleet.js";
 import RollbackPanel from "./RollbackPanel.jsx";
 
 const FEATURES = ["ADAS", "Navigation", "Energy"];
@@ -10,10 +10,11 @@ const FEATURE_LABELS = {
 };
 
 const DEFAULT_KILL_REASON = "manual kill switch from dashboard";
+const DEFAULT_CLEAR_REASON = "manual clear kill switch from dashboard";
 
 const KILL_POLICY = {
   ADAS:
-    "Emergency disable + fallback to stable A slot. ADAS flag becomes OFF.",
+    "Emergency disable + fallback to stable Primary. ADAS flag becomes OFF.",
   Navigation:
     "Basic guidance remains ON. Realtime/charging recommendation flags are turned OFF and slot falls back to A.",
   Energy:
@@ -126,15 +127,59 @@ export default function VehicleActionsSection({
   const doKill = () => {
     if (disabled || busy) return;
     const reason = killReason.trim() || DEFAULT_KILL_REASON;
-    const ok = window.confirm(`Kill switch ${carId} ${opFeature} with reason "${reason}"?`);
+    const ok = window.confirm(`Apply Kill Switch to ${opFeature} on ${carId}?\nReason: ${reason}`);
     if (!ok) return;
-    applyResult({
-      action: "kill",
-      car_id: carId,
-      feature: opFeature,
+    applyKillResult({
+      kill: true,
       reason,
-      sync_config: syncKill,
+      busyKey: "kill",
     });
+  };
+
+  const doClearKill = () => {
+    if (disabled || busy || !killOn) return;
+    const reason = killReason.trim() || DEFAULT_CLEAR_REASON;
+    const ok = window.confirm(
+      `Clear Kill Switch for ${opFeature} on ${carId}?\nThis updates deploy state only — it does not restart the Feature runtime.`,
+    );
+    if (!ok) return;
+    applyKillResult({
+      kill: false,
+      reason,
+      busyKey: "kill-clear",
+    });
+  };
+
+  const applyKillResult = async ({ kill, reason, busyKey }) => {
+    setBusy(busyKey);
+    setActionErr("");
+    try {
+      const data = await applyKillSwitch({
+        car_id: carId,
+        feature: opFeature,
+        kill,
+        reason,
+        source: "dashboard",
+        send_runtime: kill,
+        apply_fleet_kill_policy: kill,
+        sync_config: syncKill,
+      });
+      setLastResult({
+        ...data,
+        action: kill ? "kill-switch" : "kill-switch-clear",
+        ok: data.ok !== false,
+      });
+      await onFleetRefresh?.();
+      onRollbackMetaInvalidate?.();
+      if (!data.ok) {
+        setActionErr(data.error || "Kill switch request failed");
+      }
+    } catch (e) {
+      setActionErr(e.message || "Kill switch request failed");
+      setLastResult(null);
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -209,13 +254,22 @@ export default function VehicleActionsSection({
         </article>
 
         <article className="va-card">
-          <h4>Kill Switch (fleet-kill)</h4>
+          <h4>Kill Switch (integrated)</h4>
           <p className="tiny">
             Current kill_switch: <strong>{killOn ? "ON" : "OFF"}</strong>
+            {featState?.kill_source ? (
+              <span className="subtle"> · source {featState.kill_source}</span>
+            ) : null}
           </p>
+          {featState?.killed_at ? (
+            <p className="tiny subtle">killed_at: <span className="mono">{featState.killed_at}</span></p>
+          ) : null}
+          {featState?.cleared_at ? (
+            <p className="tiny subtle">cleared_at: <span className="mono">{featState.cleared_at}</span></p>
+          ) : null}
           <p className="tiny subtle">{KILL_POLICY[opFeature]}</p>
           <label className="va-field">
-            <span>reason (required)</span>
+            <span>reason</span>
             <input
               className="input"
               value={killReason}
@@ -227,12 +281,25 @@ export default function VehicleActionsSection({
           <label className="va-check">
             <input type="checkbox" checked={syncKill} onChange={(e) => setSyncKill(e.target.checked)} disabled={disabled} />
             <span>
-              <code className="mono">--sync-config</code>
+              <code className="mono">--sync-config</code> (Apply Kill ON only)
             </span>
           </label>
-          <button type="button" className="btn btn-danger va-btn" disabled={disabled || busy} onClick={doKill}>
-            {busy === "kill" ? "Running fleet-kill…" : "Apply Kill Switch"}
-          </button>
+          <div className="va-btn-row">
+            <button type="button" className="btn btn-danger va-btn" disabled={disabled || busy} onClick={doKill}>
+              {busy === "kill" ? "Applying Kill Switch…" : "Apply Kill Switch"}
+            </button>
+            <button
+              type="button"
+              className="btn va-btn"
+              disabled={disabled || busy || !killOn}
+              onClick={doClearKill}
+            >
+              {busy === "kill-clear" ? "Clearing…" : "Clear Kill Switch"}
+            </button>
+          </div>
+          <p className="tiny rollout-banner warn va-note">
+            Clear Kill Switch updates deploy state only. It does not automatically restart the Feature runtime.
+          </p>
           <button
             type="button"
             className="btn btn-secondary va-btn"

@@ -226,19 +226,14 @@ export async function updateVehicleSafetyState(carId, patch, feature = 'ADAS') {
   }
 }
 
-export async function prepareVehicleDemoReady(carId, feature = 'ADAS') {
-  const id = encodeURIComponent(String(carId || '').trim());
-  try {
-    const res = await fetchNoStore(`/api/vehicles/${id}/safety-state`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ preset: 'prepare_demo_ready', feature }),
-    });
-    const data = await res.json().catch(() => ({}));
-    return { ...data, http_ok: res.ok, http_status: res.status };
-  } catch (err) {
-    return { ok: false, error: err.message || String(err) };
-  }
+export async function prepareVehicleDemoReady(carId, feature = 'ADAS', action = '') {
+  const { prepareFleetDemoReady } = await import('./safety.js');
+  return prepareFleetDemoReady(carId, feature, action);
+}
+
+export async function prepareAllTargetsDemoReady(carIds, feature = 'ADAS', action = '') {
+  const { prepareAllFleetDemoReady } = await import('./safety.js');
+  return prepareAllFleetDemoReady(carIds, feature, action);
 }
 
 export async function applyPendingNativeForCars(carIds, options = {}) {
@@ -298,25 +293,6 @@ export async function fetchStalePendingWarnings(carIds, excludeFeature) {
       count: 0,
     };
   }
-}
-
-export async function prepareAllTargetsDemoReady(carIds, feature = 'ADAS') {
-  const ids = [
-    ...new Set(
-      (carIds || []).map((id) => String(id || '').trim()).filter(Boolean),
-    ),
-  ];
-  if (!ids.length) return { ok: true, prepared: [], failed: [] };
-  const results = await Promise.all(
-    ids.map((carId) => prepareVehicleDemoReady(carId, feature)),
-  );
-  const prepared = [];
-  const failed = [];
-  results.forEach((res, idx) => {
-    if (res.ok) prepared.push(ids[idx]);
-    else failed.push({ car_id: ids[idx], error: res.error || 'prepare failed' });
-  });
-  return { ok: failed.length === 0, prepared, failed };
 }
 
 export async function fetchFleetHistoryLogs({
