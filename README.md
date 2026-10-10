@@ -4,6 +4,7 @@
 **현대자동차 연계 팀 프로젝트 | SDV 기반 차량 소프트웨어 기능 제어 및 관리 플랫폼**
 
 차량 소프트웨어를 Feature 단위로 관리하고, 기능의 실행 상태와 생명주기를 제어하기 위한 플랫폼입니다.
+본 저장소는 전체 SDV OTA 프로젝트 중 C++ 기반 Feature Flag 플랫폼 구현을 중심으로 관리합니다. 전체 프로젝트에서는 React, Node.js/Express, Spring Boot, MQTT, Docker 등을 함께 활용했습니다.
 
 ## ✨ Key Features
 
@@ -57,4 +58,3 @@ sdv-feature-flag-platform/
 | 이다윤 | [@dayun6530](https://github.com/dayun6530) |
 | 정윤호 | [@Yuno-Jung](https://github.com/Yuno-Jung) |
 | 구자중 | [@wkwndrn](https://github.com/wkwndrn) |
-```
